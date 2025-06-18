@@ -1,20 +1,14 @@
 import Image from "next/image";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
 import WeatherCard from "./components/WeatherCard";
 import FeatureCard from "./components/FeatureCard";
-import { Map, BarChart3, SlidersHorizontal } from "lucide-react";
+import { Map, LayoutGrid, GitCompareArrows } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="bg-gray-50">
-      <Header />
-
-      {/* Sección del Héroe - Pantalla completa */}
+    <div>
       <section className="relative min-h-screen flex items-center justify-center">
-        {/* Imagen de fondo */}
         <div className="absolute inset-0 z-0">
-          {/* Puedes reemplazar esta URL con tu imagen local */}
           <Image
             src="/assets/img/bg.jpg"
             alt="Paisaje climático de Colombia"
@@ -22,42 +16,34 @@ export default function Home() {
             className="object-cover"
             priority
           />
-          {/* Degradado overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
         </div>
-
-        {/* Contenido del héroe */}
         <div className="relative z-10 container mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+          <div className="grid lg:grid-cols-4 gap-12 items-center">
+            <div className="space-y-6 md:col-span-3 xl:col-span-2 col-span-4">
               <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
-                Bienvenido a <span className="text-green-400">AClimate</span>{" "}
-                Colombia
+                Bienvenido a AClimate Colombia
               </h1>
-              <p className="text-xl text-gray-200 leading-relaxed">
+              <p className="text-xl text-gray-200">
                 Explora, monitorea y compara los datos de las estaciones
-                climatológicas con bases de datos satelitales. Infórmate sobre
-                cómo ha sido el clima en las regiones.
+                climátologicas con bases de datos satelitales. Informate sobre
+                como ha sido el clima en las regiones.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-green-600 text-white font-bold py-4 px-8 rounded-lg hover:bg-green-700 transition-colors text-lg">
+              <div className="flex flex-col md:flex-row gap-4">
+                <Link
+                  href="/locations"
+                  className="bg-[#bc6c25] text-white font-bold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
+                >
                   Explora el clima
-                </button>
-                <button className="border-2 border-white text-white font-bold py-4 px-8 rounded-lg hover:bg-white hover:text-gray-800 transition-colors text-lg">
-                  Ver estaciones
-                </button>
+                </Link>
               </div>
-            </div>
-            <div className="flex justify-center">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <WeatherCard />
-              </div>
+              <WeatherCard />
             </div>
           </div>
         </div>
 
         {/* Indicador de scroll */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="absolute bottom-18 left-1/2 transform -translate-x-1/2 z-10">
           <div className="animate-bounce">
             <svg
               className="w-6 h-6 text-white"
@@ -75,41 +61,29 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <main className="container mx-auto px-6 py-24">
-        {/* Sección de Características */}
-        <section className="bg-white py-16 rounded-lg shadow-lg">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
-                Características principales
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Descubre todas las herramientas que AClimate pone a tu
-                disposición para el análisis climático en Colombia
-              </p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard
-                icon={Map}
-                title="Mapa interactivo"
-                description="Consulta en un mapa interactivo la ubicación y datos históricos climáticos de las estaciones climatológicas, incluyendo temperaturas, precipitaciones y más."
-              />
-              <FeatureCard
-                icon={BarChart3}
-                title="Análisis de datos"
-                description="Visualiza y analiza tendencias climáticas con gráficos interactivos y herramientas de comparación entre diferentes estaciones y períodos."
-              />
-              <FeatureCard
-                icon={SlidersHorizontal}
-                title="Configuración avanzada"
-                description="Personaliza tu experiencia con filtros avanzados, alertas climáticas y configuraciones específicas para tu región de interés."
-              />
-            </div>
+      <main className="bg-white">
+        <section>
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              bg
+              icon={Map}
+              title="Mapa interactivo de estaciones climáticas"
+              description="Consulta en un mapa interactivo la ubicación y datos históricos climáticos de las estaciones climatológicas, incluyendo temperaturas, precipitaciones y más."
+            />
+            <FeatureCard
+              icon={LayoutGrid}
+              title="Dashboard de análisis climático"
+              description="Visualiza la temperatura máxima, mínima, precipitaciones y otros datos clave en un dashboard diseñado para el análisis climático en tiempo real."
+            />
+            <FeatureCard
+              bg
+              icon={GitCompareArrows}
+              title="Comparación de datos climáticos con otras fuentes"
+              description="Compara los datos de las estaciones climatológicas con otras bases de datos satelitales como CHIRPS y AgERA5."
+            />
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

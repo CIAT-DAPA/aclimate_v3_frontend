@@ -3,7 +3,7 @@ import Image from "next/image";
 
 const Header = () => {
   return (
-    <header className="bg-lime-950 shadow-sm">
+    <header className="bg-[#283618] shadow-sm">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-3">
           <Image
@@ -16,7 +16,7 @@ const Header = () => {
         </Link>
         <div>
           <Link
-            href="/estaciones"
+            href="/locations"
             className="text-gray-300 hover:text-white transition-colors"
           >
             Estaciones
