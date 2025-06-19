@@ -20,22 +20,24 @@ export default function Home() {
         </div>
         <div className="relative z-10 container mx-auto px-6">
           <div className="grid lg:grid-cols-4 gap-12 items-center">
-            <div className="space-y-6 md:col-span-3 xl:col-span-2 col-span-4">
-              <h1 className="text-5xl md:text-6xl font-semibold text-amber-50 text-balance">
-                Bienvenido a AClimate Colombia
-              </h1>
-              <p className="text-xl text-amber-50 text-pretty">
-                Explora, monitorea y compara los datos de las estaciones
-                climátologicas con bases de datos satelitales. Informate sobre
-                como ha sido el clima en las regiones.
-              </p>
-              <div className="flex flex-col md:flex-row gap-4">
-                <Link
-                  href="/locations"
-                  className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
-                >
-                  Explora el clima
-                </Link>
+            <div className="space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
+              <div className="space-y-3">
+                <h1 className="text-5xl md:text-6xl font-semibold text-amber-50 text-balance">
+                  Bienvenido a AClimate Colombia
+                </h1>
+                <p className="text-xl text-amber-50 text-pretty">
+                  Explora, monitorea y compara los datos de las estaciones
+                  climátologicas con bases de datos satelitales. Informate sobre
+                  como ha sido el clima en las regiones.
+                </p>
+                <div className="flex flex-col md:flex-row gap-4 text-center">
+                  <Link
+                    href="/locations"
+                    className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
+                  >
+                    Explora el clima
+                  </Link>
+                </div>
               </div>
               <WeatherCard />
             </div>
