@@ -1,7 +1,7 @@
 import Image from "next/image";
 import WeatherCard from "./components/WeatherCard";
 import FeatureCard from "./components/FeatureCard";
-import { Map, LayoutGrid, GitCompareArrows } from "lucide-react";
+import { Map, LayoutGrid, Newspaper } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -21,10 +21,10 @@ export default function Home() {
         <div className="relative z-10 container mx-auto px-6">
           <div className="grid lg:grid-cols-4 gap-12 items-center">
             <div className="space-y-6 md:col-span-3 xl:col-span-2 col-span-4">
-              <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+              <h1 className="text-5xl md:text-6xl font-semibold text-amber-50 text-balance">
                 Bienvenido a AClimate Colombia
               </h1>
-              <p className="text-xl text-gray-200">
+              <p className="text-xl text-amber-50 text-pretty">
                 Explora, monitorea y compara los datos de las estaciones
                 climátologicas con bases de datos satelitales. Informate sobre
                 como ha sido el clima en las regiones.
@@ -32,7 +32,7 @@ export default function Home() {
               <div className="flex flex-col md:flex-row gap-4">
                 <Link
                   href="/locations"
-                  className="bg-[#bc6c25] text-white font-bold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
+                  className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
                 >
                   Explora el clima
                 </Link>
@@ -46,7 +46,7 @@ export default function Home() {
         <div className="absolute bottom-18 left-1/2 transform -translate-x-1/2 z-10">
           <div className="animate-bounce">
             <svg
-              className="w-6 h-6 text-white"
+              className="w-6 h-6 text-amber-50"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -77,9 +77,9 @@ export default function Home() {
             />
             <FeatureCard
               bg
-              icon={GitCompareArrows}
-              title="Comparación de datos climáticos con otras fuentes"
-              description="Compara los datos de las estaciones climatológicas con otras bases de datos satelitales como CHIRPS y AgERA5."
+              icon={Newspaper}
+              title="Subscripción a boletines climáticos"
+              description="Recibe actualizaciones periódicas sobre el clima en tu región, incluyendo alertas de condiciones extremas y resúmenes de datos."
             />
           </div>
         </section>

@@ -2,7 +2,7 @@ import { MapPin, Thermometer, CloudRain, Sun } from "lucide-react";
 
 const WeatherCard = () => {
   return (
-    <div className="relative overflow-hidden bg-[#283618] text-white p-6 rounded-2xl shadow-lg max-w-sm">
+    <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
       <div className="absolute top-0 right-0 w-[200px] h-[120px] z-0">
         <svg
           className="absolute -top-5 -right-4"
@@ -30,30 +30,30 @@ const WeatherCard = () => {
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="font-bold text-lg">Farallones</h3>
-            <div className="flex items-center text-gray-300 text-sm gap-1">
+            <h3 className="font-semibold text-lg">Farallones</h3>
+            <div className="flex items-center text-amber-50 text-sm gap-1">
               <MapPin size={14} />
               <span>Cali, Valle del Cauca</span>
             </div>
           </div>
-          <div className="text-right text-sm text-gray-300">
+          <div className="text-right text-sm text-amber-50">
             <span>Jueves</span>
             <br />
             <span>2024/06/13</span>
           </div>
         </div>
 
-        <div className="space-y-3 mt-6">
-          <div className="flex items-center gap-2">
-            <Thermometer className="text-gray-400" />
+        <div className="space-y-2 mt-6">
+          <div className="flex items-center gap-3">
+            <Thermometer className="text-amber-50" />
             <span>24.0 °C - 33.7 °C</span>
           </div>
-          <div className="flex items-center gap-2">
-            <CloudRain className="text-gray-400" />
+          <div className="flex items-center gap-3">
+            <CloudRain className="text-amber-50" />
             <span>22.0 mm</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Sun className="text-gray-400" />
+          <div className="flex items-center gap-3">
+            <Sun className="text-amber-50 " />
             <span>0.0 M/J</span>
           </div>
         </div>

@@ -12,12 +12,12 @@ const Header = () => {
             width={32}
             height={32}
           />
-          <span className="text-xl font-bold text-white">AClimate</span>
+          <span className="text-xl font-normal text-amber-50">AClimate</span>
         </Link>
         <div>
           <Link
             href="/locations"
-            className="text-gray-300 hover:text-white transition-colors"
+            className="text-amber-50 hover:text-amber-100 transition-colors"
           >
             Estaciones
           </Link>
