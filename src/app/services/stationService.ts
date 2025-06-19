@@ -1,0 +1,11 @@
+import { API_URL, COUNTRY_ID } from "@/app/config";
+
+export const stationService = {
+  async getAll() {
+    const response = await fetch(
+      `${API_URL}/locations/by-country-ids?country_ids=${COUNTRY_ID}`
+    );
+    if (!response.ok) throw new Error("Error fetching stations");
+    return response.json();
+  },
+};
