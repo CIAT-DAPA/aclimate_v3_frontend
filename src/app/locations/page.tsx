@@ -51,7 +51,7 @@ export default function LocationsPage() {
           <p className="text-red-600 mb-4">Error: {error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-brand-green text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
           >
             Reintentar
           </button>
@@ -66,7 +66,7 @@ export default function LocationsPage() {
       <MapComponent center={[4.6097, -74.0817]} zoom={6} stations={stations} />
 
       {/* Buscador superpuesto */}
-      <MapSearch />
+      <MapSearch stations={stations} />
 
       {/* Indicador de carga */}
       {loading && (
