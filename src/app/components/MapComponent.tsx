@@ -1,3 +1,4 @@
+// app/components/MapComponent.tsx
 "use client";
 
 import {
@@ -6,46 +7,158 @@ import {
   Marker,
   Popup,
   ZoomControl,
+  WMSTileLayer,
+  LayersControl
 } from "react-leaflet";
-import { Icon } from "leaflet";
+import { Icon, LatLngExpression } from "leaflet";
 import { Station } from "@/app/types/Station";
+import Link from "next/link";
 import "leaflet/dist/leaflet.css";
+import TimelineController from "./TimeLineController";
 
 const customIcon = new Icon({
   iconUrl: "/assets/img/marker.png",
   iconSize: [48, 48],
 });
 
+const rasterLayers = [
+  {
+    name: "OpenStreetMap",
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  {
+    name: "Satélite",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+  },
+  {
+    name: "Topográfico",
+    url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+  }
+];
+
+interface WMSLayer {
+  url: string;
+  layers: string;
+  format?: string;
+  transparent?: boolean;
+  version?: string;
+  opacity?: number;
+  attribution?: string;
+  styles?: string;
+  time?: string;
+  cql_filter?: string;
+}
+
+interface MapComponentProps {
+  center?: [number, number];
+  zoom?: number;
+  stations?: Station[];
+  wmsLayers?: WMSLayer[];
+  baseLayerIndex?: number;
+  showZoomControl?: boolean;
+  showMarkers?: boolean;
+  showTimeline?: boolean;
+  onTimeChange?: (time: string) => void;
+}
+
 const MapComponent = ({
   center = [4.6097, -74.0817],
   zoom = 6,
   stations = [],
-}: {
-  center?: [number, number];
-  zoom?: number;
-  stations?: Station[];
-}) => {
+  wmsLayers = [],
+  baseLayerIndex = 0,
+  showZoomControl = true,
+  showMarkers = true,
+  showTimeline = false,
+  onTimeChange = () => {}
+}: MapComponentProps) => {
+  const activeStations = stations.filter(station => station.enable);
+  const hasStations = activeStations.length > 0;
+  const singleStationMode = activeStations.length === 1;
+  const noStationsMode = activeStations.length === 0;
+
+  const mapCenter: LatLngExpression = singleStationMode
+    ? [activeStations[0].latitude, activeStations[0].longitude]
+    : center;
+
+  const mapZoom = singleStationMode ? 13 : zoom;
+
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      className="h-full w-full"
-      zoomControl={false}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <div className="relative h-full w-full">
+      <MapContainer
+        center={mapCenter}
+        zoom={mapZoom}
+        className="h-full w-full"
+        zoomControl={false}
+      >
+        {/* Capa base */}
+        <TileLayer
+          attribution={rasterLayers[baseLayerIndex].attribution}
+          url={rasterLayers[baseLayerIndex].url}
+        />
 
-      <ZoomControl position="topright" />
+        {/* Capas adicionales cuando no hay estaciones */}
+        {noStationsMode && !wmsLayers.length && (
+          <>
+            <TileLayer
+              attribution={rasterLayers[1].attribution}
+              url={rasterLayers[1].url}
+              opacity={0.7}
+            />
+            <TileLayer
+              attribution={rasterLayers[2].attribution}
+              url={rasterLayers[2].url}
+              opacity={0.3}
+            />
+          </>
+        )}
 
-      {/* Renderizar solo las estaciones visibles */}
-      {stations
-        .filter((station) => station.visible)
-        .map((station) => (
+        {/* Capas WMS */}
+        {wmsLayers.length > 0 && (
+          <LayersControl position="topright">
+            {wmsLayers.map((layer, index) => (
+              <LayersControl.Overlay 
+                key={index} 
+                name={layer.layers} 
+                checked={index === 0}
+              >
+                <WMSTileLayer
+                  url={layer.url}
+                  layers={layer.layers}
+                  format={layer.format || "image/png"}
+                  transparent={layer.transparent !== false}
+                  version={layer.version || "1.1.1"}
+                  opacity={layer.opacity || 0.7}
+                  attribution={layer.attribution || ""}
+                  styles={layer.styles || ""}
+                  time={layer.time || ""}
+                  cql_filter={layer.cql_filter || ""}
+                />
+              </LayersControl.Overlay>
+            ))}
+          </LayersControl>
+        )}
+
+        {/* Control de línea de tiempo */}
+        {showTimeline && wmsLayers.length > 0 && (
+          <TimelineController
+            dimensionName="time"
+            layer={wmsLayers[0].layers}
+            onTimeChange={onTimeChange}
+            wmsUrl={wmsLayers[0].url}
+          />
+        )}
+
+        {showZoomControl && <ZoomControl position="topright" />}
+
+        {/* Marcadores de estaciones */}
+        {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => (
           <Marker
             key={station.id}
-            position={[station.lat, station.lon]}
+            position={[station.latitude, station.longitude] as LatLngExpression}
             icon={customIcon}
           >
             <Popup>
@@ -71,19 +184,32 @@ const MapComponent = ({
                   </p>
 
                   <p className="text-xs text-gray-400 mt-2 pt-2 border-t">
-                    Coordenadas: {station.lat.toFixed(4)},{" "}
-                    {station.lon.toFixed(4)}
+                    Coordenadas: {station.latitude.toFixed(4)},{" "}
+                    {station.longitude.toFixed(4)}
                   </p>
                 </div>
 
-                <button className="mt-3 bg-brand-green text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">
+                <Link 
+                  className="mt-3 inline-block bg-brand-green text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors" 
+                  href={`/monitory/${station.id}`}
+                >
                   Ver detalles
-                </button>
+                </Link>
               </div>
             </Popup>
           </Marker>
         ))}
-    </MapContainer>
+
+        {/* Para una sola estación (solo marcador) */}
+        {showMarkers && singleStationMode && activeStations.map((station) => (
+          <Marker
+            key={station.id}
+            position={[station.latitude, station.longitude] as LatLngExpression}
+            icon={customIcon}
+          />
+        ))}
+      </MapContainer>
+    </div>
   );
 };
 

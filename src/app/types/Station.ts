@@ -2,9 +2,9 @@ export interface Station {
   id: number;
   name: string;
   ext_id: string;
-  lat: number;
-  lon: number;
-  visible: boolean;
+  latitude: number;
+  longitude: number;
+  enable: boolean;
   country_id: number;
   country_name: string;
   country_iso2: string;

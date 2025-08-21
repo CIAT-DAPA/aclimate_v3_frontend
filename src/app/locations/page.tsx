@@ -27,7 +27,9 @@ export default function LocationsPage() {
     const fetchStations = async () => {
       try {
         setLoading(true);
+        console.log("Fetching stations...");
         const data = await stationService.getAll();
+        console.log("Stations fetched successfully:", data);
         setStations(data);
 
         // Log para debugging

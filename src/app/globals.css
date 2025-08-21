@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet-timedimension/dist/leaflet.timedimension.control.css';
 
 :root {
   --background: #ffffff;
@@ -23,4 +25,22 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-montserrat), system-ui, sans-serif;
+}
+
+/* Estilos adicionales para el control de tiempo */
+.leaflet-control-timecontrol {
+  background: white;
+  padding: 5px;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.leaflet-control-timecontrol .time-slider {
+  width: 200px;
+  margin: 0 5px;
+}
+
+.leaflet-control-timecontrol .time-display {
+  margin: 0 5px;
+  font-size: 12px;
 }

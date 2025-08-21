@@ -8,4 +8,9 @@ export const stationService = {
     if (!response.ok) throw new Error("Error fetching stations");
     return response.json();
   },
+  async getById(id: string) {
+    const response = await fetch(`${API_URL}/locations/by-id?id=${id}`);
+    if (!response.ok) throw new Error("Error fetching station details");
+    return response.json();
+  },
 };

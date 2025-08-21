@@ -13,7 +13,7 @@ const MapSearch = ({ stations }: { stations?: Station[] }) => {
     const term = searchTerm.toLowerCase();
 
     return (stations ?? [])
-      .filter((station) => station.visible)
+      .filter((station) => station.enable)
       .filter(
         (station) =>
           station.name.toLowerCase().includes(term) ||
