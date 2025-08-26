@@ -23,7 +23,6 @@ interface RasterFileInfo {
 
 export default function SpatialDataPage() {
   const [activeTab, setActiveTab] = useState<'climatic' | 'indicators'>('climatic');
-  const [selectedTime, setSelectedTime] = useState<string>("");
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
 
@@ -57,7 +56,6 @@ export default function SpatialDataPage() {
   ];
 
   const handleTimeChange = useCallback((time: string, layerName: string) => {
-    setSelectedTime(time);
     const bbox = "-89.5,12.9,-83.1,16.5"; // Límites aproximados para Honduras
     
     // Crear URL para la capa específica
@@ -66,8 +64,6 @@ export default function SpatialDataPage() {
     // Actualizar la referencia sin causar rerender
     rasterFilesRef.current[layerName] = { url, layer: layerName, time };
     setDownloadReady(true);
-    
-    console.log("Tiempo seleccionado:", time, "para la capa:", layerName);
   }, [wmsBaseUrl]);
 
   // Función para descargar todos los archivos
@@ -104,13 +100,6 @@ export default function SpatialDataPage() {
               <li>Identificar zonas agrícolas con mayor riesgo climático</li>
             </ul>
           </div>
-          {selectedTime && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-md">
-              <p className="text-blue-700">
-                Tiempo seleccionado: <strong>{selectedTime}</strong>
-              </p>
-            </div>
-          )}
         </div>
       </header>
 
@@ -143,9 +132,10 @@ export default function SpatialDataPage() {
             {activeTab === 'climatic' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {wmsLayers.map((layer, index) => (
-                  <div key={index} className="h-80 flex flex-col">
+                  <div key={layer.layer} className="h-80 flex flex-col">
                     <h3 className="font-semibold text-gray-800 mb-2">{layer.title}</h3>
                     <MapComponent
+                      key={layer.layer}
                       center={layer.center}
                       zoom={layer.zoom}
                       wmsLayers={[{
@@ -158,6 +148,7 @@ export default function SpatialDataPage() {
                       showZoomControl={true}
                       showTimeline={true}
                       onTimeChange={(time) => handleTimeChange(time, layer.layer)}
+                      
                     />
                   </div>
                 ))}

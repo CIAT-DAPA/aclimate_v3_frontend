@@ -31,7 +31,6 @@ export const spatialService = {
                         }
             }
         }
-        console.log("Fetched dates from GeoServer:", dates);
         return dates;
         } catch (error) {
         console.error("Error fetching dates from GeoServer:", error);

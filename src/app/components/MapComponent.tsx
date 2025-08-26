@@ -15,6 +15,7 @@ import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import "leaflet/dist/leaflet.css";
 import TimelineController from "./TimeLineController";
+import { useRef } from "react";
 
 const customIcon = new Icon({
   iconUrl: "/assets/img/marker.png",
@@ -86,6 +87,8 @@ const MapComponent = ({
 
   const mapZoom = singleStationMode ? 13 : zoom;
 
+  const mapRef = useRef<any>(null);
+
   return (
     <div className="relative h-full w-full">
       <MapContainer
@@ -93,14 +96,16 @@ const MapComponent = ({
         zoom={mapZoom}
         className="h-full w-full"
         zoomControl={false}
+        ref={mapRef}
+        // Asegura que Leaflet no inicialice automáticamente TimeDimension global
+        timeDimension={false as any}
+        timeDimensionControl={false as any}
       >
-        {/* Capa base */}
         <TileLayer
           attribution={rasterLayers[baseLayerIndex].attribution}
           url={rasterLayers[baseLayerIndex].url}
         />
 
-        {/* Capas adicionales cuando no hay estaciones */}
         {noStationsMode && !wmsLayers.length && (
           <>
             <TileLayer
@@ -116,15 +121,10 @@ const MapComponent = ({
           </>
         )}
 
-        {/* Capas WMS */}
         {wmsLayers.length > 0 && (
           <LayersControl position="topright">
             {wmsLayers.map((layer, index) => (
-              <LayersControl.Overlay 
-                key={index} 
-                name={layer.layers} 
-                checked={index === 0}
-              >
+              <LayersControl.Overlay key={index} name={layer.layers} checked={index === 0}>
                 <WMSTileLayer
                   url={layer.url}
                   layers={layer.layers}
@@ -142,7 +142,6 @@ const MapComponent = ({
           </LayersControl>
         )}
 
-        {/* Control de línea de tiempo */}
         {showTimeline && wmsLayers.length > 0 && (
           <TimelineController
             dimensionName="time"
@@ -154,7 +153,6 @@ const MapComponent = ({
 
         {showZoomControl && <ZoomControl position="topright" />}
 
-        {/* Marcadores de estaciones */}
         {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => (
           <Marker
             key={station.id}
@@ -200,7 +198,6 @@ const MapComponent = ({
           </Marker>
         ))}
 
-        {/* Para una sola estación (solo marcador) */}
         {showMarkers && singleStationMode && activeStations.map((station) => (
           <Marker
             key={station.id}
