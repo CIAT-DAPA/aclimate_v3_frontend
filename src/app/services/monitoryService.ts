@@ -83,7 +83,7 @@ async getClimateHistorical(stationId: string, period: string, startDate: string,
   }
   
   const response = await fetch(`${API_URL}/${urlBase}?${params}`);
-  //console.log("Fetching climate historical data from:", `${API_URL}/${urlBase}?${params}`);
+  console.log("Fetching climate historical data from:", `${API_URL}/${urlBase}?${params}`);
   if (!response.ok) 
     throw new Error("Error fetching climate historical data");
   

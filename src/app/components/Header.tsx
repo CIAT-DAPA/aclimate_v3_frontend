@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { COUNTRY_ID } from "@/app/config";
 
 const Header = () => {
   return (
@@ -14,12 +15,18 @@ const Header = () => {
           />
           <span className="text-xl font-normal text-amber-50">AClimate</span>
         </Link>
-        <div>
+        <div className="flex gap-6">
           <Link
             href="/locations"
             className="text-amber-50 hover:text-amber-100 transition-colors"
           >
             Estaciones
+          </Link> 
+          <Link
+            href={`/spatial/${COUNTRY_ID}`}
+            className="text-amber-50 hover:text-amber-100 transition-colors"
+          >
+            Datos espaciales
           </Link>
         </div>
       </nav>

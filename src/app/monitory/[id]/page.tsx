@@ -38,17 +38,25 @@ const MONTHS = [
 export default function StationDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const [activeTab, setActiveTab] = useState<'climatic' | 'indicators'>('climatic');
+  const [isClimaticOpen, setIsClimaticOpen] = useState(true);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const [timePeriod, setTimePeriod] = useState<string>("daily");
   const [timePeriodIndicators, setTimePeriodIndicators] = useState<string>("monthly");
-  const [filterDates, setFilterDates] = useState<{ start: string; end: string }>({ start: "", end: "" });
+  
+  // Estados independientes para cada acordeón
+  const [filterDatesClimatic, setFilterDatesClimatic] = useState<{ start: string; end: string }>({ start: "", end: "" });
+  const [filterDatesIndicators, setFilterDatesIndicators] = useState<{ start: string; end: string }>({ start: "", end: "" });
 
   const [station, setStation] = useState<Station | null>(null);
   const [stationDates, setStationDates] = useState<any>(null);
+  const [DataClimaticDates, setDataClimaticDates] = useState<any>(null);
+  const [IndicatorsDates, setIndicatorsDates] = useState<any>(null);
   const [climateHistoricalData, setClimateHistoricalData] = useState<any>(null);
   const [indicatorsData, setIndicatorsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingCharts, setLoadingCharts] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
   // Opciones para el selector de período de indicadores
   const indicatorPeriodOptions = [
     { value: "daily", label: "Diario" },
@@ -61,15 +69,15 @@ export default function StationDetailPage() {
 
   // Convertir fecha a formato de mes (para climatología)
   const dateToMonthFormat = (date: string) => {
-    if (!date) return "2000-01"; // Valor por defecto
+    if (!date) return "2000-01";
     const [year, month] = date.split('-');
-    return `2000-${month}`; // Usamos 2000 como año ficticio
+    return `2000-${month}`;
   };
 
-  // Convertir mes a formato de fecha (para climatología)
   const monthToDateFormat = (monthValue: string) => {
     return `2000-${monthValue}`;
   };
+
   // Efecto para cargar datos de la estación
   useEffect(() => {
     const fetchStation = async () => {
@@ -77,21 +85,34 @@ export default function StationDetailPage() {
         setLoading(true);
         const stationData = await stationService.getById(id);
         setStation(stationData[0]);
-        const dates = await monitoryService.getStationDates(id, timePeriod, activeTab === "indicators");
-        setStationDates(dates);
-        
-        // Para climatología, usar formato de mes
+        const dates = await monitoryService.getStationDates(id, timePeriod, false);
+        setDataClimaticDates(dates);
+        const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
+        setIndicatorsDates(datesIndicators);
+
+        // Obtener la fecha mínima y máxima entre ambos objetos
+        const minDate = new Date(dates.minDate) < new Date(datesIndicators.minDate) ? dates.minDate : datesIndicators.minDate;
+        const maxDate = new Date(dates.maxDate) > new Date(datesIndicators.maxDate) ? dates.maxDate : datesIndicators.maxDate;
+
+        setStationDates({ minDate, maxDate });
+        // Inicializar filtros para datos climáticos
         if (timePeriod === "climatology") {
-          setFilterDates({ 
+          setFilterDatesClimatic({ 
             start: dateToMonthFormat(dates.minDate || "2000-01"), 
-            end: dateToMonthFormat(dates.maxDate || "2000-12") 
+            end: dateToMonthFormat("2000-12") 
           });
         } else {
-          setFilterDates({ 
+          setFilterDatesClimatic({ 
             start: dates.minDate || "", 
             end: dates.maxDate || "" 
           });
         }
+        
+        // Inicializar filtros para indicadores
+        setFilterDatesIndicators({ 
+          start: datesIndicators.minDate || "", 
+          end: datesIndicators.maxDate || "" 
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading station data");
       } finally {
@@ -102,54 +123,113 @@ export default function StationDetailPage() {
     if (id) {
       fetchStation();
     }
-  }, [id, timePeriod, activeTab]);
+  }, [id]);
 
-  // Agrega este nuevo useEffect después del primer useEffect
-  useEffect(() => {
-    if (!stationDates) return;
-    
-    if (timePeriod === "climatology") {
-      setFilterDates({ 
-        start: dateToMonthFormat(stationDates.minDate), 
-        end: dateToMonthFormat(stationDates.maxDate) 
-      });
-    } else {
-      setFilterDates({ 
-        start: stationDates.minDate, 
-        end: stationDates.maxDate 
-      });
-    }
-  }, [timePeriod, stationDates]);
-
-  // Efecto para cargar datos climáticos cuando cambian los filtros
-  useEffect(() => {
-    const fetchChartData = async () => {
+    useEffect(() => {
+    const fetchData = async () => {
       try {
-        if (!filterDates.start || !filterDates.end) return;
+        const dates = await monitoryService.getStationDates(id, timePeriod, false);
+        setDataClimaticDates(dates);
+        const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
+        setIndicatorsDates(datesIndicators);
+
+        // Inicializar filtros para datos climáticos
+        if (timePeriod === "climatology") {
+          setFilterDatesClimatic({ 
+            start: dateToMonthFormat(dates.minDate || "2000-01"), 
+            end: dateToMonthFormat("2000-12") 
+          });
+        } else {
+          setFilterDatesClimatic({ 
+            start: dates.minDate || "", 
+            end: dates.maxDate || "" 
+          });
+        }
         
-        const climateHistorical = await monitoryService.getClimateHistorical(
-          id, 
-          timePeriod, 
-          filterDates.start, 
-          filterDates.end
-        );
-        setClimateHistoricalData(climateHistorical);
-        if (activeTab === 'indicators') {
-            const indicators = await monitoryService.getIndicatorsHistorical(
-              id,
-              timePeriodIndicators,
-              filterDates.start,
-              filterDates.end
-            );
-            setIndicatorsData(indicators);
-          }
+        // Inicializar filtros para indicadores
+        setFilterDatesIndicators({ 
+          start: datesIndicators.minDate || "", 
+          end: datesIndicators.maxDate || "" 
+        });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading climate data");
+        setError(err instanceof Error ? err.message : "Error loading charts data");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchChartData();
-  }, [timePeriod, filterDates, id, activeTab, timePeriodIndicators]);
+    if (id) {
+      fetchData();
+    }
+  }, [id, timePeriod, timePeriodIndicators]);
+
+  // Efecto para actualizar filtros cuando cambia timePeriod
+  useEffect(() => {
+    // Limpiar datos anteriores y mostrar carga
+    setClimateHistoricalData(null);
+    setLoadingCharts(true);
+    
+    if (timePeriod === "climatology") {
+      setFilterDatesClimatic({ 
+        start: "2000-01", 
+        end: "2000-12" 
+      });
+    } else if (DataClimaticDates) {
+      setFilterDatesClimatic({ 
+        start: DataClimaticDates.minDate || "", 
+        end: DataClimaticDates.maxDate || "" 
+      });
+    }
+  }, [timePeriod, DataClimaticDates]);
+
+  // Efecto para cargar datos climáticos cuando cambian los filtros
+  useEffect(() => {
+    const fetchClimateData = async () => {
+      try {
+        if (!filterDatesClimatic.start || !filterDatesClimatic.end) return;
+        
+        setLoadingCharts(true);
+        const climateHistorical = await monitoryService.getClimateHistorical(
+          id, 
+          timePeriod, 
+          filterDatesClimatic.start, 
+          filterDatesClimatic.end
+        );
+        setClimateHistoricalData(climateHistorical);
+      } catch (err) {
+        console.error("Error loading climate data:", err);
+        setClimateHistoricalData(null);
+      } finally {
+        setLoadingCharts(false);
+      }
+    };
+
+    // Agregar un pequeño delay para evitar parpadeo
+    const timeoutId = setTimeout(fetchClimateData, 100);
+    return () => clearTimeout(timeoutId);
+  }, [timePeriod, filterDatesClimatic]);
+
+  // Efecto para cargar datos de indicadores cuando cambian los filtros
+  useEffect(() => {
+    const fetchIndicatorsData = async () => {
+      try {
+        if (!filterDatesIndicators.start || !filterDatesIndicators.end) return;
+        
+        const indicators = await monitoryService.getIndicatorsHistorical(
+          id,
+          timePeriodIndicators,
+          filterDatesIndicators.start,
+          filterDatesIndicators.end
+        );
+        setIndicatorsData(indicators);
+      } catch (err) {
+        console.error("Error loading indicators data:", err);
+        setIndicatorsData(null);
+      }
+    };
+
+    fetchIndicatorsData();
+  }, [timePeriodIndicators, filterDatesIndicators]);
 
   if (loading) {
     return (
@@ -195,8 +275,8 @@ export default function StationDetailPage() {
   }
 
   // Formatear fechas
-  const startDate = stationDates.minDate;
-  const endDate = stationDates.maxDate;
+  const startDate = stationDates?.minDate;
+  const endDate = stationDates?.maxDate;
 
   function getIndicatorColor(indicatorKey: string): string {
     const colorMap: Record<string, string> = {
@@ -222,12 +302,15 @@ export default function StationDetailPage() {
         </div>
         
         <div className="mb-4">
-          <p className="text-gray-600">
-            <span className="font-medium">Ubicación:</span> {station?.admin2_name || "N/A"},{" "}
-            {station?.admin1_name || "N/A"}, {station?.country_name || "N/A"}
+          <p className="text-gray-500 text-sm">
+            Ubicación: {station?.country_name || "N/A"},{" "}
+            {station?.admin1_name || "N/A"}, {station?.admin2_name || "N/A"}
           </p>
           <p className="text-gray-500 text-sm mt-1">
-            {station?.latitude?.toFixed(6) || "N/A"}, {station?.longitude?.toFixed(6) || "N/A"}
+            Latitud: {station?.latitude?.toFixed(6) || "N/A"}, Longitud: {station?.longitude?.toFixed(6) || "N/A"}
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+            Fuente: {station?.source || "N/A"}
           </p>
         </div>
         
@@ -246,122 +329,6 @@ export default function StationDetailPage() {
           </p>
         </div>
         
-        {/* Sección de fechas con selector de rango */}
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">Fechas</h3>
-          
-          {timePeriod === "climatology" ? (
-            // Selectores de mes para climatología
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="start-month" className="block text-sm font-medium text-gray-700 mb-1">
-                  Mes inicial
-                </label>
-                <select
-                  id="start-month"
-                  value={filterDates.start.split('-')[1]}
-                  onChange={(e) => setFilterDates(prev => ({
-                    ...prev, 
-                    start: monthToDateFormat(e.target.value)
-                  }))}
-                  // Añadido: Clases para mejorar la apariencia del select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent text-gray-900 bg-white"
-                >
-                  {MONTHS.map(month => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label htmlFor="end-month" className="block text-sm font-medium text-gray-700 mb-1">
-                  Mes final
-                </label>
-                <select
-                  id="end-month"
-                  value={filterDates.end.split('-')[1]}
-                  onChange={(e) => setFilterDates(prev => ({
-                    ...prev, 
-                    end: monthToDateFormat(e.target.value)
-                  }))}
-                  // Añadido: Clases para mejorar la apariencia del select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent text-gray-900 bg-white"
-                >
-                  {MONTHS.map(month => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            // Selectores de fecha para otros modos
-            <div className="flex flex-col md:flex-row md:justify-start gap-4">
-              <div className="flex flex-col">
-                <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha inicial
-                </label>
-                <input
-                  type="date"
-                  id="start-date"
-                  value={filterDates.start}
-                  min={stationDates?.minDate || ""}
-                  max={stationDates?.maxDate || ""}
-                  onChange={(e) => setFilterDates(prev => ({ ...prev, start: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent text-gray-900 bg-white"
-                />
-              </div>
-              
-              <div className="flex flex-col">
-                <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha final
-                </label>
-                <input
-                  type="date"
-                  id="end-date"
-                  value={filterDates.end}
-                  min={filterDates.start || stationDates?.minDate || ""}
-                  max={stationDates?.maxDate || ""}
-                  onChange={(e) => setFilterDates(prev => ({ ...prev, end: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent text-gray-900 bg-white"
-                />
-              </div>
-            </div>
-          )}
-          
-          <div className="mt-4 flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              {timePeriod === "climatology" 
-                ? "Rango completo: Todos los meses" 
-                : `Rango completo: ${startDate} - ${endDate}`}
-            </div>
-            <button
-              onClick={() => {
-                if (stationDates) {
-                  if (timePeriod === "climatology") {
-                    setFilterDates({ 
-                      start: dateToMonthFormat(stationDates.minDate), 
-                      end: dateToMonthFormat(stationDates.maxDate) 
-                    });
-                  } else {
-                    setFilterDates({ 
-                      start: stationDates.minDate, 
-                      end: stationDates.maxDate 
-                    });
-                  }
-                }
-              }}
-              className="text-sm text-brand-green hover:text-green-700 font-medium"
-            >
-              Restablecer rango
-            </button>
-          </div>
-        </div>
-        
-        
         {/* Mapa */}
         <div className="h-80 rounded-lg overflow-hidden border border-gray-200">
           <MapComponent
@@ -376,157 +343,343 @@ export default function StationDetailPage() {
         {/* Segunda card - Gráficas y datos */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            {/* Tabs para selección de tipo de datos */}
-            <div className="flex border-b border-gray-200 mb-6">
-              <button
-                className={`py-3 px-6 font-medium ${
-                  activeTab === 'climatic'
-                    ? 'text-black border-b-2 border-brand-green'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab('climatic')}
-              >
-                Datos climáticos
-              </button>
-              <button
-                className={`py-3 px-6 font-medium ${
-                  activeTab === 'indicators'
-                    ? 'text-black border-b-2 border-brand-green'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab('indicators')}
-              >
-                Indicadores climáticos
-              </button>
-            </div>
-
-            {/* Selector de período de tiempo */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {activeTab === 'climatic' ? 'Datos climáticos' : 'Indicadores climáticos'}
-              </h2>
-              {/* Selector condicional basado en la pestaña activa */}
-              {activeTab === 'climatic' ? (
-                <div className="flex items-center bg-gray-100 rounded">
-                  <select
-                    value={timePeriod}
-                    onChange={(e) => setTimePeriod(e.target.value)}
-                    // Modificado: Añadir clases para texto negro
-                    className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+            {/* Acordeones para selección de tipo de datos */}
+            <div id="accordion-collapse" data-accordion="collapse">
+              {/* Acordeón para Datos climáticos */}
+              <div id="climatic-accordion">
+                <h2 id="climatic-accordion-trigger">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 hover:bg-gray-100"
+                    onClick={() => setIsClimaticOpen(!isClimaticOpen)}
+                    aria-expanded={isClimaticOpen}
                   >
-                    <option value="daily">Diario</option>
-                    <option value="monthly">Mensual</option>
-                    <option value="climatology">Climatología</option>
-                  </select>
-                </div>
-              ) : (
-                <div className="flex items-center bg-gray-100 rounded">
-                  <select
-                    value={timePeriodIndicators}
-                    onChange={(e) => setTimePeriodIndicators(e.target.value)}
-                    // Modificado: Añadir clases para texto negro
-                    className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
-                  >
-                    {indicatorPeriodOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+                    <span className="text-xl font-semibold text-gray-800">Datos climáticos</span>
+                    <svg
+                      className={`w-6 h-6 shrink-0 ${isClimaticOpen ? 'rotate-180' : ''}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                  </button>
+                </h2>
+                <div
+                  id="climatic-accordion-content"
+                  className={isClimaticOpen ? '' : 'hidden'}
+                  aria-labelledby="climatic-accordion-trigger"
+                >
+                  <div className="p-5 border border-b-0 border-gray-200">
+                    {/* Selector de período de tiempo para datos climáticos */}
+                    <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
+                      <p>Explora cómo han variado las principales variables del clima en esta estación. Visualiza la evolución de la 
+                          <strong> temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
+                          Utiliza los filtros de fecha para ajustar la información a tu interés.</p>
+                      <div className="flex items-center gap-6">
+                        {/* Selector de período */}
+                        <div>
+                          <label htmlFor="period-climatic" className="block text-xs font-medium text-gray-700 mb-1">
+                            Período
+                          </label>
+                          <select
+                            id="period-climatic"
+                            value={timePeriod}
+                            onChange={(e) => setTimePeriod(e.target.value)}
+                            className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+                          >
+                            <option value="daily">Diario</option>
+                            <option value="monthly">Mensual</option>
+                            <option value="climatology">Climatología</option>
+                          </select>
+                        </div>
+                      </div>
 
-            {/* Contenido de los tabs */}
-            <div className="mt-6">
-              {activeTab === 'climatic' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ClimateChart 
-                    title="Temperatura máxima" 
-                    unit="°C"
-                    datasets={[
-                      { 
-                        label: "Datos estación", 
-                        color: "#4CAF50",
-                        data: climateHistoricalData?.Tmax?.values || [],
-                        dates: climateHistoricalData?.Tmax?.dates || []
-                      }
-                    ]}
-                    period={timePeriod}
-                  />
-                  <ClimateChart 
-                    title="Precipitación" 
-                    unit="mm"
-                    datasets={[
-                      { 
-                        label: "Datos estación", 
-                        color: "#2196F3",
-                        data: climateHistoricalData?.Prec?.values || [],
-                        dates: climateHistoricalData?.Prec?.dates || []
-                      }
-                    ]}
-                    period={timePeriod}
-                  />
-                  <ClimateChart 
-                    title="Temperatura mínima" 
-                    unit="°C"
-                    datasets={[
-                      { 
-                        label: "Datos estación", 
-                        color: "#FF9800",
-                        data: climateHistoricalData?.Tmin?.values || [],
-                        dates: climateHistoricalData?.Tmin?.dates || []
-                      }
-                    ]}
-                    period={timePeriod}
-                  />
-                  <ClimateChart 
-                    title="Radiación solar" 
-                    unit="MJ/m²"
-                    datasets={[
-                      { 
-                        label: "Datos estación", 
-                        color: "#F44336",
-                        data: climateHistoricalData?.Rad?.values || [],
-                        dates: climateHistoricalData?.Rad?.dates || []
-                      }
-                    ]}
-                    period={timePeriod}
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {indicatorsData && Object.keys(indicatorsData).length > 0 ? (
-                    Object.entries(indicatorsData).map(([key, indicator]) => (
-                      <ClimateChart
-                        key={key}
-                        title={indicator.name}
-                        unit={indicator.unit}
+                      {/* Selector de fechas alineado a la derecha */}
+                      <div className="flex gap-4">
+                        {timePeriod === "climatology" ? (
+                          <>
+                            <div>
+                              <label htmlFor="start-month" className="block text-xs font-medium text-gray-700 mb-1">
+                                Mes inicial
+                              </label>
+                              <select
+                                id="start-month"
+                                value={filterDatesClimatic.start.split('-')[1]}
+                                onChange={(e) => setFilterDatesClimatic(prev => ({
+                                  ...prev, 
+                                  start: monthToDateFormat(e.target.value)
+                                }))}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                              >
+                                {MONTHS.map(month => (
+                                  <option key={month.value} value={month.value}>
+                                    {month.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label htmlFor="end-month" className="block text-xs font-medium text-gray-700 mb-1">
+                                Mes final
+                              </label>
+                              <select
+                                id="end-month"
+                                value={filterDatesClimatic.end.split('-')[1]}
+                                onChange={(e) => setFilterDatesClimatic(prev => ({
+                                  ...prev, 
+                                  end: monthToDateFormat(e.target.value)
+                                }))}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                              >
+                                {MONTHS.map(month => (
+                                  <option key={month.value} value={month.value}>
+                                    {month.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <label htmlFor="start-date" className="block text-xs font-medium text-gray-700 mb-1">
+                                Fecha inicial
+                              </label>
+                              <input
+                                type="date"
+                                id="start-date"
+                                value={filterDatesClimatic.start || ""}
+                                min={stationDates?.minDate || ""}
+                                max={stationDates?.maxDate || ""}
+                                onChange={(e) => setFilterDatesClimatic(prev => ({ ...prev, start: e.target.value }))}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="end-date" className="block text-xs font-medium text-gray-700 mb-1">
+                                Fecha final
+                              </label>
+                              <input
+                                type="date"
+                                id="end-date"
+                                value={filterDatesClimatic.end}
+                                min={filterDatesClimatic.start || stationDates?.minDate || ""}
+                                max={stationDates?.maxDate || ""}
+                                onChange={(e) => setFilterDatesClimatic(prev => ({ ...prev, end: e.target.value }))}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Gráficas de datos climáticos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {loadingCharts ? (
+                      // Mostrar esqueletos de carga
+                      Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                      <ClimateChart 
+                        title="Temperatura máxima" 
+                        unit="°C"
                         datasets={[
                           { 
-                            label: "Datos estación", 
-                            color: getIndicatorColor(key),
-                            data: indicator.values,
-                            dates: indicator.dates
+                            label: "Temperatura", 
+                            color: "#4CAF50",
+                            data: climateHistoricalData?.Tmax?.values || [],
+                            dates: climateHistoricalData?.Tmax?.dates || []
                           }
                         ]}
-                        period={timePeriodIndicators}
+                        period={timePeriod}
                       />
-                    ))
-                  ) : (
-                    <div className="col-span-2 flex items-center justify-center">
-                      <p className="text-gray-500">No hay datos disponibles</p>
+                      <ClimateChart 
+                        title="Precipitación" 
+                        unit="mm"
+                        datasets={[
+                          { 
+                            label: "Precipitación", 
+                            color: "#2196F3",
+                            data: climateHistoricalData?.Prec?.values || [],
+                            dates: climateHistoricalData?.Prec?.dates || []
+                          }
+                        ]}
+                        period={timePeriod}
+                        chartType="bar"
+                      />
+                      <ClimateChart 
+                        title="Temperatura mínima" 
+                        unit="°C"
+                        datasets={[
+                          { 
+                            label: "Temperatura", 
+                            color: "#FF9800",
+                            data: climateHistoricalData?.Tmin?.values || [],
+                            dates: climateHistoricalData?.Tmin?.dates || []
+                          }
+                        ]}
+                        period={timePeriod}
+                      />
+                      <ClimateChart 
+                        title="Radiación solar" 
+                        unit="MJ/m²"
+                        datasets={[
+                          { 
+                            label: "Radiación solar", 
+                            color: "#F44336",
+                            data: climateHistoricalData?.Rad?.values || [],
+                            dates: climateHistoricalData?.Rad?.dates || []
+                          }
+                        ]}
+                        period={timePeriod}
+                      />
+                      </>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Botón de descarga */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <button className="bg-brand-green text-black py-3 rounded hover:bg-green-700 transition-colors font-medium">
-                Descargar todos los datos
-              </button>
+                    {/* Botón de descarga */}
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <button className="bg-brand-green text-black py-3 rounded hover:bg-green-700 transition-colors font-medium">
+                        Descargar datos climáticos
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Acordeón para Indicadores climáticos */}
+              <div id="indicators-accordion">
+                <h2 id="indicators-accordion-trigger">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                    onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
+                    aria-expanded={isIndicatorsOpen}
+                  >
+                    <span className="text-xl font-semibold text-gray-800">Indicadores climáticos</span>
+                    <svg
+                      className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? 'rotate-180' : ''}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                  </button>
+                </h2>
+                <div
+                  id="indicators-accordion-content"
+                  className={isIndicatorsOpen ? '' : 'hidden'}
+                  aria-labelledby="indicators-accordion-trigger"
+                >
+                  <div className="p-5 border border-t-0 border-gray-200">
+                    {/* Selector de período de tiempo para indicadores */}
+                    <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
+                      <p>Consulta la evolución de los <strong>indicadores climáticos</strong> de esta estación y descubre patrones relevantes. 
+                        Filtra fácilmente por <strong>categoría</strong> y <strong>rango de fechas</strong> para personalizar tu análisis.</p>
+                      <div className="flex items-center gap-6">
+                        {/* Selector de período */}
+                        <div>
+                          <label htmlFor="period-indicators" className="block text-xs font-medium text-gray-700 mb-1">
+                            Período
+                          </label>
+                          <select
+                            id="period-indicators"
+                            value={timePeriodIndicators}
+                            onChange={(e) => setTimePeriodIndicators(e.target.value)}
+                            className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+                          >
+                            {indicatorPeriodOptions.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Selector de fechas alineado a la derecha */}
+                      <div className="flex gap-4">
+                        <div>
+                          <label htmlFor="start-date-indicators" className="block text-xs font-medium text-gray-700 mb-1">
+                            Fecha inicial
+                          </label>
+                          <input
+                            type="date"
+                            id="start-date-indicators"
+                            value={filterDatesIndicators.start}
+                            min={stationDates?.minDate || ""}
+                            max={stationDates?.maxDate || ""}
+                            onChange={(e) => setFilterDatesIndicators(prev => ({ ...prev, start: e.target.value }))}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="end-date-indicators" className="block text-xs font-medium text-gray-700 mb-1">
+                            Fecha final
+                          </label>
+                          <input
+                            type="date"
+                            id="end-date-indicators"
+                            value={filterDatesIndicators.end}
+                            min={filterDatesIndicators.start || stationDates?.minDate || ""}
+                            max={stationDates?.maxDate || ""}
+                            onChange={(e) => setFilterDatesIndicators(prev => ({ ...prev, end: e.target.value }))}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gráficas de indicadores climáticos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {indicatorsData && Object.keys(indicatorsData).length > 0 ? (
+                        Object.entries(indicatorsData).map(([key, indicator]) => (
+                          <ClimateChart
+                            key={key}
+                            title={indicator.name}
+                            unit={indicator.unit}
+                            datasets={[
+                              { 
+                                label: "Datos estación", 
+                                color: getIndicatorColor(key),
+                                data: indicator.values,
+                                dates: indicator.dates
+                              }
+                            ]}
+                            period={timePeriodIndicators}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-2 flex items-center justify-center">
+                          <p className="text-gray-500">No hay datos disponibles</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botón de descarga */}
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <button className="bg-brand-green text-black py-3 rounded hover:bg-green-700 transition-colors font-medium">
+                        Descargar indicadores climáticos
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

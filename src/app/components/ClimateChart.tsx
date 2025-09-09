@@ -1,7 +1,7 @@
 // app/components/ClimateChart.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 
 const Chart = dynamic(() => import("react-apexcharts"), { 
@@ -22,16 +22,45 @@ interface ClimateChartProps {
   datasets: DatasetConfig[];
   period: string;
   chartType?: "line" | "bar" | "area";
+  description?: string; 
 }
+
+// Información de tooltip para cada variable climática
+const variableInfo = {
+  "Temperatura máxima": "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
+  "Precipitación": "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
+  "Temperatura mínima": "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
+  "Radiación solar": "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²)."
+};
 
 const ClimateChart: React.FC<ClimateChartProps> = ({ 
   title, 
   unit, 
   datasets, 
   period,
-  chartType = "line"
+  chartType = "line",
+  description
 }) => {
   const isClimatology = period === "climatology";
+
+  // Inicializar tooltips de Flowbite
+  useEffect(() => {
+    // Cargar e inicializar Flowbite solo en el cliente
+    const initFlowbite = async () => {
+      const { initTooltips } = await import('flowbite');
+      initTooltips();
+    };
+    
+    initFlowbite();
+  }, []);
+
+    // Obtener descripción para el tooltip
+  const getTooltipContent = () => {
+    if (description) return description;
+    return variableInfo[title as keyof typeof variableInfo] || `Información sobre ${title.toLowerCase()}`;
+  };
+
+  const tooltipId = `tooltip-${title.replace(/\s+/g, '-').toLowerCase()}`;
   
   // Configuración de ApexCharts
   const chartOptions = {
@@ -39,7 +68,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       height: "100%",
       type: chartType,
       zoom: {
-        enabled: !isClimatology // Deshabilitar zoom en climatología
+        enabled: !isClimatology
       },
       toolbar: {
         show: true,
@@ -58,7 +87,8 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       enabled: false
     },
     stroke: {
-      curve: 'smooth'
+      curve: 'smooth',
+      width: 3
     },
     title: {
       text: title,
@@ -78,7 +108,6 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       title: {
         text: isClimatology ? 'Meses' : 'Fecha'
       },
-      // Configuración especial para climatología
       ...(isClimatology ? {
         type: 'category' as const,
         categories: datasets[0]?.dates || []
@@ -86,7 +115,11 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
         type: 'datetime' as const,
         labels: {
           formatter: function(value: string) {
-            return new Date(value).toLocaleDateString();
+            try {
+              return new Date(value).toLocaleDateString();
+            } catch (e) {
+              return value; // Si falla el parsing, devolver el valor original
+            }
           }
         }
       })
@@ -100,19 +133,18 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       show: false
     },
     tooltip: {
-      // Tooltip especial para climatología
-      ...(isClimatology ? {
-        x: {
-          show: true,
-          formatter: undefined
-        }
-      } : {
-        x: {
-          formatter: function(value: string) {
-            return new Date(value).toLocaleDateString();
+      x: {
+        formatter: function(value: any, { series, seriesIndex, dataPointIndex, w }: any) {
+          if (isClimatology) {
+            // Para climatología, mostrar directamente el nombre del mes
+            return w.globals.categoryLabels[dataPointIndex];
+          } else {
+            // Para otros períodos, mostrar fecha formateada
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? value : date.toLocaleDateString();
           }
         }
-      }),
+      },
       y: {
         formatter: function(val: number) {
           return val.toFixed(2) + " " + unit;
@@ -123,7 +155,6 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
 
   const series = datasets.map(dataset => ({
     name: dataset.label,
-    // Formato diferente para climatología
     data: isClimatology 
       ? dataset.data 
       : dataset.dates.map((date, index) => ({
@@ -137,9 +168,33 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-      <h3 className="font-medium text-lg text-gray-800 mb-4">
+      <div className="flex items-center gap-2 mb-4">
+
+      <h3 className="font-medium text-lg text-gray-800">
         {title} <span className="text-gray-500 text-sm">({unit})</span>
       </h3>
+      {/* Botón con tooltip */}
+        <button 
+          data-tooltip-target={tooltipId}
+          data-tooltip-placement="right"
+          type="button" 
+          className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        
+        {/* Tooltip */}
+        <div 
+          id={tooltipId} 
+          role="tooltip" 
+          className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
+        >
+          {getTooltipContent()}
+          <div className="tooltip-arrow" data-popper-arrow></div>
+        </div>
+      </div>
       
       {!hasData ? (
         <div className="h-64 flex items-center justify-center">

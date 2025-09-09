@@ -12,4 +12,5 @@ export interface Station {
   admin1_name: string; // Departamento
   admin2_id: number;
   admin2_name: string; // Municipio
+  source: string;
 }

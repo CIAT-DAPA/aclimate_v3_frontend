@@ -15,7 +15,10 @@ import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import "leaflet/dist/leaflet.css";
 import TimelineController from "./TimeLineController";
+import MapLegend from "./MapLegend";
+
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 
 const customIcon = new Icon({
   iconUrl: "/assets/img/marker.png",
@@ -63,6 +66,8 @@ interface MapComponentProps {
   showMarkers?: boolean;
   showTimeline?: boolean;
   onTimeChange?: (time: string) => void;
+  showLegend?: boolean;
+  showAdminLayer?: boolean; // Nueva prop para mostrar capa administrativa
 }
 
 const MapComponent = ({
@@ -74,7 +79,9 @@ const MapComponent = ({
   showZoomControl = true,
   showMarkers = true,
   showTimeline = false,
-  onTimeChange = () => {}
+  onTimeChange = () => {},
+  showLegend = true,
+  showAdminLayer = false // Valor por defecto
 }: MapComponentProps) => {
   const activeStations = stations.filter(station => station.enable);
   const hasStations = activeStations.length > 0;
@@ -88,6 +95,7 @@ const MapComponent = ({
   const mapZoom = singleStationMode ? 13 : zoom;
 
   const mapRef = useRef<any>(null);
+  const router = useRouter();
 
   return (
     <div className="relative h-full w-full">
@@ -123,22 +131,24 @@ const MapComponent = ({
 
         {wmsLayers.length > 0 && (
           <LayersControl position="topright">
-            {wmsLayers.map((layer, index) => (
-              <LayersControl.Overlay key={index} name={layer.layers} checked={index === 0}>
+            {/* Capa administrativa de Honduras */}
+            {showAdminLayer && (
+              <LayersControl.Overlay 
+                name="Límites Departamentales de Honduras" 
+                checked={true}
+              >
                 <WMSTileLayer
-                  url={layer.url}
-                  layers={layer.layers}
-                  format={layer.format || "image/png"}
-                  transparent={layer.transparent !== false}
-                  version={layer.version || "1.1.1"}
-                  opacity={layer.opacity || 0.7}
-                  attribution={layer.attribution || ""}
-                  styles={layer.styles || ""}
-                  time={layer.time || ""}
-                  cql_filter={layer.cql_filter || ""}
+                  url="https://geo.aclimate.org/geoserver/fc_cenaos_hn/wms"
+                  layers="fc_cenaos_hn:Limite_Departamental_de_Honduras"
+                  format="image/png"
+                  transparent={true}
+                  version="1.1.1"
+                  opacity={0.5}
+                  styles=""
+                  attribution=""
                 />
               </LayersControl.Overlay>
-            ))}
+            )}
           </LayersControl>
         )}
 
@@ -151,6 +161,14 @@ const MapComponent = ({
           />
         )}
 
+        {showLegend && wmsLayers.length > 0 && (
+          <MapLegend
+            wmsUrl={wmsLayers[0].url}
+            layerName={wmsLayers[0].layers}
+            position="bottomright"
+          />
+        )}
+
         {showZoomControl && <ZoomControl position="topright" />}
 
         {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => (
@@ -160,35 +178,35 @@ const MapComponent = ({
             icon={customIcon}
           >
             <Popup>
-              <div className="p-2 min-w-[200px]">
+              <div
+                className="p-2 min-w-[200px] cursor-pointer"
+                onClick={() => router.push(`/monitory/${station.id}`)}
+                role="button"
+                tabIndex={0}
+              >
                 <h3 className="font-bold text-lg text-brand-green mb-2">
                   {station.name}
                 </h3>
-
                 <div className="space-y-1 text-sm">
                   <p className="text-gray-600">
                     <span className="font-medium">Ubicación:</span>{" "}
                     {station.admin2_name}, {station.admin1_name}
                   </p>
-
                   <p className="text-gray-600">
                     <span className="font-medium">País:</span>{" "}
                     {station.country_name} ({station.country_iso2})
                   </p>
-
                   <p className="text-gray-600">
                     <span className="font-medium">ID Externo:</span>{" "}
                     {station.ext_id}
                   </p>
-
                   <p className="text-xs text-gray-400 mt-2 pt-2 border-t">
                     Coordenadas: {station.latitude.toFixed(4)},{" "}
                     {station.longitude.toFixed(4)}
                   </p>
                 </div>
-
                 <Link 
-                  className="mt-3 inline-block bg-brand-green text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors" 
+                  className="mt-3 inline-block text-white px-3 py-1 rounded text-sm hover:bg-green-200 transition-colors" 
                   href={`/monitory/${station.id}`}
                 >
                   Ver detalles

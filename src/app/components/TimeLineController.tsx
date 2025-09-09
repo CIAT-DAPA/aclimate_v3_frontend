@@ -52,7 +52,7 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
       // Crear instancia independiente de TimeDimension
       const timeDimension = new L.TimeDimension({
         times: dates,
-        currentTime: dates[0],
+        currentTime: dates[dates.length - 1],
       });
       tdInstanceRef.current = timeDimension;
 
@@ -74,7 +74,7 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
       // Crear control independiente y añadirlo al mapa
       const tdControl = new (L.Control as any).TimeDimensionCustom({
         timeDimension: timeDimension,
-        position: "bottomleft",
+        position: "bottomright",
         autoPlay: false,
         speedSlider: false,
         playerOptions: {
