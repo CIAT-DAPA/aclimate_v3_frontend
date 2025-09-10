@@ -91,6 +91,36 @@ async getClimateHistorical(stationId: string, period: string, startDate: string,
   return this.processClimateData(data, period);
 },
 
+/**
+ * Obtiene los datos de la última fecha disponible para una estación
+ * @param stationId ID de la estación
+ * @returns Datos de la última fecha disponible
+ */
+async getLatestDailyData(stationId: string): Promise<any[]> {
+  try {
+    // Obtener la última fecha disponible
+    const { maxDate } = await this.getStationDates(stationId, "daily", false);
+    
+    if (!maxDate) {
+      throw new Error("No hay datos disponibles para esta estación");
+    }
+
+    // Obtener los datos para la última fecha
+    const response = await fetch(
+      `${API_URL}/historical-daily/by-date-range-all-measures?location_ids=${stationId}&start_date=${maxDate}&end_date=${maxDate}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Error fetching latest daily data");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getLatestDailyData:", error);
+    return [];
+  }
+},
+
 processClimateData(data: any[], period: string): Record<string, { dates: string[]; values: number[] }> {
   const result: Record<string, { dates: string[]; values: number[] }> = {};
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import MapSearch from "../components/MapSearch";
 import { stationService } from "@/app/services/stationService";
+import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
@@ -20,30 +21,47 @@ const MapComponent = dynamic(() => import("../components/MapComponent"), {
 
 export default function LocationsPage() {
   const [stations, setStations] = useState<Station[]>([]);
+  const [stationData, setStationData] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         console.log("Fetching stations...");
-        const data = await stationService.getAll();
-        console.log("Stations fetched successfully:", data);
-        setStations(data);
+        const stationsData = await stationService.getAll();
+        console.log("Stations fetched successfully:", stationsData);
+        setStations(stationsData);
 
-        // Log para debugging
-        console.log("Estaciones cargadas:", data.length);
-        console.log("Primera estación:", data[0]);
+        // Obtener datos de la última fecha para cada estación
+        const dataPromises = stationsData.map(async (station) => {
+          try {
+            const data = await monitoryService.getLatestDailyData(station.id.toString());
+            return { stationId: station.id.toString(), data };
+          } catch (err) {
+            console.error(`Error fetching data for station ${station.id}:`, err);
+            return { stationId: station.id.toString(), data: [] };
+          }
+        });
+
+        const allData = await Promise.all(dataPromises);
+        const dataMap: Record<string, any[]> = {};
+        
+        allData.forEach(({ stationId, data }) => {
+          dataMap[stationId] = data;
+        });
+
+        setStationData(dataMap);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading stations");
-        console.error("Error fetching stations:", err);
+        setError(err instanceof Error ? err.message : "Error loading data");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStations();
+    fetchData();
   }, []);
 
   if (error) {
@@ -65,7 +83,7 @@ export default function LocationsPage() {
   return (
     <div className="relative h-screen w-full">
       {/* Componente del mapa con las estaciones */}
-      <MapComponent center={[4.6097, -74.0817]} zoom={6} stations={stations} />
+      <MapComponent center={[4.6097, -74.0817]} zoom={6} stations={stations} stationData={stationData} />
 
       {/* Buscador superpuesto */}
       <MapSearch stations={stations} />

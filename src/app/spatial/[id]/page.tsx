@@ -29,7 +29,8 @@ const variableInfo = {
 };
 
 export default function SpatialDataPage() {
-  const [activeTab, setActiveTab] = useState<'climatic' | 'indicators'>('climatic');
+  const [isClimaticOpen, setIsClimaticOpen] = useState(true);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
 
@@ -123,108 +124,152 @@ export default function SpatialDataPage() {
 
       <main className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex border-b border-gray-200 mb-6">
-            <button
-              className={`py-3 px-6 font-medium ${
-                activeTab === 'climatic'
-                  ? 'text-black border-b-2 border-brand-green'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('climatic')}
-            >
-              Datos climáticos
-            </button>
-            <button
-              className={`py-3 px-6 font-medium ${
-                activeTab === 'indicators'
-                  ? 'text-black border-b-2 border-brand-green'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('indicators')}
-            >
-              Indicadores climáticos
-            </button>
-          </div>
+          {/* Reemplazo de tabs por acordeones */}
+          <div id="accordion-collapse" data-accordion="collapse">
+            {/* Acordeón para Datos climáticos */}
+            <div id="climatic-accordion">
+              <h2 id="climatic-accordion-trigger">
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 hover:bg-gray-100"
+                  onClick={() => setIsClimaticOpen(!isClimaticOpen)}
+                  aria-expanded={isClimaticOpen}
+                >
+                  <span className="text-xl font-semibold text-gray-800">Datos climáticos</span>
+                  <svg
+                    className={`w-6 h-6 shrink-0 ${isClimaticOpen ? 'rotate-180' : ''}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </button>
+              </h2>
+              <div
+                id="climatic-accordion-content"
+                className={isClimaticOpen ? '' : 'hidden'}
+                aria-labelledby="climatic-accordion-trigger"
+              >
+                <div className="p-5 border border-b-0 border-gray-200">
+                  <div className="flex flex-col gap-8">
+                    <p>Explora cómo se comportan las principales variables climáticas en todo el territorio colombiano. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
+                    Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
+                    {wmsLayers.map((layer, index) => {
+                      let unidad = "";
+                      if (layer.title.toLowerCase().includes("temperatura")) {
+                        unidad = "°C";
+                      } else if (layer.title.toLowerCase().includes("precipitación")) {
+                        unidad = "mm";
+                      } else if (layer.title.toLowerCase().includes("radiación")) {
+                        unidad = "MJ/m²";
+                      }
 
-          <div className="mt-6">
-            {activeTab === 'climatic' ? (
-              <div className="flex flex-col gap-8">
-                {wmsLayers.map((layer, index) => {
-                  let unidad = "";
-                  if (layer.title.toLowerCase().includes("temperatura")) {
-                    unidad = "°C";
-                  } else if (layer.title.toLowerCase().includes("precipitación")) {
-                    unidad = "mm";
-                  } else if (layer.title.toLowerCase().includes("radiación")) {
-                    unidad = "MJ/m²";
-                  }
+                      const tooltipId = `tooltip-${layer.title.replace(/\s+/g, '-').toLowerCase()}`;
 
-                  const tooltipId = `tooltip-${layer.title.replace(/\s+/g, '-').toLowerCase()}`;
-
-
-                  return (
-                    <div key={layer.layer} className="h-80 flex flex-col">
-                      <div className="flex items-center gap-2 mb-4">
-                        <h3 className="font-semibold text-gray-800 text-lg">
-                          {layer.title} <span className="text-gray-500 text-base">({unidad})</span>
-                        </h3>
-                        
-                        {/* Botón con tooltip */}
-                        <button 
-                          data-tooltip-target={tooltipId}
-                          data-tooltip-placement="right"
-                          type="button" 
-                          className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </button>
-                        
-                        {/* Tooltip */}
-                        <div 
-                          id={tooltipId} 
-                          role="tooltip" 
-                          className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
-                        >
-                          {variableInfo[layer.title as keyof typeof variableInfo]}
-                          <div className="tooltip-arrow" data-popper-arrow></div>
+                      return (
+                        <div key={layer.layer} className="h-80 flex flex-col">
+                          <div className="flex items-center gap-2 mb-4">
+                            
+                            <h3 className="font-semibold text-gray-800 text-lg">
+                              {layer.title} <span className="text-gray-500 text-base">({unidad})</span>
+                            </h3>
+                            
+                            {/* Botón con tooltip */}
+                            <button 
+                              data-tooltip-target={tooltipId}
+                              data-tooltip-placement="right"
+                              type="button" 
+                              className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                            
+                            {/* Tooltip */}
+                            <div 
+                              id={tooltipId} 
+                              role="tooltip" 
+                              className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
+                            >
+                              {variableInfo[layer.title as keyof typeof variableInfo]}
+                              <div className="tooltip-arrow" data-popper-arrow></div>
+                            </div>
+                          </div>
+                          <div className="h-96 w-full rounded-lg overflow-hidden">
+                            <MapComponent
+                              key={layer.layer}
+                              center={layer.center}
+                              zoom={layer.zoom}
+                              wmsLayers={[{
+                                url: wmsBaseUrl,
+                                layers: layer.layer,
+                                opacity: 0.7,
+                                transparent: true
+                              }]}
+                              showMarkers={false}
+                              showZoomControl={true}
+                              showTimeline={true}
+                              showLegend={true}
+                              showAdminLayer={true}
+                              onTimeChange={(time) => handleTimeChange(time, layer.layer)}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="h-96 w-full rounded-lg overflow-hidden">
-                        <MapComponent
-                          key={layer.layer}
-                          center={layer.center}
-                          zoom={layer.zoom}
-                          wmsLayers={[{
-                            url: wmsBaseUrl,
-                            layers: layer.layer,
-                            opacity: 0.7,
-                            transparent: true
-                          }]}
-                          showMarkers={false}
-                          showZoomControl={true}
-                          showTimeline={true}
-                          showLegend={true}
-                          showAdminLayer={true}
-                          onTimeChange={(time) => handleTimeChange(time, layer.layer)}
-                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Acordeón para Indicadores climáticos */}
+            <div id="indicators-accordion">
+              <h2 id="indicators-accordion-trigger">
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                  onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
+                  aria-expanded={isIndicatorsOpen}
+                >
+                  <span className="text-xl font-semibold text-gray-800">Indicadores climáticos</span>
+                  <svg
+                    className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? 'rotate-180' : ''}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </button>
+              </h2>
+              <div
+                id="indicators-accordion-content"
+                className={isIndicatorsOpen ? '' : 'hidden'}
+                aria-labelledby="indicators-accordion-trigger"
+              >
+                <div className="p-5 border border-t-0 border-gray-200">
+                  <p>Analiza la evolución de los indicadores climáticos en Colombia y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>rango de fechas</strong> para profundizar en los datos que más te interesen.</p>
+                  <div className="h-80 flex items-center justify-center">
+                    <p className="text-gray-500">No hay datos para mostrar</p>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="h-80 flex items-center justify-center">
-                <p className="text-gray-500">Selecciona un indicador para ver los datos</p>
-              </div>
-            )}
+            </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <button 
-              className="bg-brand-green text-black py-3 rounded hover:bg-green-700 transition-colors font-medium"
+              className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
               onClick={downloadAllData}
               disabled={!downloadReady}
             >

@@ -13,7 +13,7 @@ import {
 import { Icon, LatLngExpression } from "leaflet";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
-import "leaflet/dist/leaflet.css";
+//import "leaflet/dist/leaflet.css";
 import TimelineController from "./TimeLineController";
 import MapLegend from "./MapLegend";
 
@@ -67,7 +67,8 @@ interface MapComponentProps {
   showTimeline?: boolean;
   onTimeChange?: (time: string) => void;
   showLegend?: boolean;
-  showAdminLayer?: boolean; // Nueva prop para mostrar capa administrativa
+  showAdminLayer?: boolean;
+  stationData?: Record<string, any[]>;
 }
 
 const MapComponent = ({
@@ -81,12 +82,15 @@ const MapComponent = ({
   showTimeline = false,
   onTimeChange = () => {},
   showLegend = true,
-  showAdminLayer = false // Valor por defecto
+  showAdminLayer = false,
+  stationData = {},
+  
 }: MapComponentProps) => {
   const activeStations = stations.filter(station => station.enable);
   const hasStations = activeStations.length > 0;
   const singleStationMode = activeStations.length === 1;
   const noStationsMode = activeStations.length === 0;
+  
 
   const mapCenter: LatLngExpression = singleStationMode
     ? [activeStations[0].latitude, activeStations[0].longitude]
@@ -96,6 +100,30 @@ const MapComponent = ({
 
   const mapRef = useRef<any>(null);
   const router = useRouter();
+
+  // Función para formatear los datos de la estación para mostrar en el popup
+  const renderStationData = (stationId: string) => {
+    const data = stationData[stationId];
+    if (!data || data.length === 0) {
+      return <p className="text-gray-500 text-sm">No hay datos disponibles</p>;
+    }
+
+    return (
+      <div className="mt-2 pt-2 border-t border-gray-200">
+        <p className="text-xs text-gray-500 mb-1">
+          Datos para: {new Date(data[0].date).toLocaleDateString()}
+        </p>
+        {data.map((item) => (
+          <div key={item.measure_id} className="flex justify-between text-xs">
+            <span className="font-medium">{item.measure_short_name}:</span>
+            <span>{item.value.toFixed(1)} {item.measure_unit}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  
 
   return (
     <div className="relative h-full w-full">
@@ -165,7 +193,7 @@ const MapComponent = ({
           <MapLegend
             wmsUrl={wmsLayers[0].url}
             layerName={wmsLayers[0].layers}
-            position="bottomright"
+            position="bottomleft"
           />
         )}
 
@@ -200,16 +228,20 @@ const MapComponent = ({
                     <span className="font-medium">ID Externo:</span>{" "}
                     {station.ext_id}
                   </p>
+                  
+                  {/* Mostrar datos de la última fecha disponible */}
+                  {renderStationData(station.id.toString())}
+                  
                   <p className="text-xs text-gray-400 mt-2 pt-2 border-t">
                     Coordenadas: {station.latitude.toFixed(4)},{" "}
                     {station.longitude.toFixed(4)}
                   </p>
                 </div>
                 <Link 
-                  className="mt-3 inline-block text-white px-3 py-1 rounded text-sm hover:bg-green-200 transition-colors" 
+                  className="mt-3 inline-block bg-brand-green text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors" 
                   href={`/monitory/${station.id}`}
                 >
-                  Ver detalles
+                  Ver detalles completos
                 </Link>
               </div>
             </Popup>

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet-timedimension";
-import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
+//import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 import { spatialService } from "@/app/services/spatialService";
 
 interface TimelineControllerProps {
