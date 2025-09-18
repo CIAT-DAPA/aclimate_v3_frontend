@@ -18,6 +18,7 @@ interface RasterFileInfo {
   url: string;
   layer: string;
   time: string;
+  title: string;
 }
 
 // Información de tooltip para cada variable climática
@@ -33,6 +34,7 @@ export default function SpatialDataPage() {
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
    // Inicializar tooltips de Flowbite
   useEffect(() => {
@@ -74,34 +76,52 @@ export default function SpatialDataPage() {
     }
   ];
 
-  const handleTimeChange = useCallback((time: string, layerName: string) => {
+  const handleTimeChange = useCallback((time: string, layerName: string, layerTitle: string) => {
     const bbox = "-89.5,12.9,-83.1,16.5"; // Límites aproximados para Honduras
     
     // Crear URL para la capa específica
     const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/tiff&transparent=true&time=${time}&bbox=${bbox}&width=512&height=512`;
     
     // Actualizar la referencia sin causar rerender
-    rasterFilesRef.current[layerName] = { url, layer: layerName, time };
-    setDownloadReady(true);
+    rasterFilesRef.current[layerName] = { url, layer: layerName, time, title: layerTitle };
+    setDownloadReady(Object.keys(rasterFilesRef.current).length > 0);
   }, [wmsBaseUrl]);
 
   // Función para descargar todos los archivos
-  const downloadAllData = () => {
+  const downloadAllData = async () => {
     const files = Object.values(rasterFilesRef.current);
     
     if (files.length === 0) {
-      alert("No hay datos para descargar. Por favor, selecciona un tiempo primero.");
+      alert("No hay datos para descargar. Por favor, selecciona un tiempo para al menos una capa primero.");
       return;
     }
 
-    files.forEach(fileInfo => {
-      const link = document.createElement('a');
-      link.href = fileInfo.url;
-      link.download = `${fileInfo.layer.split(':')[1]}_${fileInfo.time}.tiff`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
+    setDownloadProgress(0);
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const fileInfo = files[i];
+        const link = document.createElement('a');
+        link.href = fileInfo.url;
+        link.download = `${fileInfo.title.replace(/\s+/g, '_')}_${fileInfo.time}.tiff`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Actualizar progreso
+        setDownloadProgress(Math.round(((i + 1) / files.length) * 100));
+        
+        // Pequeña pausa entre descargas para evitar sobrecargar el navegador
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      // Resetear progreso después de 2 segundos
+      setTimeout(() => setDownloadProgress(0), 2000);
+    } catch (error) {
+      console.error("Error descargando archivos:", error);
+      alert("Ocurrió un error al descargar los archivos. Por favor, intenta nuevamente.");
+      setDownloadProgress(0);
+    }
   };
 
   return (
@@ -117,6 +137,7 @@ export default function SpatialDataPage() {
             <ul className="list-disc list-inside text-gray-600 mt-1">
               <li>Ver cómo varían estos indicadores en diferentes regiones</li>
               <li>Identificar zonas agrícolas con mayor riesgo climático</li>
+              <li>Descargar datos raster para análisis especializados</li>
             </ul>
           </div>
         </div>
@@ -217,7 +238,7 @@ export default function SpatialDataPage() {
                               showTimeline={true}
                               showLegend={true}
                               showAdminLayer={true}
-                              onTimeChange={(time) => handleTimeChange(time, layer.layer)}
+                              onTimeChange={(time) => handleTimeChange(time, layer.layer, layer.title)}
                             />
                           </div>
                         </div>
@@ -267,14 +288,24 @@ export default function SpatialDataPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col items-start gap-4">
             <button 
-              className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+              className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               onClick={downloadAllData}
               disabled={!downloadReady}
             >
-              Descargar todos los datos
+              {downloadProgress > 0 ? `Descargando... ${downloadProgress}%` : "Descargar todos los datos raster"}
             </button>
+            
+            {downloadProgress > 0 && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-green-600 h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${downloadProgress}%` }}
+                ></div>
+              </div>
+            )}
+            
           </div>
         </div>
       </main>

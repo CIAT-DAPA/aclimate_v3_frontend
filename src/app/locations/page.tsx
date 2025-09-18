@@ -35,7 +35,7 @@ export default function LocationsPage() {
         setStations(stationsData);
 
         // Obtener datos de la última fecha para cada estación
-        const dataPromises = stationsData.map(async (station) => {
+        const dataPromises = stationsData.map(async (station: { id: { toString: () => string; }; }) => {
           try {
             const data = await monitoryService.getLatestDailyData(station.id.toString());
             return { stationId: station.id.toString(), data };
