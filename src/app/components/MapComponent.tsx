@@ -17,9 +17,11 @@ import Link from "next/link";
 import TimelineController from "./TimeLineController";
 import MapLegend from "./MapLegend";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useAuth } from "@/app/hooks/useAuth";
+import { addUserStation, deleteUserStation, getUserStations } from "@/app/services/userService";
 import { faTemperatureArrowUp } from '@fortawesome/free-solid-svg-icons';
 import { faTemperatureArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { faCloudRain } from '@fortawesome/free-solid-svg-icons';
@@ -107,24 +109,79 @@ const MapComponent = ({
 
   const mapRef = useRef<any>(null);
   const router = useRouter();
+  const { userInfo, authenticated } = useAuth();
 
-  // Estado para controlar favoritos (simulado por ahora)
+  // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(new Set());
 
-  const toggleFavorite = (stationId: string, e: React.MouseEvent) => {
+  // Cargar favoritos del usuario autenticado
+  useEffect(() => {
+    const loadUserFavorites = async () => {
+      if (authenticated && userInfo?.sub) {
+        try {
+          // Asumiendo que userInfo tiene un id o podemos usar sub
+          const userId = userInfo.id || 1; // Necesitarás ajustar esto según tu estructura
+          const userStations = await getUserStations(userId);
+          const favoriteIds = new Set(userStations.map(station => station.ws_ext_id));
+          setFavorites(favoriteIds);
+        } catch (error) {
+          console.error('Error loading user favorites:', error);
+        }
+      }
+    };
+
+    loadUserFavorites();
+  }, [authenticated, userInfo]);
+
+  const toggleFavorite = async (stationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(stationId)) {
-      newFavorites.delete(stationId);
-    } else {
-      newFavorites.add(stationId);
+    if (!authenticated || !userInfo) {
+      alert('Debe iniciar sesión para gestionar favoritos');
+      return;
     }
-    setFavorites(newFavorites);
-    
-    // Aquí podrías guardar en localStorage o hacer una llamada API en el futuro
-    console.log(`Estación ${stationId} ${newFavorites.has(stationId) ? 'agregada a' : 'eliminada de'} favoritos`);
+
+    // Añadir a loading state
+    const newLoadingFavorites = new Set(loadingFavorites);
+    newLoadingFavorites.add(stationId);
+    setLoadingFavorites(newLoadingFavorites);
+
+    try {
+      const userId = userInfo.id || 1; // Ajustar según estructura de userInfo
+      const isFavorite = favorites.has(stationId);
+
+      if (isFavorite) {
+        // Eliminar de favoritos
+        await deleteUserStation(userId, stationId);
+        const newFavorites = new Set(favorites);
+        newFavorites.delete(stationId);
+        setFavorites(newFavorites);
+        console.log(`Estación ${stationId} eliminada de favoritos`);
+      } else {
+        // Agregar a favoritos
+        await addUserStation(userId, {
+          ws_ext_id: stationId,
+          notification: {
+            email: true,
+            push: false
+          }
+        });
+        const newFavorites = new Set(favorites);
+        newFavorites.add(stationId);
+        setFavorites(newFavorites);
+        console.log(`Estación ${stationId} agregada a favoritos`);
+      }
+    } catch (error) {
+      console.error('Error al gestionar favorito:', error);
+      alert('Error al actualizar favoritos. Por favor, intente de nuevo.');
+    } finally {
+      // Remover del loading state
+      const newLoadingFavorites = new Set(loadingFavorites);
+      newLoadingFavorites.delete(stationId);
+      setLoadingFavorites(newLoadingFavorites);
+    }
   };
 
    // Función para formatear los datos de la estación para mostrar en el popup
@@ -216,9 +273,6 @@ const MapComponent = ({
         className="h-full w-full"
         zoomControl={false}
         ref={mapRef}
-        // Asegura que Leaflet no inicialice automáticamente TimeDimension global
-        timeDimension={false as any}
-        timeDimensionControl={false as any}
       >
         <TileLayer
           attribution={rasterLayers[baseLayerIndex].attribution}
@@ -296,23 +350,32 @@ const MapComponent = ({
                   </h3>
                   <button
                     onClick={(e) => toggleFavorite(station.id.toString(), e)}
+                    disabled={loadingFavorites.has(station.id.toString())}
                     className={`p-1 rounded-full ${
                       favorites.has(station.id.toString()) 
                         ? "text-red-500 bg-red-50" 
                         : "text-gray-400 hover:text-red-500 hover:bg-red-50"
-                    } transition-colors`}
+                    } transition-colors ${
+                      loadingFavorites.has(station.id.toString()) 
+                        ? "opacity-50 cursor-not-allowed" 
+                        : ""
+                    }`}
                     aria-label="Agregar a favoritos"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-5 w-5" 
-                      viewBox="0 0 20 20" 
-                      fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    >
-                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                    </svg>
+                    {loadingFavorites.has(station.id.toString()) ? (
+                      <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
+                    ) : (
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        viewBox="0 0 20 20" 
+                        fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </button>
                 </div>
                 
@@ -336,17 +399,31 @@ const MapComponent = ({
                 
                 <div className="flex justify-between gap-2">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("Agregar a favoritos", station.id);
-                      // Lógica de favoritos se maneja en toggleFavorite
-                    }}
-                    className="flex items-center justify-center text-xs text-gray-600 hover:text-gray-800 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    onClick={(e) => toggleFavorite(station.id.toString(), e)}
+                    disabled={loadingFavorites.has(station.id.toString()) || !authenticated}
+                    className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
+                      favorites.has(station.id.toString())
+                        ? "text-red-600 border-red-300 bg-red-50 hover:bg-red-100"
+                        : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
+                    } ${
+                      loadingFavorites.has(station.id.toString()) || !authenticated
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    Favoritos
+                    {loadingFavorites.has(station.id.toString()) ? (
+                      <div className="animate-spin h-4 w-4 mr-1 border-2 border-current border-t-transparent rounded-full"></div>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    )}
+                    {!authenticated 
+                      ? "Inicie sesión" 
+                      : favorites.has(station.id.toString()) 
+                        ? "Quitar favorito" 
+                        : "Agregar favorito"
+                    }
                   </button>
                   
                   <Link

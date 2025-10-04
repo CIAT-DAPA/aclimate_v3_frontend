@@ -8,7 +8,8 @@ import React, {
   createContext,
 } from "react";
 import Keycloak, { KeycloakTokenParsed } from "keycloak-js";
-import { validateToken } from "@/app/services/authService";
+import { validateToken, validateUser } from "@/app/services/userService";
+import { Configuration } from "@/conf/Configuration";
 
 interface ValidationPayload {
   valid: boolean;
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
   const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<any | null>(null);
+  const [userValidatedInfo, setUserValidatedInfo] = useState<any | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<KeycloakTokenParsed | null>(null);
   const isRun = useRef<boolean>(false);
@@ -62,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const isAuthenticated = await keycloak.current.init({ 
           onLoad: "check-sso",
           silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-          checkLoginIframe: false // Deshabilitar la verificación del iframe para evitar problemas
+          checkLoginIframe: false
         });
 
         setAuthenticated(isAuthenticated);
@@ -76,6 +78,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const userInfo = await keycloak.current.loadUserInfo();
             setUserInfo(userInfo);
 
+            // Validar usuario con el backend
+            const userValidationData: UserValidationRequest = {
+              email: userInfo.email,
+              email_verified: userInfo.email_verified,
+              family_name: userInfo.family_name,
+              given_name: userInfo.given_name,
+              name: userInfo.name,
+              preferred_username: userInfo.preferred_username,
+              sub: userInfo.sub,
+              app_id: Configuration.getColombiaAppId(), // Ajusta según tu configuración
+              profile: userInfo.profile
+            };
+
+            const validatedUser = await validateUser(userValidationData);
+            setUserValidatedInfo(validatedUser.user);
+
             if (currentToken) {
               const validation = await validateToken(currentToken);
               if (validation.valid) {
@@ -83,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
           } catch (userError) {
-            console.error("Error loading user info:", userError);
+            console.error("Error loading/validating user:", userError);
             setAuthenticated(false);
           }
         }
