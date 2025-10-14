@@ -4,11 +4,11 @@ import Image from "next/image";
 import { COUNTRY_ID } from "@/app/config";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useState, useEffect } from "react";
-import { faArrowRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRightFromBracket, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
-  const { userInfo, loading, authenticated, login, logout } = useAuth();
+  const { userInfo, userValidatedInfo, loading, authenticated, login, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -94,6 +94,14 @@ const Header = () => {
                           </p>
                           <p className="text-xs text-gray-500">{userInfo?.email}</p>
                         </div>
+                        <Link
+                          href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-2" />
+                          Mi perfil
+                        </Link>
                         <button
                           onClick={() => {
                             logout();

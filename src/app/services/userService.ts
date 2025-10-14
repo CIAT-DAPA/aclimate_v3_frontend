@@ -1,3 +1,4 @@
+import { Configuration } from "@/conf/Configuration";
 interface TokenValidationResponse {
   valid: boolean;
   payload?: {
@@ -16,7 +17,7 @@ interface TokenValidationResponse {
  */
 export const validateToken = async (token: string): Promise<TokenValidationResponse> => {
   try {
-    const response = await fetch(process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://127.0.0.1:8000/auth/token/validate', {
+    const response = await fetch(process.env.NEXT_PUBLIC_AUTH_API_URL || Configuration.getUsersFrontendApiUrlBase() + 'auth/token/validate', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -72,7 +73,7 @@ interface UserValidationResponse {
  */
 export const validateUser = async (userData: UserValidationRequest): Promise<UserValidationResponse> => {
   try {
-    const response = await fetch(process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://127.0.0.1:8000/validate/user', {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_FRONTEND_BASE_URL || Configuration.getUsersFrontendApiUrlBase() + 'validate/user', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,12 +120,20 @@ interface WsInterestedRead {
  */
 export const getUserStations = async (userId: number): Promise<WsInterestedRead[]> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_API_URL}/user-stations/${userId}`, {
+    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
+
+    // Si el usuario no tiene estaciones (404), devolver array vacío sin mostrar error
+    if (response.status === 404) {
+      return [];
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -133,6 +142,10 @@ export const getUserStations = async (userId: number): Promise<WsInterestedRead[
 
     return await response.json();
   } catch (error) {
+    // Si es un error de red o cualquier otro error que no sea 404
+    if (error instanceof Error && error.message.includes('404')) {
+      return [];
+    }
     console.error('Error getting user stations:', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
@@ -146,7 +159,10 @@ export const getUserStations = async (userId: number): Promise<WsInterestedRead[
  */
 export const addUserStation = async (userId: number, stationData: WsInterestedRequest): Promise<WsInterestedRead> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_API_URL}/user-stations/${userId}`, {
+    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,6 +172,12 @@ export const addUserStation = async (userId: number, stationData: WsInterestedRe
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      
+      // Si es un error 400, probablemente la estación ya está agregada
+      if (response.status === 400) {
+        throw new Error(errorData.detail || errorData.message || 'La estación ya está en favoritos');
+      }
+      
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -179,7 +201,10 @@ export const updateUserStation = async (
   updateData: WsInterestedUpdateRequest
 ): Promise<WsInterestedRead> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_API_URL}/user-stations/${userId}/${wsExtId}`, {
+    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
+    
+    const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -207,7 +232,10 @@ export const updateUserStation = async (
  */
 export const deleteUserStation = async (userId: number, wsExtId: string): Promise<{ message: string }> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_API_URL}/user-stations/${userId}/${wsExtId}`, {
+    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
+    
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

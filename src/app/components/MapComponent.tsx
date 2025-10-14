@@ -109,7 +109,7 @@ const MapComponent = ({
 
   const mapRef = useRef<any>(null);
   const router = useRouter();
-  const { userInfo, authenticated } = useAuth();
+  const { userValidatedInfo, authenticated } = useAuth();
 
   // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -118,28 +118,42 @@ const MapComponent = ({
   // Cargar favoritos del usuario autenticado
   useEffect(() => {
     const loadUserFavorites = async () => {
-      if (authenticated && userInfo?.sub) {
-        try {
-          // Asumiendo que userInfo tiene un id o podemos usar sub
-          const userId = userInfo.id || 1; // Necesitarás ajustar esto según tu estructura
-          const userStations = await getUserStations(userId);
-          const favoriteIds = new Set(userStations.map(station => station.ws_ext_id));
-          setFavorites(favoriteIds);
-        } catch (error) {
-          console.error('Error loading user favorites:', error);
-        }
+      if (!authenticated || !userValidatedInfo) {
+        return;
+      }
+
+      try {
+        let userId = userValidatedInfo.id;
+        const userStations = await getUserStations(userId);
+        const favoriteIds = new Set(userStations.map(station => station.ws_ext_id?.toString() || ''));
+        setFavorites(favoriteIds);
+      } catch (error) {
+        console.error('Error al cargar favoritos:', error);
+        setFavorites(new Set());
       }
     };
 
     loadUserFavorites();
-  }, [authenticated, userInfo]);
+  }, [authenticated, userValidatedInfo]);
 
   const toggleFavorite = async (stationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    if (!authenticated || !userInfo) {
+    if (!authenticated || !userValidatedInfo) {
       alert('Debe iniciar sesión para gestionar favoritos');
+      return;
+    }
+
+    // Encontrar userId de la misma manera que en loadUserFavorites
+    let userId = null;
+    if (userValidatedInfo.user?.id) {
+      userId = userValidatedInfo.user.id;
+    } else if (userValidatedInfo.id) {
+      userId = userValidatedInfo.id;
+    } else {
+      console.error('No se pudo encontrar userId para toggleFavorite');
+      alert('Error: No se pudo identificar al usuario');
       return;
     }
 
@@ -149,7 +163,6 @@ const MapComponent = ({
     setLoadingFavorites(newLoadingFavorites);
 
     try {
-      const userId = userInfo.id || 1; // Ajustar según estructura de userInfo
       const isFavorite = favorites.has(stationId);
 
       if (isFavorite) {
@@ -158,20 +171,30 @@ const MapComponent = ({
         const newFavorites = new Set(favorites);
         newFavorites.delete(stationId);
         setFavorites(newFavorites);
-        console.log(`Estación ${stationId} eliminada de favoritos`);
       } else {
         // Agregar a favoritos
-        await addUserStation(userId, {
-          ws_ext_id: stationId,
-          notification: {
-            email: true,
-            push: false
+        try {
+          await addUserStation(userId, {
+            ws_ext_id: stationId,
+            notification: {
+              email: true,
+              push: false
+            }
+          });
+          const newFavorites = new Set(favorites);
+          newFavorites.add(stationId);
+          setFavorites(newFavorites);
+        } catch (addError) {
+          // Si el error es porque ya existe, actualizar el estado local
+          if (addError instanceof Error && addError.message.includes('favoritos')) {
+            const newFavorites = new Set(favorites);
+            newFavorites.add(stationId);
+            setFavorites(newFavorites);
+            alert('Esta estación ya está en favoritos');
+          } else {
+            throw addError;
           }
-        });
-        const newFavorites = new Set(favorites);
-        newFavorites.add(stationId);
-        setFavorites(newFavorites);
-        console.log(`Estación ${stationId} agregada a favoritos`);
+        }
       }
     } catch (error) {
       console.error('Error al gestionar favorito:', error);

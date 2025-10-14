@@ -252,41 +252,13 @@ export default function StationDetailPage() {
 
  
 
-  // Efecto para cargar datos de la estación
+  // Efecto para cargar datos de la estación (solo una vez al montar)
   useEffect(() => {
     const fetchStation = async () => {
       try {
         setLoading(true);
         const stationData = await stationService.getById(id);
         setStation(stationData[0]);
-        const dates = await monitoryService.getStationDates(id, timePeriod, false);
-        setDataClimaticDates(dates);
-        const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
-        setIndicatorsDates(datesIndicators);
-
-        // Obtener la fecha mínima y máxima entre ambos objetos
-        const minDate = new Date(dates.minDate) < new Date(datesIndicators.minDate) ? dates.minDate : datesIndicators.minDate;
-        const maxDate = new Date(dates.maxDate) > new Date(datesIndicators.maxDate) ? dates.maxDate : datesIndicators.maxDate;
-
-        setStationDates({ minDate, maxDate });
-        // Inicializar filtros para datos climáticos
-        if (timePeriod === "climatology") {
-          setFilterDatesClimatic({ 
-            start: dateToMonthFormat(dates.minDate || "2000-01"), 
-            end: dateToMonthFormat("2000-12") 
-          });
-        } else {
-          setFilterDatesClimatic({ 
-            start: dates.minDate || "", 
-            end: dates.maxDate || "" 
-          });
-        }
-        
-        // Inicializar filtros para indicadores
-        setFilterDatesIndicators({ 
-          start: datesIndicators.minDate || "", 
-          end: datesIndicators.maxDate || "" 
-        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading station data");
       } finally {
@@ -299,25 +271,32 @@ export default function StationDetailPage() {
     }
   }, [id]);
 
-    useEffect(() => {
-    const fetchData = async () => {
+  // Efecto para cargar rangos de fechas cuando cambia el período
+  useEffect(() => {
+    const fetchDates = async () => {
       try {
         const dates = await monitoryService.getStationDates(id, timePeriod, false);
         setDataClimaticDates(dates);
+        
         const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
         setIndicatorsDates(datesIndicators);
 
-        // Inicializar filtros para datos climáticos
+        // Obtener la fecha mínima y máxima entre ambos objetos
+        if (dates.minDate && dates.maxDate && datesIndicators.minDate && datesIndicators.maxDate) {
+          const minDate = new Date(dates.minDate) < new Date(datesIndicators.minDate) ? dates.minDate : datesIndicators.minDate;
+          const maxDate = new Date(dates.maxDate) > new Date(datesIndicators.maxDate) ? dates.maxDate : datesIndicators.maxDate;
+          setStationDates({ minDate, maxDate });
+        }
+
+        // Inicializar filtros para datos climáticos SOLO si cambia el período
         if (timePeriod === "climatology") {
-          setFilterDatesClimatic({ 
-            start: dateToMonthFormat(dates.minDate || "2000-01"), 
-            end: dateToMonthFormat("2000-12") 
-          });
+          const start = dateToMonthFormat(dates.minDate || "2000-01");
+          const end = dateToMonthFormat("2000-12");
+          setFilterDatesClimatic({ start, end });
         } else {
-          setFilterDatesClimatic({ 
-            start: dates.minDate || "", 
-            end: dates.maxDate || "" 
-          });
+          const start = dates.minDate || "";
+          const end = dates.maxDate || "";
+          setFilterDatesClimatic({ start, end });
         }
         
         // Inicializar filtros para indicadores
@@ -326,43 +305,28 @@ export default function StationDetailPage() {
           end: datesIndicators.maxDate || "" 
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading charts data");
-      } finally {
-        setLoading(false);
+        setError(err instanceof Error ? err.message : "Error loading dates");
       }
     };
 
     if (id) {
-      fetchData();
+      fetchDates();
     }
   }, [id, timePeriod, timePeriodIndicators]);
-
-  // Efecto para actualizar filtros cuando cambia timePeriod
-  useEffect(() => {
-    // Limpiar datos anteriores y mostrar carga
-    setClimateHistoricalData(null);
-    setLoadingCharts(true);
-    
-    if (timePeriod === "climatology") {
-      setFilterDatesClimatic({ 
-        start: "2000-01", 
-        end: "2000-12" 
-      });
-    } else if (DataClimaticDates) {
-      setFilterDatesClimatic({ 
-        start: DataClimaticDates.minDate || "", 
-        end: DataClimaticDates.maxDate || "" 
-      });
-    }
-  }, [timePeriod, DataClimaticDates]);
 
   // Efecto para cargar datos climáticos cuando cambian los filtros
   useEffect(() => {
     const fetchClimateData = async () => {
       try {
-        if (!filterDatesClimatic.start || !filterDatesClimatic.end) return;
+        // Solo cargar si tenemos fechas válidas
+        if (!filterDatesClimatic.start || !filterDatesClimatic.end) {
+          console.log('Esperando fechas válidas para datos climáticos...');
+          return;
+        }
         
         setLoadingCharts(true);
+        console.log('Cargando datos climáticos:', { id, timePeriod, start: filterDatesClimatic.start, end: filterDatesClimatic.end });
+        
         const climateHistorical = await monitoryService.getClimateHistorical(
           id, 
           timePeriod, 
@@ -378,10 +342,8 @@ export default function StationDetailPage() {
       }
     };
 
-    // Agregar un pequeño delay para evitar parpadeo
-    const timeoutId = setTimeout(fetchClimateData, 100);
-    return () => clearTimeout(timeoutId);
-  }, [timePeriod, filterDatesClimatic]);
+    fetchClimateData();
+  }, [id, timePeriod, filterDatesClimatic.start, filterDatesClimatic.end]);
 
   // Efecto para cargar datos de indicadores cuando cambian los filtros
   useEffect(() => {
@@ -403,7 +365,7 @@ export default function StationDetailPage() {
     };
 
     fetchIndicatorsData();
-  }, [timePeriodIndicators, filterDatesIndicators]);
+  }, [id, timePeriodIndicators, filterDatesIndicators]);
 
   if (loading) {
     return (
@@ -467,7 +429,7 @@ export default function StationDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
         {/* Encabezado */}
-        <header className="bg-white shadow-sm max-w-6xl mx-auto p-6" >
+        <header className="bg-white max-w-6xl mx-auto p-6 mb-6 shadow-sm" >
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-800">Monitoreo</h1>
             <h2 className="text-2xl font-bold text-gray-800 mt-1">
@@ -513,10 +475,10 @@ export default function StationDetailPage() {
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <main className="max-w-6xl mx-auto px-6">
           {/* Segunda card - Gráficas y datos */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+          <div>
+            <div className="bg-white rounded-lg shadow-sm">
               {/* Acordeones para selección de tipo de datos */}
               <div id="accordion-collapse" data-accordion="collapse">
                 {/* Acordeón para Datos climáticos */}
@@ -848,8 +810,8 @@ export default function StationDetailPage() {
 
       
               {/* Botón de descarga */}
-              <div className="max-w-6xl mx-auto p-4">
-                <div className="bg-white rounded-lg shadow-sm p-6 mt-4 flex justify-center">
+              <div className="max-w-6xl mx-auto px-6 mt-6">
+                <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center">
                   <PDFDownloadLink
                     document={
                       <ReportDocument 

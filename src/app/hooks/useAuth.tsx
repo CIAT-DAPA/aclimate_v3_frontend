@@ -18,6 +18,7 @@ interface ValidationPayload {
 
 interface AuthContextType {
   userInfo: any | null;
+  userValidatedInfo: any | null;
   token: string | null;
   tokenParsed: KeycloakTokenParsed | null;
   login: () => void;
@@ -136,10 +137,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    console.log(userInfo);
-  }, [userInfo]);
-
   const login = () => {
     if (keycloak.current) {
       keycloak.current.login();
@@ -161,6 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const contextValue: AuthContextType = {
     userInfo,
+    userValidatedInfo,
     token,
     tokenParsed,
     login,

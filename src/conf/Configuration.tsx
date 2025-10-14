@@ -1,4 +1,5 @@
 const GEOSERVER_PRODUCTION_URL ="https://geo.aclimate.org/geoserver/historical_climate_hn/wms";
+const USERS_FRONTEND_WEB_API_URL_BASE = "http://127.0.0.1:9000/"
 const APP_ID_CO ="1";
 const APP_ID_HN ="2";
 
@@ -9,5 +10,8 @@ export class Configuration{
   }
   static getColombiaAppId() {
     return APP_ID_CO;
+  }
+  static getUsersFrontendApiUrlBase() {
+    return USERS_FRONTEND_WEB_API_URL_BASE;
   }
 }
