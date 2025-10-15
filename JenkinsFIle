@@ -7,7 +7,7 @@ pipeline {
     environment {
         user = credentials('aclimate_v3_herschel_user')
         host = credentials('aclimate_v3_herschel_host')
-        name = credentials('aclimate_v3_herschel_name')
+        name = credentials('aclimate_v3_herschel_host')
         ssh_key = credentials('aclimate_v3_herschel_key')
     }
 
