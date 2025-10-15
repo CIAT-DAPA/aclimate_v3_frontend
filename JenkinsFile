@@ -30,6 +30,7 @@ pipeline {
                 script {
                     sshCommand remote: remote, command: """
                         cd /var/www/aclimate/aclimate_v3_frontend_hn/src
+                        source /home/aclimate_v3/miniforge3/etc/profile.d/conda.sh
                         conda activate /home/aclimate_v3/miniforge3/envs/aclimate_v3
                         npm install
                         npm run build
