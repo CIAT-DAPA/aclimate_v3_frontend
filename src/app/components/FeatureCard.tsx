@@ -1,17 +1,19 @@
 import type { LucideProps } from "lucide-react";
 import React from "react";
 
+interface FeatureCardProps {
+  icon: React.ElementType<LucideProps>;
+  title: string;
+  description: string;
+  bg?: boolean;
+}
+
 const FeatureCard = ({
   icon: Icon,
   title,
   description,
   bg,
-}: {
-  icon: React.ElementType<LucideProps>;
-  title: string;
-  description: string;
-  bg?: boolean;
-}) => {
+}: FeatureCardProps) => {
   return (
     <div
       className={`${
