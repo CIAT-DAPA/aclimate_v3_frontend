@@ -10,7 +10,7 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 z-0">
           <Image
-            src="./assets/img/bg.jpg"
+            src="/assets/img/bg.jpg"
             alt="Paisaje climático de Colombia"
             fill
             className="object-cover"
