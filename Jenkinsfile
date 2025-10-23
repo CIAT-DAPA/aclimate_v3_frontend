@@ -1,0 +1,58 @@
+def remote = [:]
+
+pipeline {
+
+    agent any
+
+    environment {
+        user = credentials('aclimate_v3_herschel_user')
+        host = credentials('aclimate_v3_herschel_host')
+        name = credentials('aclimate_v3_herschel_host')
+        ssh_key = credentials('aclimate_v3_herschel_key')
+    }
+
+    stages {
+        stage('Ssh to connect Herschel server') {
+            steps {
+                script {
+                    // Set up remote SSH connection parameters
+                    remote.allowAnyHosts = true
+                    remote.identityFile = ssh_key
+                    remote.user = user
+                    remote.name = name
+                    remote.host = host
+                    
+                }
+            }
+        }
+        stage('Download latest release') {
+            steps {
+                script {
+                    sshCommand remote: remote, command: """
+                        cd /var/www/aclimate/aclimate_v3_frontend_hn/src
+                        source /home/aclimate_v3/miniforge3/etc/profile.d/conda.sh
+                        conda activate /home/aclimate_v3/miniforge3/envs/aclimate_v3
+                        npm install
+                        npm run build
+                        pm2 restart aclimate_v3_hn
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        failure {
+            script {
+                echo 'fail :c'
+            }
+        }
+
+        success {
+            script {
+                echo 'everything went very well!!'
+            }
+        }
+    }
+ 
+}
