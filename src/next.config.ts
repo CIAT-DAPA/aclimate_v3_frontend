@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
  
 const nextConfig: NextConfig = {
-  output: "export", // Esto genera salida estática
+  // Modo dinámico - sin output: "export"
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
