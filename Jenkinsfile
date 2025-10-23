@@ -50,7 +50,9 @@ pipeline {
                         conda activate /home/aclimate_v3/miniforge3/envs/aclimate_v3
                         npm install
                         npm run build
-                        pm2 restart aclimate_v3_hn
+                        cd /var/www/aclimate/aclimate_v3_frontend_hn
+                        pm2 stop aclimate_v3_hn || pm2 delete aclimate_v3_hn
+                        pm2 start ecosystem.config.js
                     """
                 }
             }
