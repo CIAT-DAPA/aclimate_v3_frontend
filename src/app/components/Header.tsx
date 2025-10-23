@@ -36,7 +36,7 @@ const Header = () => {
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="./assets/img/logo.png"
+            src="/assets/img/logo.png"
             alt="AClimate Logo"
             width={32}
             height={32}
