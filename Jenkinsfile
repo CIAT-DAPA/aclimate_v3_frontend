@@ -25,6 +25,22 @@ pipeline {
                 }
             }
         }
+        stage('Update Code') {
+            steps {
+                script {
+                    try {
+                        sshCommand remote: remote, command: """
+                            cd /var/www/aclimate/aclimate_v3_frontend_hn/
+                            git checkout aclimate_honduras
+                            git pull origin aclimate_honduras
+                        """
+                    } catch (Exception e) {
+                        echo "Git Pull Error: ${e.message}"
+                        error("Failed to update code: ${e.message}")
+                    }
+                }
+            }
+        }
         stage('Download latest release') {
             steps {
                 script {
