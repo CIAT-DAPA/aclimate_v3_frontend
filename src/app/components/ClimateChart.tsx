@@ -117,7 +117,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           formatter: function(value: string) {
             try {
               return new Date(value).toLocaleDateString();
-            } catch (e) {
+            } catch {
               return value; // Si falla el parsing, devolver el valor original
             }
           }
@@ -134,10 +134,10 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     },
     tooltip: {
       x: {
-        formatter: function(value: any, { series, seriesIndex, dataPointIndex, w }: any) {
+        formatter: function(value: string, context: { dataPointIndex: number; w: { globals: { categoryLabels: string[] } } }) {
           if (isClimatology) {
             // Para climatología, mostrar directamente el nombre del mes
-            return w.globals.categoryLabels[dataPointIndex];
+            return context.w.globals.categoryLabels[context.dataPointIndex];
           } else {
             // Para otros períodos, mostrar fecha formateada
             const date = new Date(value);
@@ -157,7 +157,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     name: dataset.label,
     data: isClimatology 
       ? dataset.data 
-      : dataset.dates.map((date, index) => ({
+      : dataset.dates.map((date: string, index: number) => ({
           x: date,
           y: dataset.data[index]
         })),

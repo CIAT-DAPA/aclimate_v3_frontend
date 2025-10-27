@@ -6,10 +6,10 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { getUserStations, updateUserStation, deleteUserStation } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
-import Header from "@/app/components/Header";
-import Footer from "@/app/components/Footer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTemperatureHalf, faCloudRain, faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { COUNTRY_NAME } from "@/app/config";
+
 
 interface UserStation {
   id: number;
@@ -185,7 +185,6 @@ export default function UserProfilePage() {
           }
         })
       );
-      console.log("All station details loaded:", details);
       setStationDetails(details);
     } catch (error) {
       console.error("Error loading user stations:", error);
@@ -265,7 +264,7 @@ export default function UserProfilePage() {
                 <p className="text-gray-600">{userEmail}</p>
                 <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                   <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                  Colombia
+                  {COUNTRY_NAME}
                 </p>
               </div>
             </div>

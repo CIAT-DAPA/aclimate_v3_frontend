@@ -1,6 +1,21 @@
 // app/services/monitoryService.ts
 import { API_URL } from "@/app/config";
 
+// Tipos para respuestas de API
+interface DailyDataItem {
+  measure_short_name: string;
+  value: number;
+  date: string;
+}
+
+interface IndicatorRawItem {
+  indicator_short_name: string;
+  indicator_name: string;
+  indicator_unit: string;
+  start_date: string;
+  value: number;
+}
+
 export const monitoryService = {
 
   async getStationDates(stationId: string, period: string, indicator: boolean): Promise<{ minDate: string | null; maxDate: string | null}> {
@@ -96,13 +111,14 @@ async getClimateHistorical(stationId: string, period: string, startDate: string,
  * @param stationId ID de la estación
  * @returns Datos de la última fecha disponible
  */
-async getLatestDailyData(stationId: string): Promise<any[]> {
+async getLatestDailyData(stationId: string): Promise<DailyDataItem[]> {
   try {
     // Obtener la última fecha disponible
     const { maxDate } = await this.getStationDates(stationId, "daily", false);
     
     if (!maxDate) {
-      throw new Error("No hay datos disponibles para esta estación");
+      // No hay datos disponibles para esta estación; devolver vacío sin marcar error
+      return [];
     }
 
     // Obtener los datos para la última fecha
@@ -116,28 +132,29 @@ async getLatestDailyData(stationId: string): Promise<any[]> {
 
     return await response.json();
   } catch (error) {
-    console.error("Error in getLatestDailyData:", error);
+    // Registrar como advertencia para evitar overlay de errores cuando no es crítico
+    console.warn("Aviso en getLatestDailyData:", error);
     return [];
   }
 },
 
-processClimateData(data: any[], period: string): Record<string, { dates: string[]; values: number[] }> {
+processClimateData(data: DailyDataItem[], period: string): Record<string, { dates: string[]; values: number[] }> {
   const result: Record<string, { dates: string[]; values: number[] }> = {};
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
-  data.forEach(item => {
-    const measureKey = item.measure_short_name;
+  data.forEach((item) => {
+    const measureKey = (item as unknown as { measure_short_name: string }).measure_short_name;
     if (!result[measureKey]) {
       result[measureKey] = { dates: [], values: [] };
     }
     
     // Para climatología, usar nombres de mes
     if (period === "climatology") {
-      const monthIndex = parseInt(item.month) - 1;
+      const monthIndex = parseInt((item as unknown as { month: string }).month) - 1;
       if (monthIndex >= 0 && monthIndex < monthNames.length) {
         result[measureKey].dates.push(monthNames[monthIndex]);
       } else {
-        result[measureKey].dates.push(item.month);
+        result[measureKey].dates.push((item as unknown as { month: string }).month);
       }
     } else {
       // Para otros períodos usar fecha completa
@@ -190,7 +207,7 @@ processClimateData(data: any[], period: string): Record<string, { dates: string[
    * @param data Datos crudos de la API
    * @returns Datos estructurados por indicador
    */
-  processIndicatorsData(data: any[]): Record<string, {
+  processIndicatorsData(data: IndicatorRawItem[]): Record<string, {
     name: string;
     unit: string;
     dates: string[];
@@ -203,7 +220,7 @@ processClimateData(data: any[], period: string): Record<string, { dates: string[
       values: number[];
     }> = {};
 
-    data.forEach(item => {
+    data.forEach((item) => {
       const indicatorKey = item.indicator_short_name;
       
       if (!result[indicatorKey]) {

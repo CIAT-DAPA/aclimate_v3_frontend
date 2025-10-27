@@ -29,9 +29,7 @@ export default function LocationsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log("Fetching stations...");
         const stationsData = await stationService.getAll();
-        console.log("Stations fetched successfully:", stationsData);
         setStations(stationsData);
 
         // Obtener datos de la última fecha para cada estación
