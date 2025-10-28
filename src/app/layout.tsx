@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
+import { COUNTRY_NAME } from "./config";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -11,7 +12,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "AClimate Colombia",
+  title: `AClimate ${COUNTRY_NAME}`,
   description:
     "Explora, monitorea y compara los datos de las estaciones climátologicas con bases de datos satelitales. Informate sobre como ha sido el clima en las regiones.",
 };
