@@ -107,8 +107,7 @@ const MapComponent = ({
 
   const mapZoom = singleStationMode ? 13 : zoom;
 
-  const mapRef = useRef<any>(null);
-  const router = useRouter();
+  const mapRef = useRef<L.Map | null>(null);
   const { userValidatedInfo, authenticated } = useAuth();
 
   // Estado para controlar favoritos
@@ -123,7 +122,7 @@ const MapComponent = ({
       }
 
       try {
-        let userId = userValidatedInfo.id;
+  const userId = userValidatedInfo.id;
         const userStations = await getUserStations(userId);
         const favoriteIds = new Set(userStations.map(station => station.ws_ext_id?.toString() || ''));
         setFavorites(favoriteIds);
@@ -146,12 +145,8 @@ const MapComponent = ({
     }
 
     // Encontrar userId de la misma manera que en loadUserFavorites
-    let userId = null;
-    if (userValidatedInfo.user?.id) {
-      userId = userValidatedInfo.user.id;
-    } else if (userValidatedInfo.id) {
-      userId = userValidatedInfo.id;
-    } else {
+    const userId = userValidatedInfo.user?.id ?? userValidatedInfo.id;
+    if (!userId) {
       console.error('No se pudo encontrar userId para toggleFavorite');
       alert('Error: No se pudo identificar al usuario');
       return;
@@ -215,9 +210,10 @@ const MapComponent = ({
     }
 
     // Agrupar datos por medida
-    const measures: Record<string, any> = {};
-    data.forEach(item => {
-      measures[item.measure_short_name] = item;
+    type Measure = { value: number };
+    const measures: Record<string, Measure> = {};
+    data.forEach((item: { measure_short_name: string; value: number }) => {
+      measures[item.measure_short_name] = { value: item.value };
     });
 
     return (
@@ -235,7 +231,7 @@ const MapComponent = ({
               />
               <div>
                 <p className="text-xs text-gray-500">Temperatura máxima</p>
-                <p className="text-sm font-semibold">{measures.Tmax.value.toFixed(1)}°C</p>
+                <p className="text-sm font-semibold">{Number(measures.Tmax.value).toFixed(1)}°C</p>
               </div>
             </div>
           )}
@@ -249,7 +245,7 @@ const MapComponent = ({
               />
               <div>
                 <p className="text-xs text-gray-500">Temperatura mínima</p>
-                <p className="text-sm font-semibold">{measures.Tmin.value.toFixed(1)}°C</p>
+                <p className="text-sm font-semibold">{Number(measures.Tmin.value).toFixed(1)}°C</p>
               </div>
             </div>
           )}
@@ -263,7 +259,7 @@ const MapComponent = ({
               />
               <div>
                 <p className="text-xs text-gray-500">Precipitación</p>
-                <p className="text-sm font-semibold">{measures.Prec.value.toFixed(1)}mm</p>
+                <p className="text-sm font-semibold">{Number(measures.Prec.value).toFixed(1)}mm</p>
               </div>
             </div>
           )}
@@ -277,7 +273,7 @@ const MapComponent = ({
               />
               <div>
                 <p className="text-xs text-gray-500">Radiación</p>
-                <p className="text-sm font-semibold">{measures.Rad.value.toFixed(1)}MJ/m²</p>
+                <p className="text-sm font-semibold">{Number(measures.Rad.value).toFixed(1)}MJ/m²</p>
               </div>
             </div>
           )}

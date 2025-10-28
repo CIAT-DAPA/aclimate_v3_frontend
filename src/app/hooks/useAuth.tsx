@@ -7,9 +7,9 @@ import React, {
   useContext,
   createContext,
 } from "react";
-import Keycloak, { KeycloakTokenParsed } from "keycloak-js";
-import { validateToken, validateUser } from "@/app/services/userService";
-import { Configuration } from "@/conf/Configuration";
+import Keycloak, { KeycloakTokenParsed, KeycloakProfile } from "keycloak-js";
+import { validateToken, validateUser, UserValidationRequest } from "@/app/services/userService";
+import { APP_ID, KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from "@/app/config";
 
 interface ValidationPayload {
   valid: boolean;
@@ -57,9 +57,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeKeycloak = async () => {
       try {
         keycloak.current = new Keycloak({
-          url: process.env.NEXT_PUBLIC_KEYCLOAK_URL || "http://localhost:8080",
-          realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "aclimate-realm",
-          clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "aclimate-frontend",
+          url: KEYCLOAK_URL,
+          realm: KEYCLOAK_REALM,
+          clientId: KEYCLOAK_CLIENT_ID,
         });
 
         const isAuthenticated = await keycloak.current.init({ 
@@ -76,20 +76,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setTokenParsed(keycloak.current.tokenParsed || null);
 
           try {
-            const userInfo = await keycloak.current.loadUserInfo();
-            setUserInfo(userInfo);
+            const kcProfile = (await keycloak.current.loadUserInfo()) as KeycloakProfile;
+            setUserInfo(kcProfile);
 
             // Validar usuario con el backend
             const userValidationData: UserValidationRequest = {
-              email: userInfo.email,
-              email_verified: userInfo.email_verified,
-              family_name: userInfo.family_name,
-              given_name: userInfo.given_name,
-              name: userInfo.name,
-              preferred_username: userInfo.preferred_username,
-              sub: userInfo.sub,
-              app_id: Configuration.getColombiaAppId(), // Ajusta según tu configuración
-              profile: userInfo.profile
+              email: kcProfile.email || "",
+              email_verified: Boolean((kcProfile as any).email_verified),
+              family_name: kcProfile.lastName || "",
+              given_name: kcProfile.firstName || "",
+              name: kcProfile.username || kcProfile.email || "",
+              preferred_username: kcProfile.username || "",
+              sub: (keycloak.current.tokenParsed?.sub as string) || "",
+              app_id: APP_ID, // toma el valor unificado desde config
+              profile: (kcProfile as any).profile || ""
             };
 
             const validatedUser = await validateUser(userValidationData);
@@ -118,24 +118,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    // Solo refrescar token si el usuario está autenticado y hay token
+    if (!authenticated || !keycloak.current || !token) return;
+
     const interval = setInterval(async () => {
-      if (keycloak.current) {
-        try {
-          const refreshed = await keycloak.current.updateToken(60);
-          if (refreshed && keycloak.current) {
-            const currentToken = keycloak.current.token;
-            setToken(currentToken || null);
-            setTokenParsed(keycloak.current.tokenParsed || null);
-          }
-        } catch (error) {
-          console.warn("No se pudo actualizar el token, cerrando sesión");
-          logout();
+      try {
+        const refreshed = await keycloak.current!.updateToken(60);
+        if (refreshed && keycloak.current) {
+          const currentToken = keycloak.current.token;
+          setToken(currentToken || null);
+          setTokenParsed(keycloak.current.tokenParsed || null);
         }
+      } catch (error) {
+        // Si falla el refresh, no forzar logout/redirect cuando no corresponde.
+        // Marcamos estado no autenticado y limpiamos token sin redirigir.
+        console.warn("Fallo al refrescar token (ignorado si no autenticado):", error);
+        setToken(null);
+        setTokenParsed(null);
+        setAuthenticated(false);
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [authenticated, token]);
 
   const login = () => {
     if (keycloak.current) {

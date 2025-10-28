@@ -1,4 +1,4 @@
-import { Configuration } from "@/conf/Configuration";
+import { USERS_FRONTEND_API_URL_BASE } from "@/app/config";
 interface TokenValidationResponse {
   valid: boolean;
   payload?: {
@@ -17,7 +17,9 @@ interface TokenValidationResponse {
  */
 export const validateToken = async (token: string): Promise<TokenValidationResponse> => {
   try {
-    const response = await fetch(process.env.NEXT_PUBLIC_AUTH_API_URL || Configuration.getUsersFrontendApiUrlBase() + 'auth/token/validate', {
+    const base = process.env.NEXT_PUBLIC_AUTH_API_URL || USERS_FRONTEND_API_URL_BASE;
+    const url = `${base}${base.endsWith('/') ? '' : '/'}auth/token/validate`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -41,7 +43,7 @@ export const validateToken = async (token: string): Promise<TokenValidationRespo
   }
 };
 
-interface UserValidationRequest {
+export interface UserValidationRequest {
   email: string;
   email_verified: boolean;
   family_name: string;
@@ -73,7 +75,9 @@ interface UserValidationResponse {
  */
 export const validateUser = async (userData: UserValidationRequest): Promise<UserValidationResponse> => {
   try {
-    const response = await fetch(process.env.NEXT_PUBLIC_API_FRONTEND_BASE_URL || Configuration.getUsersFrontendApiUrlBase() + 'validate/user', {
+    const base = process.env.NEXT_PUBLIC_API_FRONTEND_BASE_URL || USERS_FRONTEND_API_URL_BASE;
+    const url = `${base}${base.endsWith('/') ? '' : '/'}validate/user`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -120,7 +124,7 @@ interface WsInterestedRead {
  */
 export const getUserStations = async (userId: number): Promise<WsInterestedRead[]> => {
   try {
-    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const baseUrl = USERS_FRONTEND_API_URL_BASE;
     const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
     
     const response = await fetch(url, {
@@ -159,7 +163,7 @@ export const getUserStations = async (userId: number): Promise<WsInterestedRead[
  */
 export const addUserStation = async (userId: number, stationData: WsInterestedRequest): Promise<WsInterestedRead> => {
   try {
-    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const baseUrl = USERS_FRONTEND_API_URL_BASE;
     const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
     
     const response = await fetch(url, {
@@ -201,7 +205,7 @@ export const updateUserStation = async (
   updateData: WsInterestedUpdateRequest
 ): Promise<WsInterestedRead> => {
   try {
-    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const baseUrl = USERS_FRONTEND_API_URL_BASE;
     const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
     
     const response = await fetch(url, {
@@ -232,7 +236,7 @@ export const updateUserStation = async (
  */
 export const deleteUserStation = async (userId: number, wsExtId: string): Promise<{ message: string }> => {
   try {
-    const baseUrl = Configuration.getUsersFrontendApiUrlBase();
+    const baseUrl = USERS_FRONTEND_API_URL_BASE;
     const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
     
     const response = await fetch(url, {

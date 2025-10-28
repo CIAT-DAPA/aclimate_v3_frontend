@@ -3,6 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { COUNTRY_NAME } from "@/app/config";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -130,7 +131,7 @@ export default function SpatialDataPage() {
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800">Datos espaciales</h1>
           <p className="text-gray-600 mt-2">
-            Esta herramienta interactiva te permite consultar información histórica sobre indicadores climáticos en País.
+            Esta herramienta interactiva te permite consultar información histórica sobre indicadores climáticos en {COUNTRY_NAME}.
           </p>
           <div className="mt-3">
             <p className="text-gray-600">Puedes usarla para:</p>
@@ -178,7 +179,7 @@ export default function SpatialDataPage() {
               >
                 <div className="p-5 border border-b-0 border-gray-200">
                   <div className="flex flex-col gap-8">
-                    <p>Explora cómo se comportan las principales variables climáticas en todo el territorio colombiano. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
+                    <p>Explora cómo se comportan las principales variables climáticas en todo el territorio de {COUNTRY_NAME}. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
                     Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
                     {wmsLayers.map((layer, index) => {
                       let unidad = "";
@@ -279,7 +280,7 @@ export default function SpatialDataPage() {
                 aria-labelledby="indicators-accordion-trigger"
               >
                 <div className="p-5 border border-t-0 border-gray-200">
-                  <p>Analiza la evolución de los indicadores climáticos en Colombia y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>rango de fechas</strong> para profundizar en los datos que más te interesen.</p>
+                  <p>Analiza la evolución de los indicadores climáticos en {COUNTRY_NAME} y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>rango de fechas</strong> para profundizar en los datos que más te interesen.</p>
                   <div className="h-80 flex items-center justify-center">
                     <p className="text-gray-500">No hay datos para mostrar</p>
                   </div>

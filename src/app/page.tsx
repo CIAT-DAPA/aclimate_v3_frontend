@@ -3,6 +3,7 @@ import WeatherCard from "./components/WeatherCard";
 import FeatureCard from "./components/FeatureCard";
 import { Map, LayoutGrid, Newspaper } from "lucide-react";
 import Link from "next/link";
+import { COUNTRY_NAME } from "./config";
 
 export default function Home() {
   return (
@@ -11,7 +12,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <Image
             src="/assets/img/bg.jpg"
-            alt="Paisaje climático de Colombia"
+            alt="Paisaje climático"
             fill
             className="object-cover"
             priority
@@ -23,7 +24,7 @@ export default function Home() {
             <div className="space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
               <div className="space-y-3">
                 <h1 className="text-5xl md:text-6xl font-semibold text-amber-50 text-balance">
-                  Bienvenido a AClimate Colombia
+                  Bienvenido a AClimate {COUNTRY_NAME}
                 </h1>
                 <p className="text-xl text-amber-50 text-pretty">
                   Explora, monitorea y compara los datos de las estaciones
