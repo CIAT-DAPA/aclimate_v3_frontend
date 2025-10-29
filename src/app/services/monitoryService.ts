@@ -36,7 +36,7 @@ export const monitoryService = {
     );
     if (!response.ok) throw new Error("Error fetching dates");
 
-    const data = await response.json();
+  const data = await response.json();
     
     // Validar que la respuesta sea un array
     if (!Array.isArray(data)) {
@@ -46,26 +46,51 @@ export const monitoryService = {
     let minDate: string | null = null;
     let maxDate: string | null = null;
 
-    // Procesar cada elemento para encontrar fechas extremas
-    for (const item of data) {
-        // Considerar tanto min_date como max_date de cada objeto
+    // Para climatología, algunos endpoints devuelven min_month/max_month en vez de min_date/max_date
+    if (!indicator && period === "climatology") {
+      let minMonth: string | null = null;
+      let maxMonth: string | null = null;
+
+      for (const item of data) {
+        // Aceptar diferentes formas: min_month/max_month o month (string o número)
+        const candidateMins = [item.min_month, item.minMonth, item.month];
+        const candidateMaxs = [item.max_month, item.maxMonth, item.month];
+
+        const norm = (m: any) => {
+          if (m === undefined || m === null) return null;
+          const s = String(m).padStart(2, '0');
+          // Validar que esté entre 01 y 12
+          return /^(0[1-9]|1[0-2])$/.test(s) ? s : null;
+        };
+
+        const localMin = candidateMins.map(norm).find(Boolean) || null;
+        const localMax = candidateMaxs.map(norm).find(Boolean) || null;
+
+        if (localMin && (!minMonth || localMin < minMonth)) minMonth = localMin;
+        if (localMax && (!maxMonth || localMax > maxMonth)) maxMonth = localMax;
+      }
+
+      // Mapear meses a fechas ficticias del año 2000 para mantener formato YYYY-MM-DD
+      minDate = minMonth ? `2000-${minMonth}-01` : null;
+      maxDate = maxMonth ? `2000-${maxMonth}-01` : null;
+    } else {
+      // Procesamiento estándar por fecha
+      for (const item of data) {
         const dates = [item.min_date, item.max_date];
-        
         for (const date of dates) {
-            if (!minDate || date < minDate) {
-                minDate = date;
-            }
-            if (!maxDate || date > maxDate) {
-                maxDate = date;
-            }
+          if (!date) continue;
+          const onlyDate = String(date).split('T')[0];
+          if (!minDate || onlyDate < minDate) {
+            minDate = onlyDate;
+          }
+          if (!maxDate || onlyDate > maxDate) {
+            maxDate = onlyDate;
+          }
         }
+      }
     }
 
-    // Formatear fechas a YYYY-MM-DD
-    return {
-        minDate: minDate ? minDate.split('T')[0] : null,
-        maxDate: maxDate ? maxDate.split('T')[0] : null
-    };
+    return { minDate, maxDate };
 },
 
 async getClimateHistorical(stationId: string, period: string, startDate: string, endDate: string) {
@@ -98,7 +123,6 @@ async getClimateHistorical(stationId: string, period: string, startDate: string,
   }
   
   const response = await fetch(`${API_URL}/${urlBase}?${params}`);
-  console.log("Fetching climate historical data from:", `${API_URL}/${urlBase}?${params}`);
   if (!response.ok) 
     throw new Error("Error fetching climate historical data");
   
@@ -165,6 +189,18 @@ processClimateData(data: DailyDataItem[], period: string): Record<string, { date
     const roundedValue = parseFloat(item.value.toFixed(2));
     result[measureKey].values.push(roundedValue);
   });
+  // Para daily y monthly, asegurar orden cronológico ascendente por fecha
+  if (period !== "climatology") {
+    Object.keys(result).forEach((key) => {
+      const pairs = result[key].dates.map((date, i) => ({
+        date,
+        value: result[key].values[i]
+      }));
+      pairs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      result[key].dates = pairs.map((p) => p.date);
+      result[key].values = pairs.map((p) => p.value);
+    });
+  }
 
   return result;
 },
