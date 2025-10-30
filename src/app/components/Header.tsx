@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { COUNTRY_ID } from "@/app/config";
+import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { faArrowRightFromBracket, faUser } from "@fortawesome/free-solid-svg-icons";
@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } = useAuth();
+  const { countryId } = useCountry();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -51,7 +52,7 @@ const Header = () => {
             Estaciones
           </Link>
           <Link
-            href={`/spatial/${COUNTRY_ID}`}
+            href={`/spatial/${countryId || '1'}`}
             className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
           >
             Datos espaciales

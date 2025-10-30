@@ -3,7 +3,9 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { COUNTRY_NAME } from "@/app/config";
+import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
+import { useCountry } from "@/app/contexts/CountryContext";
+import { spatialService } from "@/app/services/spatialService";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -22,71 +24,105 @@ interface RasterFileInfo {
   title: string;
 }
 
+interface LayerInfo {
+  name: string;
+  title: string;
+  variable: string;
+  available: boolean;
+}
+
 // Información de tooltip para cada variable climática
-const variableInfo = {
+const variableInfo: Record<string, string> = {
   "Temperatura máxima": "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
   "Precipitación": "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
   "Temperatura mínima": "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
-  "Radiación solar": "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²)."
+  "Radiación solar": "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²).",
+  "Evapotranspiración": "La evapotranspiración es la pérdida de agua del suelo por evaporación y transpiración de las plantas, medida en milímetros (mm)."
+};
+
+// Mapeo de códigos de país a códigos usados en geoserver
+const countryCodeMap: Record<string, string> = {
+  "1": "co", // Colombia
+  "2": "hn"  // Honduras
 };
 
 export default function SpatialDataPage() {
+  const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [timePeriod, setTimePeriod] = useState<string>("daily");
+  const [availableLayers, setAvailableLayers] = useState<LayerInfo[]>([]);
+  const [loadingLayers, setLoadingLayers] = useState(false);
 
-   // Inicializar tooltips de Flowbite
+  const countryCode = countryCodeMap[countryId || "1"] || "hn";
+
+  
+  // Construir workspace y WMS URL dinámicamente
+  const workspace = `climate_historical_${timePeriod}`;
+  const wmsBaseUrl = `${GEOSERVER_URL}/${workspace}/wms`;
+
+  // Coordenadas por país
+  const countryCoordinates: Record<string, { center: [number, number]; zoom: number; bbox: string }> = {
+    "hn": {
+      center: [14.5, -86.5],
+      zoom: 7,
+      bbox: "-89.5,12.9,-83.1,16.5"
+    },
+    "co": {
+      center: [4.5, -74.0],
+      zoom: 6,
+      bbox: "-79.0,-4.2,-66.9,12.5"
+    }
+  };
+
+  const currentCountry = countryCoordinates[countryCode] || countryCoordinates["hn"];
+
+  // Inicializar tooltips de Flowbite
   useEffect(() => {
-    // Cargar e inicializar Flowbite solo en el cliente
     const initFlowbite = async () => {
       const { initTooltips } = await import('flowbite');
       initTooltips();
     };
     
     initFlowbite();
-  }, []);
+  }, [availableLayers]);
 
-  // Configuración de capas WMS
-  const wmsBaseUrl = "https://geo.aclimate.org/geoserver/historical_climate_hn/wms";
-  const wmsLayers = [
-    {
-      title: "Temperatura máxima",
-      layer: "historical_climate_hn:TMAX",
-      center: [14.5, -86.5] as [number, number],
-      zoom: 7
-    },
-    {
-      title: "Precipitación",
-      layer: "historical_climate_hn:PREC",
-      center: [14.5, -86.5] as [number, number],
-      zoom: 7
-    },
-    {
-      title: "Temperatura mínima",
-      layer: "historical_climate_hn:TMIN",
-      center: [14.5, -86.5] as [number, number],
-      zoom: 7
-    },
-    {
-      title: "Radiación solar",
-      layer: "historical_climate_hn:SRAD",
-      center: [14.5, -86.5] as [number, number],
-      zoom: 7
-    }
-  ];
+  // Cargar capas disponibles cuando cambia el período de tiempo
+  useEffect(() => {
+    const loadLayers = async () => {
+      setLoadingLayers(true);
+      try {
+        const layers = await spatialService.getAvailableLayers(
+          GEOSERVER_URL,
+          workspace,
+          countryCode,
+          timePeriod
+        );
+        setAvailableLayers(layers);
+      } catch (error) {
+        console.error("Error cargando capas:", error);
+        setAvailableLayers([]);
+      } finally {
+        setLoadingLayers(false);
+      }
+    };
+
+    loadLayers();
+  }, [timePeriod, workspace, countryCode]);
 
   const handleTimeChange = useCallback((time: string, layerName: string, layerTitle: string) => {
-    const bbox = "-89.5,12.9,-83.1,16.5"; // Límites aproximados para Honduras
+    const bbox = currentCountry.bbox;
     
     // Crear URL para la capa específica
-    const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/tiff&transparent=true&time=${time}&bbox=${bbox}&width=512&height=512`;
+    const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/tiff&transparent=true&time=${time}&bbox=${bbox}&width=512&height=512&crs=EPSG:4326`;
     
     // Actualizar la referencia sin causar rerender
     rasterFilesRef.current[layerName] = { url, layer: layerName, time, title: layerTitle };
     setDownloadReady(Object.keys(rasterFilesRef.current).length > 0);
-  }, [wmsBaseUrl]);
+  }, [wmsBaseUrl, currentCountry.bbox]);
 
   // Función para descargar todos los archivos
   const downloadAllData = async () => {
@@ -126,8 +162,8 @@ export default function SpatialDataPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm max-w-6xl mx-auto p-6">
+    <div className="min-h-screen bg-gray-50 pt-4">
+      <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800">Datos espaciales</h1>
           <p className="text-gray-600 mt-2">
@@ -135,17 +171,34 @@ export default function SpatialDataPage() {
           </p>
           <div className="mt-3">
             <p className="text-gray-600">Puedes usarla para:</p>
-            <ul className="list-disc list-inside text-gray-600 mt-1">
+            <ul className="list-disc list-inside text-gray-600 mt-1 ms-3">
               <li>Ver cómo varían estos indicadores en diferentes regiones</li>
               <li>Identificar zonas agrícolas con mayor riesgo climático</li>
               <li>Descargar datos raster para análisis especializados</li>
             </ul>
           </div>
+
+          {/* Selector de período de tiempo */}
+          <div className="mt-6">
+            <label htmlFor="timePeriod" className="block font-medium text-gray-700 mb-2">
+              Período de tiempo
+            </label>
+            <select
+              id="timePeriod"
+              value={timePeriod}
+              onChange={(e) => setTimePeriod(e.target.value)}
+              className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+            >
+              <option value="daily">Diario</option>
+              <option value="monthly">Mensual</option>
+              <option value="climatology">Climatología</option>
+            </select>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4">
-        <div className="bg-white rounded-lg shadow-sm p-6">
+      <main className="max-w-6xl mx-auto mt-4">
+        <div className="bg-white rounded-lg shadow-sm">
           {/* Reemplazo de tabs por acordeones */}
           <div id="accordion-collapse" data-accordion="collapse">
             {/* Acordeón para Datos climáticos */}
@@ -181,70 +234,104 @@ export default function SpatialDataPage() {
                   <div className="flex flex-col gap-8">
                     <p>Explora cómo se comportan las principales variables climáticas en todo el territorio de {COUNTRY_NAME}. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
                     Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
-                    {wmsLayers.map((layer, index) => {
-                      let unidad = "";
-                      if (layer.title.toLowerCase().includes("temperatura")) {
-                        unidad = "°C";
-                      } else if (layer.title.toLowerCase().includes("precipitación")) {
-                        unidad = "mm";
-                      } else if (layer.title.toLowerCase().includes("radiación")) {
-                        unidad = "MJ/m²";
-                      }
+                    
+                    {loadingLayers ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                        <span className="ml-3 text-gray-600">Cargando capas disponibles...</span>
+                      </div>
+                    ) : availableLayers.length === 0 ? (
+                      <div className="text-center py-12 text-gray-600">
+                        No hay capas disponibles para el período seleccionado.
+                      </div>
+                    ) : (
+                      availableLayers.map((layer) => {
+                        let unidad = "";
+                        if (layer.variable === "tmax" || layer.variable === "tmin") {
+                          unidad = "°C";
+                        } else if (layer.variable === "prec") {
+                          unidad = "mm";
+                        } else if (layer.variable === "rad") {
+                          unidad = "MJ/m²";
+                        } else if (layer.variable === "et0") {
+                          unidad = "mm";
+                        }
 
-                      const tooltipId = `tooltip-${layer.title.replace(/\s+/g, '-').toLowerCase()}`;
+                        const tooltipId = `tooltip-${layer.variable}`;
 
-                      return (
-                        <div key={layer.layer} className="h-80 flex flex-col">
-                          <div className="flex items-center gap-2 mb-4">
-                            
-                            <h3 className="font-semibold text-gray-800 text-lg">
-                              {layer.title} <span className="text-gray-500 text-base">({unidad})</span>
-                            </h3>
-                            
-                            {/* Botón con tooltip */}
-                            <button 
-                              data-tooltip-target={tooltipId}
-                              data-tooltip-placement="right"
-                              type="button" 
-                              className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                            
-                            {/* Tooltip */}
-                            <div 
-                              id={tooltipId} 
-                              role="tooltip" 
-                              className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
-                            >
-                              {variableInfo[layer.title as keyof typeof variableInfo]}
-                              <div className="tooltip-arrow" data-popper-arrow></div>
+                        return (
+                          <div key={layer.name} className="h-80 flex flex-col">
+                            <div className="flex items-center gap-2 mb-4">
+                              
+                              <h3 className="font-semibold text-gray-800 text-lg">
+                                {layer.title} <span className="text-gray-500 text-base">({unidad})</span>
+                              </h3>
+                              
+                              {/* Botón con tooltip */}
+                              <button 
+                                data-tooltip-target={tooltipId}
+                                data-tooltip-placement="right"
+                                type="button" 
+                                className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </button>
+                              
+                              {/* Tooltip */}
+                              <div 
+                                id={tooltipId} 
+                                role="tooltip" 
+                                className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
+                              >
+                                {variableInfo[layer.title]}
+                                <div className="tooltip-arrow" data-popper-arrow></div>
+                              </div>
+
+                              {/* Badge de no disponible */}
+                              {!layer.available && (
+                                <span className="ml-auto px-3 py-1 text-xs font-medium text-amber-800 bg-amber-100 rounded-full">
+                                  Datos no disponibles
+                                </span>
+                              )}
                             </div>
+
+                            {layer.available ? (
+                              <div className="h-96 w-full rounded-lg overflow-hidden">
+                                <MapComponent
+                                  key={layer.name}
+                                  center={currentCountry.center}
+                                  zoom={currentCountry.zoom}
+                                  wmsLayers={[{
+                                    url: wmsBaseUrl,
+                                    layers: layer.name,
+                                    opacity: 0.7,
+                                    transparent: true
+                                  }]}
+                                  showMarkers={false}
+                                  showZoomControl={true}
+                                  showTimeline={true}
+                                  showLegend={true}
+                                  showAdminLayer={true}
+                                  onTimeChange={(time) => handleTimeChange(time, layer.name, layer.title)}
+                                />
+                              </div>
+                            ) : (
+                              <div className="h-96 w-full rounded-lg bg-gray-100 flex items-center justify-center">
+                                <div className="text-center">
+                                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                  </svg>
+                                  <p className="mt-2 text-gray-500">No hay datos disponibles para esta variable</p>
+                                  <p className="text-sm text-gray-400">en el período {timePeriod}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="h-96 w-full rounded-lg overflow-hidden">
-                            <MapComponent
-                              key={layer.layer}
-                              center={layer.center}
-                              zoom={layer.zoom}
-                              wmsLayers={[{
-                                url: wmsBaseUrl,
-                                layers: layer.layer,
-                                opacity: 0.7,
-                                transparent: true
-                              }]}
-                              showMarkers={false}
-                              showZoomControl={true}
-                              showTimeline={true}
-                              showLegend={true}
-                              showAdminLayer={true}
-                              onTimeChange={(time) => handleTimeChange(time, layer.layer, layer.title)}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -289,7 +376,7 @@ export default function SpatialDataPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col items-start gap-4">
+          <div className="p-6 border-t border-gray-200 flex flex-col items-start gap-4">
             <button 
               className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               onClick={downloadAllData}
