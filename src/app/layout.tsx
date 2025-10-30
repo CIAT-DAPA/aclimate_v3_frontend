@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
+import { CountryProvider } from "@/app/contexts/CountryContext";
 import { COUNTRY_NAME } from "./config";
 
 const montserrat = Montserrat({
@@ -26,9 +27,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${montserrat.variable} antialiased`}>
         <AuthProvider>
-          <Header />
-          {children}
-          <Footer />
+          <CountryProvider>
+            <Header />
+            {children}
+            <Footer />
+          </CountryProvider>
         </AuthProvider>
       </body>
     </html>
