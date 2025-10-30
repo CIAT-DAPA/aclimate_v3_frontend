@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import type { ApexOptions } from 'apexcharts';
 import dynamic from "next/dynamic";
 
 const Chart = dynamic(() => import("react-apexcharts"), { 
@@ -42,6 +43,8 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   description
 }) => {
   const isClimatology = period === "climatology";
+  const isMonthly = period === "monthly";
+  const isDaily = period === "daily";
 
   // Inicializar tooltips de Flowbite
   useEffect(() => {
@@ -61,9 +64,49 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   };
 
   const tooltipId = `tooltip-${title.replace(/\s+/g, '-').toLowerCase()}`;
+
+  // Helpers de formato en UTC para mantener consistencia con los filtros
+  const formatUTC = (d: Date) => {
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    return { yyyy, mm, dd };
+  };
+
+  const parseToDateUTC = (dateValue: number | string): Date | null => {
+    if (typeof dateValue === 'number' && !Number.isNaN(dateValue)) {
+      return new Date(dateValue);
+    }
+    if (typeof dateValue === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
+        return new Date(dateValue + 'T00:00:00Z');
+      }
+      const tmp = new Date(dateValue);
+      return isNaN(tmp.getTime()) ? null : tmp;
+    }
+    return null;
+  };
+
+  const formatAxisForPeriod = (dateValue: number | string) => {
+    const d = parseToDateUTC(dateValue);
+    if (!d) return String(dateValue);
+    const { yyyy, mm, dd } = formatUTC(d);
+    if (isMonthly) return `${mm}/${yyyy}`; // MM/YYYY
+    if (isDaily) return `${dd}/${mm}`; // dd/MM (más compacto en eje)
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  const formatTooltipForPeriod = (dateValue: number | string) => {
+    const d = parseToDateUTC(dateValue);
+    if (!d) return String(dateValue);
+    const { yyyy, mm, dd } = formatUTC(d);
+    if (isMonthly) return `${mm}/${yyyy}`;
+    if (isDaily) return `${dd}/${mm}/${yyyy}`; // completo en tooltip
+    return `${dd}/${mm}/${yyyy}`;
+  };
   
   // Configuración de ApexCharts
-  const chartOptions = {
+  const chartOptions: ApexOptions = {
     chart: {
       height: "100%",
       type: chartType,
@@ -87,7 +130,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       enabled: false
     },
     stroke: {
-      curve: 'smooth',
+      curve: 'smooth' as const,
       width: 3
     },
     title: {
@@ -115,11 +158,8 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
         type: 'datetime' as const,
         labels: {
           formatter: function(value: string) {
-            try {
-              return new Date(value).toLocaleDateString();
-            } catch {
-              return value; // Si falla el parsing, devolver el valor original
-            }
+            const n = Number(value);
+            return formatAxisForPeriod(!Number.isNaN(n) ? n : value);
           }
         }
       })
@@ -134,14 +174,13 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     },
     tooltip: {
       x: {
-        formatter: function(value: string, context: { dataPointIndex: number; w: { globals: { categoryLabels: string[] } } }) {
+        formatter: function(value: number, context: { dataPointIndex: number; w: { globals: { categoryLabels: string[] } } }) {
           if (isClimatology) {
             // Para climatología, mostrar directamente el nombre del mes
             return context.w.globals.categoryLabels[context.dataPointIndex];
           } else {
-            // Para otros períodos, mostrar fecha formateada
-            const date = new Date(value);
-            return isNaN(date.getTime()) ? value : date.toLocaleDateString();
+            // Para daily/monthly: tooltip en formato completo (dd/MM/YYYY o MM/YYYY)
+            return formatTooltipForPeriod(value);
           }
         }
       },

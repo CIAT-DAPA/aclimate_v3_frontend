@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import MapSearch from "../components/MapSearch";
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
+import { useCountry } from "@/app/contexts/CountryContext";
 import { Station } from "@/app/types/Station";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
@@ -20,6 +21,7 @@ const MapComponent = dynamic(() => import("../components/MapComponent"), {
 });
 
 export default function LocationsPage() {
+  const { countryId, isLoading: countryLoading } = useCountry();
   const [stations, setStations] = useState<Station[]>([]);
   const [stationData, setStationData] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
@@ -27,9 +29,12 @@ export default function LocationsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Esperar a que el countryId esté disponible
+      if (!countryId) return;
+      
       try {
         setLoading(true);
-        const stationsData = await stationService.getAll();
+        const stationsData = await stationService.getAll(countryId);
         setStations(stationsData);
 
         // Obtener datos de la última fecha para cada estación
@@ -60,7 +65,18 @@ export default function LocationsPage() {
     };
 
     fetchData();
-  }, []);
+  }, [countryId]);
+
+  if (countryLoading || loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando estaciones...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

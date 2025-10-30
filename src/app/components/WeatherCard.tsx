@@ -2,6 +2,7 @@
 
 import { MapPin, Thermometer, CloudRain, Sun, Heart } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useCountry } from "@/app/contexts/CountryContext";
 import { useEffect, useState } from "react";
 import { getUserStations } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
@@ -26,12 +27,13 @@ interface StationData {
 
 const WeatherCard = () => {
   const { authenticated, userValidatedInfo } = useAuth();
+  const { countryId } = useCountry();
   const [favoriteStations, setFavoriteStations] = useState<StationData[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadFavoriteStations = async () => {
-      if (!authenticated || !userValidatedInfo) {
+      if (!authenticated || !userValidatedInfo || !countryId) {
         setFavoriteStations([]);
         return;
       }
@@ -49,7 +51,7 @@ const WeatherCard = () => {
         }
 
         // Obtener información completa de cada estación
-        const allStations = await stationService.getAll();
+        const allStations = await stationService.getAll(countryId);
         const favoriteStationIds = new Set(userStations.map(s => s.ws_ext_id));
         
         const stationsWithData = await Promise.all(
@@ -102,7 +104,7 @@ const WeatherCard = () => {
     };
 
     loadFavoriteStations();
-  }, [authenticated, userValidatedInfo]);
+  }, [authenticated, userValidatedInfo, countryId]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin datos';

@@ -1,10 +1,10 @@
 // app/monitory/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useRef  } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
@@ -82,9 +82,8 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   table: {
-    display: 'table',
     width: 'auto',
-    borderStyle: 'solid',
+    borderStyle: 'solid' as const,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRightWidth: 0,
@@ -92,12 +91,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   tableRow: {
-    margin: 'auto',
-    flexDirection: 'row',
+    margin: 'auto' as const,
+    flexDirection: 'row' as const,
   },
   tableCol: {
     width: '25%',
-    borderStyle: 'solid',
+    borderStyle: 'solid' as const,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderLeftWidth: 0,
@@ -109,8 +108,17 @@ const styles = StyleSheet.create({
   },
 });
 
+// Tipos para el PDF
+interface ReportDocumentProps {
+  station: Station | null;
+  climateHistoricalData: Record<string, { dates: string[]; values: number[] }> | null;
+  indicatorsData: Record<string, { name: string; unit: string; dates: string[]; values: number[] }> | null;
+  startDate: string | undefined;
+  endDate: string | undefined;
+}
+
 // Componente para el documento PDF
-const ReportDocument = ({ station, climateHistoricalData, indicatorsData, startDate, endDate }) => (
+const ReportDocument: React.FC<ReportDocumentProps> = ({ station, climateHistoricalData, indicatorsData, startDate, endDate }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Encabezado */}
@@ -126,7 +134,7 @@ const ReportDocument = ({ station, climateHistoricalData, indicatorsData, startD
         </Text>
         <Text style={styles.text}>Fuente: {station?.source || "N/A"}</Text>
         <Text style={styles.text}>
-          Período de datos: {startDate} - {endDate}
+          Período de datos: {startDate || "N/A"} - {endDate || "N/A"}
         </Text>
       </View>
 
@@ -137,41 +145,43 @@ const ReportDocument = ({ station, climateHistoricalData, indicatorsData, startD
           {station?.admin2_name || "N/A"}, {station?.country_name || "N/A"} en la latitud{" "}
           {station?.latitude?.toFixed(4) || "N/A"} y longitud{" "}
           {station?.longitude?.toFixed(4) || "N/A"}, ha registrado datos desde el{" "}
-          {startDate} hasta el {endDate}, cubriendo variables clave para el monitoreo agroclimático.
+          {startDate || "N/A"} hasta el {endDate || "N/A"}, cubriendo variables clave para el monitoreo agroclimático.
         </Text>
       </View>
 
       {/* Datos climáticos */}
-      <View style={styles.section}>
-        <Text style={styles.subtitle}>Datos Climáticos</Text>
-        
-        {climateHistoricalData && Object.entries(climateHistoricalData).map(([key, data]) => (
-          <View key={key} style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>
-              {key === 'Tmax' ? 'Temperatura máxima' : 
-               key === 'Tmin' ? 'Temperatura mínima' : 
-               key === 'Prec' ? 'Precipitación' : 
-               key === 'Rad' ? 'Radiación solar' : key} 
-              ({key === 'Tmax' || key === 'Tmin' ? '°C' : key === 'Prec' ? 'mm' : 'MJ/m²'})
-            </Text>
-            
-            {/* Tabla de datos */}
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <View style={styles.tableCol}><Text style={styles.tableCell}>Fecha</Text></View>
-                <View style={styles.tableCol}><Text style={styles.tableCell}>Valor</Text></View>
-              </View>
+      {climateHistoricalData && Object.keys(climateHistoricalData).length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.subtitle}>Datos Climáticos</Text>
+          
+          {Object.entries(climateHistoricalData).map(([key, data]) => (
+            <View key={key} style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>
+                {key === 'Tmax' ? 'Temperatura máxima' : 
+                 key === 'Tmin' ? 'Temperatura mínima' : 
+                 key === 'Prec' ? 'Precipitación' : 
+                 key === 'Rad' ? 'Radiación solar' : key} 
+                ({key === 'Tmax' || key === 'Tmin' ? '°C' : key === 'Prec' ? 'mm' : 'MJ/m²'})
+              </Text>
               
-              {data.dates.map((date, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{date}</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{data.values[index]}</Text></View>
+              {/* Tabla de datos */}
+              <View style={styles.table}>
+                <View style={styles.tableRow}>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>Fecha</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>Valor</Text></View>
                 </View>
-              ))}
+                
+                {data.dates && data.dates.slice(0, 50).map((date, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <View style={styles.tableCol}><Text style={styles.tableCell}>{date}</Text></View>
+                    <View style={styles.tableCol}><Text style={styles.tableCell}>{data.values[index]}</Text></View>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
 
       {/* Indicadores climáticos */}
       {indicatorsData && Object.keys(indicatorsData).length > 0 && (
@@ -191,7 +201,7 @@ const ReportDocument = ({ station, climateHistoricalData, indicatorsData, startD
                   <View style={styles.tableCol}><Text style={styles.tableCell}>Valor</Text></View>
                 </View>
                 
-                {indicator.dates.map((date, index) => (
+                {indicator.dates && indicator.dates.slice(0, 50).map((date, index) => (
                   <View key={index} style={styles.tableRow}>
                     <View style={styles.tableCol}><Text style={styles.tableCell}>{date}</Text></View>
                     <View style={styles.tableCol}><Text style={styles.tableCell}>{indicator.values[index]}</Text></View>
@@ -223,11 +233,19 @@ export default function StationDetailPage() {
   const [stationDates, setStationDates] = useState<any>(null);
   const [DataClimaticDates, setDataClimaticDates] = useState<any>(null);
   const [IndicatorsDates, setIndicatorsDates] = useState<any>(null);
+  
+  // Datos completos sin filtrar (cargados una sola vez)
+  const [climateHistoricalDataFull, setClimateHistoricalDataFull] = useState<any>(null);
+  const [indicatorsDataFull, setIndicatorsDataFull] = useState<any>(null);
+  
+  // Datos filtrados para visualización
   const [climateHistoricalData, setClimateHistoricalData] = useState<any>(null);
   const [indicatorsData, setIndicatorsData] = useState<any>(null);
+  
   const [loading, setLoading] = useState(true);
   const [loadingCharts, setLoadingCharts] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   
   // Opciones para el selector de período de indicadores
   const indicatorPeriodOptions = [
@@ -248,6 +266,78 @@ export default function StationDetailPage() {
 
   const monthToDateFormat = (monthValue: string) => {
     return `2000-${monthValue}`;
+  };
+
+  // Función para filtrar datos climáticos en el cliente
+  const filterClimateData = (data: any, startDate: string, endDate: string, period: string) => {
+    if (!data) return null;
+    
+    const filtered: any = {};
+    
+    // Para climatología, filtrar por mes
+    if (period === "climatology") {
+      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const startMonth = parseInt(startDate.split('-')[1]);
+      const endMonth = parseInt(endDate.split('-')[1]);
+      
+      Object.keys(data).forEach(key => {
+        const dates = data[key].dates;
+        const values = data[key].values;
+        
+        const filteredIndices = dates
+          .map((date: string, index: number) => ({ date, index, monthIndex: monthNames.indexOf(date) + 1 }))
+          .filter(({ monthIndex }: { monthIndex: number }) => 
+            monthIndex >= startMonth && monthIndex <= endMonth
+          );
+        
+        filtered[key] = {
+          dates: filteredIndices.map(({ date }: { date: string }) => date),
+          values: filteredIndices.map(({ index }: { index: number }) => values[index])
+        };
+      });
+    } else {
+      // Para daily y monthly, filtrar por fecha
+      Object.keys(data).forEach(key => {
+        const dates = data[key].dates;
+        const values = data[key].values;
+        
+        const filteredIndices = dates
+          .map((date: string, index: number) => ({ date, index }))
+          .filter(({ date }: { date: string }) => date >= startDate && date <= endDate);
+        
+        filtered[key] = {
+          dates: filteredIndices.map(({ date }: { date: string }) => date),
+          values: filteredIndices.map(({ index }: { index: number }) => values[index])
+        };
+      });
+    }
+    
+    return filtered;
+  };
+
+  // Función para filtrar datos de indicadores en el cliente
+  const filterIndicatorsData = (data: any, startDate: string, endDate: string) => {
+    if (!data) return null;
+    
+    const filtered: any = {};
+    Object.keys(data).forEach(key => {
+      const indicator = data[key];
+      const dates = indicator.dates;
+      const values = indicator.values;
+      
+      const filteredIndices = dates
+        .map((date: string, index: number) => ({ date, index }))
+        .filter(({ date }: { date: string }) => date >= startDate && date <= endDate);
+      
+      filtered[key] = {
+        name: indicator.name,
+        unit: indicator.unit,
+        dates: filteredIndices.map(({ date }: { date: string }) => date),
+        values: filteredIndices.map(({ index }: { index: number }) => values[index])
+      };
+    });
+    
+    return filtered;
   };
 
  
@@ -275,11 +365,12 @@ export default function StationDetailPage() {
   useEffect(() => {
     const fetchDates = async () => {
       try {
-        const dates = await monitoryService.getStationDates(id, timePeriod, false);
-        setDataClimaticDates(dates);
+  const dates = await monitoryService.getStationDates(id, timePeriod, false);
+  // Anotar el período para el que se obtuvieron estas fechas
+  setDataClimaticDates({ ...dates, _period: timePeriod });
         
-        const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
-        setIndicatorsDates(datesIndicators);
+  const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
+  setIndicatorsDates({ ...datesIndicators, _period: timePeriodIndicators });
 
         // Obtener la fecha mínima y máxima entre ambos objetos
         if (dates.minDate && dates.maxDate && datesIndicators.minDate && datesIndicators.maxDate) {
@@ -288,7 +379,7 @@ export default function StationDetailPage() {
           setStationDates({ minDate, maxDate });
         }
 
-        // Inicializar filtros para datos climáticos SOLO si cambia el período
+        // SIEMPRE resetear filtros cuando cambia el período
         if (timePeriod === "climatology") {
           const start = dateToMonthFormat(dates.minDate || "2000-01");
           const end = dateToMonthFormat("2000-12");
@@ -299,7 +390,7 @@ export default function StationDetailPage() {
           setFilterDatesClimatic({ start, end });
         }
         
-        // Inicializar filtros para indicadores
+        // Resetear filtros de indicadores cuando cambia el período
         setFilterDatesIndicators({ 
           start: datesIndicators.minDate || "", 
           end: datesIndicators.maxDate || "" 
@@ -314,59 +405,174 @@ export default function StationDetailPage() {
     }
   }, [id, timePeriod, timePeriodIndicators]);
 
-  // Efecto para cargar datos climáticos cuando cambian los filtros
+  // Al cambiar el período climático, limpiar de inmediato los datos para evitar parpadeo de gráficos anteriores
+  useEffect(() => {
+    setLoadingCharts(true);
+    setClimateHistoricalData(null);
+    setClimateHistoricalDataFull(null);
+  }, [timePeriod]);
+
+  // Al cambiar el período de indicadores, limpiar de inmediato los datos mostrados para evitar parpadeo
+  useEffect(() => {
+    setIndicatorsData(null);
+    setIndicatorsDataFull(null);
+  }, [timePeriodIndicators]);
+
+  // Efecto para cargar datos climáticos COMPLETOS cuando cambian las fechas calculadas para el período actual
   useEffect(() => {
     const fetchClimateData = async () => {
       try {
-        // Solo cargar si tenemos fechas válidas
-        if (!filterDatesClimatic.start || !filterDatesClimatic.end) {
-          console.log('Esperando fechas válidas para datos climáticos...');
+        if (!DataClimaticDates?.minDate || !DataClimaticDates?.maxDate) {
+          return;
+        }
+        // Evitar llamadas con fechas de un período distinto al seleccionado
+        if (DataClimaticDates?._period !== timePeriod) {
           return;
         }
         
         setLoadingCharts(true);
-        console.log('Cargando datos climáticos:', { id, timePeriod, start: filterDatesClimatic.start, end: filterDatesClimatic.end });
         
         const climateHistorical = await monitoryService.getClimateHistorical(
           id, 
           timePeriod, 
-          filterDatesClimatic.start, 
-          filterDatesClimatic.end
+          DataClimaticDates.minDate, 
+          DataClimaticDates.maxDate
         );
-        setClimateHistoricalData(climateHistorical);
+        setClimateHistoricalDataFull(climateHistorical);
       } catch (err) {
         console.error("Error loading climate data:", err);
-        setClimateHistoricalData(null);
+        setClimateHistoricalDataFull(null);
       } finally {
         setLoadingCharts(false);
       }
     };
 
     fetchClimateData();
-  }, [id, timePeriod, filterDatesClimatic.start, filterDatesClimatic.end]);
+  }, [id, DataClimaticDates?.minDate, DataClimaticDates?.maxDate, DataClimaticDates?._period, timePeriod]);
 
-  // Efecto para cargar datos de indicadores cuando cambian los filtros
+  // Efecto para filtrar datos climáticos cuando cambian los filtros
+  useEffect(() => {
+    if (!climateHistoricalDataFull || !filterDatesClimatic.start || !filterDatesClimatic.end) {
+      setClimateHistoricalData(null);
+      return;
+    }
+    
+    const filtered = filterClimateData(
+      climateHistoricalDataFull,
+      filterDatesClimatic.start,
+      filterDatesClimatic.end,
+      timePeriod
+    );
+    setClimateHistoricalData(filtered);
+  }, [climateHistoricalDataFull, filterDatesClimatic.start, filterDatesClimatic.end, timePeriod]);
+
+  // Efecto para cargar datos de indicadores COMPLETOS cuando cambian las fechas calculadas para el período actual
   useEffect(() => {
     const fetchIndicatorsData = async () => {
       try {
-        if (!filterDatesIndicators.start || !filterDatesIndicators.end) return;
+        if (!IndicatorsDates?.minDate || !IndicatorsDates?.maxDate) return;
+        if (IndicatorsDates?._period !== timePeriodIndicators) return;
         
         const indicators = await monitoryService.getIndicatorsHistorical(
           id,
           timePeriodIndicators,
-          filterDatesIndicators.start,
-          filterDatesIndicators.end
+          IndicatorsDates.minDate,
+          IndicatorsDates.maxDate
         );
-        setIndicatorsData(indicators);
+        setIndicatorsDataFull(indicators);
       } catch (err) {
         console.error("Error loading indicators data:", err);
-        setIndicatorsData(null);
+        setIndicatorsDataFull(null);
       }
     };
 
     fetchIndicatorsData();
-  }, [id, timePeriodIndicators, filterDatesIndicators]);
+  }, [id, IndicatorsDates?.minDate, IndicatorsDates?.maxDate, IndicatorsDates?._period, timePeriodIndicators]);
 
+  // Efecto para filtrar datos de indicadores cuando cambian los filtros
+  useEffect(() => {
+    if (!indicatorsDataFull || !filterDatesIndicators.start || !filterDatesIndicators.end) {
+      setIndicatorsData(null);
+      return;
+    }
+    
+    const filtered = filterIndicatorsData(
+      indicatorsDataFull,
+      filterDatesIndicators.start,
+      filterDatesIndicators.end
+    );
+    setIndicatorsData(filtered);
+  }, [indicatorsDataFull, filterDatesIndicators.start, filterDatesIndicators.end]);
+
+  // Formatear fechas (calcular antes de useEffect/useMemo)
+  const startDate = stationDates?.minDate;
+  const endDate = stationDates?.maxDate;
+
+  // Generar y descargar PDF bajo demanda cuando el usuario hace clic
+  const handleDownloadPDF = async () => {
+    if (!station || !hasDataForPDF || pdfLoading) return;
+    try {
+      setPdfLoading(true);
+      const { pdf } = await import('@react-pdf/renderer');
+      const element = (
+        <ReportDocument
+          station={station}
+          climateHistoricalData={climateHistoricalData}
+          indicatorsData={indicatorsData}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      );
+      const blob = await pdf(element).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = station?.name?.toString().replace(/[^a-zA-Z0-9_\-]/g, '_') || 'desconocida';
+      link.href = url;
+      link.download = `reporte_estacion_${safeName}_${timePeriod}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+      console.error('Error generating PDF:', e);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  // Verificar si hay datos suficientes para mostrar el botón PDF
+  const hasDataForPDF = useMemo(() => {
+    // Verificación exhaustiva de todos los datos necesarios
+    if (!station || !startDate || !endDate) return false;
+    
+    // Verificar que climateHistoricalData existe y tiene datos válidos
+    if (!climateHistoricalData || typeof climateHistoricalData !== 'object') return false;
+    const climateKeys = Object.keys(climateHistoricalData);
+    if (climateKeys.length === 0) return false;
+    
+    // Verificar que al menos una variable climática tiene datos
+    const hasClimateData = climateKeys.some(key => {
+      const item = climateHistoricalData[key];
+      return item && Array.isArray(item.dates) && Array.isArray(item.values) && item.dates.length > 0;
+    });
+    if (!hasClimateData) return false;
+    
+    // Verificar que indicatorsData existe y tiene datos válidos
+    if (!indicatorsData || typeof indicatorsData !== 'object') return false;
+    const indicatorKeys = Object.keys(indicatorsData);
+    if (indicatorKeys.length === 0) return false;
+    
+    // Verificar que al menos un indicador tiene datos
+    const hasIndicatorData = indicatorKeys.some(key => {
+      const item = indicatorsData[key];
+      return item && Array.isArray(item.dates) && Array.isArray(item.values) && item.dates.length > 0;
+    });
+    if (!hasIndicatorData) return false;
+    
+    return true;
+  }, [station, climateHistoricalData, indicatorsData, startDate, endDate]);
+
+  // Early returns DESPUÉS de todos los hooks
   if (loading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
@@ -410,10 +616,6 @@ export default function StationDetailPage() {
     );
   }
 
-  // Formatear fechas
-  const startDate = stationDates?.minDate;
-  const endDate = stationDates?.maxDate;
-
   function getIndicatorColor(indicatorKey: string): string {
     const colorMap: Record<string, string> = {
       "cold_stress": "#2196F3",
@@ -427,9 +629,9 @@ export default function StationDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-4">
         {/* Encabezado */}
-        <header className="bg-white max-w-6xl mx-auto p-6 mb-6 shadow-sm" >
+        <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-6">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-800">Monitoreo</h1>
             <h2 className="text-2xl font-bold text-gray-800 mt-1">
@@ -475,7 +677,7 @@ export default function StationDetailPage() {
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-6">
+        <main className="max-w-6xl mx-auto mt-4">
           {/* Segunda card - Gráficas y datos */}
           <div>
             <div className="bg-white rounded-lg shadow-sm">
@@ -627,6 +829,7 @@ export default function StationDetailPage() {
                       ) : (
                         <>
                         <ClimateChart 
+                          key={`climate-tmax-${timePeriod}`}
                           title="Temperatura máxima" 
                           unit="°C"
                           datasets={[
@@ -640,6 +843,7 @@ export default function StationDetailPage() {
                           period={timePeriod}
                         />
                         <ClimateChart 
+                          key={`climate-prec-${timePeriod}`}
                           title="Precipitación" 
                           unit="mm"
                           datasets={[
@@ -654,6 +858,7 @@ export default function StationDetailPage() {
                           chartType="bar"
                         />
                         <ClimateChart 
+                          key={`climate-tmin-${timePeriod}`}
                           title="Temperatura mínima" 
                           unit="°C"
                           datasets={[
@@ -667,6 +872,7 @@ export default function StationDetailPage() {
                           period={timePeriod}
                         />
                         <ClimateChart 
+                          key={`climate-rad-${timePeriod}`}
                           title="Radiación solar" 
                           unit="MJ/m²"
                           datasets={[
@@ -777,22 +983,25 @@ export default function StationDetailPage() {
                       {/* Gráficas de indicadores climáticos */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {indicatorsData && Object.keys(indicatorsData).length > 0 ? (
-                          Object.entries(indicatorsData).map(([key, indicator]) => (
-                            <ClimateChart
-                              key={key}
-                              title={indicator.name}
-                              unit={indicator.unit}
-                              datasets={[
-                                { 
-                                  label: "Datos estación", 
-                                  color: getIndicatorColor(key),
-                                  data: indicator.values,
-                                  dates: indicator.dates
-                                }
-                              ]}
-                              period={timePeriodIndicators}
-                            />
-                          ))
+                          Object.entries(indicatorsData).map(([key, indicator]) => {
+                            const typedIndicator = indicator as { name: string; unit: string; dates: string[]; values: number[] };
+                            return (
+                              <ClimateChart
+                                key={key}
+                                title={typedIndicator.name}
+                                unit={typedIndicator.unit}
+                                datasets={[
+                                  { 
+                                    label: "Datos estación", 
+                                    color: getIndicatorColor(key),
+                                    data: typedIndicator.values,
+                                    dates: typedIndicator.dates
+                                  }
+                                ]}
+                                period={timePeriodIndicators}
+                              />
+                            );
+                          })
                         ) : (
                           <div className="col-span-2 flex items-center justify-center">
                             <p className="text-gray-500">No hay datos disponibles</p>
@@ -809,35 +1018,27 @@ export default function StationDetailPage() {
         </main>
 
       
-              {/* Botón de descarga */}
-              <div className="max-w-6xl mx-auto px-6 mt-6">
-                <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center">
-                  <PDFDownloadLink
-                    document={
-                      <ReportDocument 
-                        station={station}
-                        climateHistoricalData={climateHistoricalData}
-                        indicatorsData={indicatorsData}
-                        startDate={startDate}
-                        endDate={endDate}
-                      />
-                    }
-                    fileName={`reporte_estacion_${station?.name || "desconocida"}.pdf`}
-                    className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {({ blob, url, loading, error }) =>
-                      loading ? (
+              {/* Botón de descarga - Generar PDF solo al hacer clic */}
+              {hasDataForPDF && (
+                <div className="max-w-6xl mx-auto mt-2">
+                  <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={!hasDataForPDF || pdfLoading}
+                      className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {pdfLoading ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
-                          ...
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></span>
+                          Generando PDF...
                         </>
                       ) : (
-                        "Descargar datos de gráficas (PDF)"
-                      )
-                    }
-                  </PDFDownloadLink>
+                        'Descargar datos de gráficas (PDF)'
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
     </div>
   );
 }
