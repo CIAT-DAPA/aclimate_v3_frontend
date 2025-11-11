@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
@@ -35,187 +34,6 @@ const MONTHS = [
   { value: "11", label: "Noviembre" },
   { value: "12", label: "Diciembre" },
 ];
-
-
-// Estilos para el PDF
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-  },
-  header: {
-    marginBottom: 20,
-    borderBottom: '1pt solid #E5E7EB',
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#1F2937',
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1F2937',
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 5,
-    color: '#6B7280',
-  },
-  section: {
-    marginBottom: 15,
-  },
-  chartContainer: {
-    marginBottom: 15,
-    border: '1pt solid #E5E7EB',
-    padding: 10,
-    borderRadius: 4,
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#1F2937',
-  },
-  table: {
-    width: 'auto',
-    borderStyle: 'solid' as const,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    marginBottom: 15,
-  },
-  tableRow: {
-    margin: 'auto' as const,
-    flexDirection: 'row' as const,
-  },
-  tableCol: {
-    width: '25%',
-    borderStyle: 'solid' as const,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-  },
-  tableCell: {
-    margin: 5,
-    fontSize: 10,
-  },
-});
-
-// Tipos para el PDF
-interface ReportDocumentProps {
-  station: Station | null;
-  climateHistoricalData: Record<string, { dates: string[]; values: number[] }> | null;
-  indicatorsData: Record<string, { name: string; unit: string; dates: string[]; values: number[] }> | null;
-  startDate: string | undefined;
-  endDate: string | undefined;
-}
-
-// Componente para el documento PDF
-const ReportDocument: React.FC<ReportDocumentProps> = ({ station, climateHistoricalData, indicatorsData, startDate, endDate }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* Encabezado */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Monitoreo</Text>
-        <Text style={styles.subtitle}>Estación {station?.name || "Desconocida"}</Text>
-        
-        <Text style={styles.text}>
-          Ubicación: {station?.country_name || "N/A"}, {station?.admin1_name || "N/A"}, {station?.admin2_name || "N/A"}
-        </Text>
-        <Text style={styles.text}>
-          Latitud: {station?.latitude?.toFixed(6) || "N/A"}, Longitud: {station?.longitude?.toFixed(6) || "N/A"}
-        </Text>
-        <Text style={styles.text}>Fuente: {station?.source || "N/A"}</Text>
-        <Text style={styles.text}>
-          Período de datos: {startDate || "N/A"} - {endDate || "N/A"}
-        </Text>
-      </View>
-
-      {/* Descripción */}
-      <View style={styles.section}>
-        <Text style={styles.text}>
-          La estación meteorológica {station?.name || "Desconocida"} está ubicada en{" "}
-          {station?.admin2_name || "N/A"}, {station?.country_name || "N/A"} en la latitud{" "}
-          {station?.latitude?.toFixed(4) || "N/A"} y longitud{" "}
-          {station?.longitude?.toFixed(4) || "N/A"}, ha registrado datos desde el{" "}
-          {startDate || "N/A"} hasta el {endDate || "N/A"}, cubriendo variables clave para el monitoreo agroclimático.
-        </Text>
-      </View>
-
-      {/* Datos climáticos */}
-      {climateHistoricalData && Object.keys(climateHistoricalData).length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Datos Climáticos</Text>
-          
-          {Object.entries(climateHistoricalData).map(([key, data]) => (
-            <View key={key} style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>
-                {key === 'Tmax' ? 'Temperatura máxima' : 
-                 key === 'Tmin' ? 'Temperatura mínima' : 
-                 key === 'Prec' ? 'Precipitación' : 
-                 key === 'Rad' ? 'Radiación solar' : key} 
-                ({key === 'Tmax' || key === 'Tmin' ? '°C' : key === 'Prec' ? 'mm' : 'MJ/m²'})
-              </Text>
-              
-              {/* Tabla de datos */}
-              <View style={styles.table}>
-                <View style={styles.tableRow}>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>Fecha</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>Valor</Text></View>
-                </View>
-                
-                {data.dates && data.dates.slice(0, 50).map((date, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <View style={styles.tableCol}><Text style={styles.tableCell}>{date}</Text></View>
-                    <View style={styles.tableCol}><Text style={styles.tableCell}>{data.values[index]}</Text></View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Indicadores climáticos */}
-      {indicatorsData && Object.keys(indicatorsData).length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Indicadores Climáticos</Text>
-          
-          {Object.entries(indicatorsData).map(([key, indicator]) => (
-            <View key={key} style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>
-                {indicator.name} ({indicator.unit})
-              </Text>
-              
-              {/* Tabla de datos */}
-              <View style={styles.table}>
-                <View style={styles.tableRow}>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>Fecha</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>Valor</Text></View>
-                </View>
-                
-                {indicator.dates && indicator.dates.slice(0, 50).map((date, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <View style={styles.tableCol}><Text style={styles.tableCell}>{date}</Text></View>
-                    <View style={styles.tableCol}><Text style={styles.tableCell}>{indicator.values[index]}</Text></View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </Page>
-  </Document>
-);
-
 
 export default function StationDetailPage() {
   const params = useParams();
@@ -513,28 +331,11 @@ export default function StationDetailPage() {
     if (!station || !hasDataForPDF || pdfLoading) return;
     try {
       setPdfLoading(true);
-      const { pdf } = await import('@react-pdf/renderer');
-      const element = (
-        <ReportDocument
-          station={station}
-          climateHistoricalData={climateHistoricalData}
-          indicatorsData={indicatorsData}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      );
-      const blob = await pdf(element).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const safeName = station?.name?.toString().replace(/[^a-zA-Z0-9_\-]/g, '_') || 'desconocida';
-      link.href = url;
-      link.download = `reporte_estacion_${safeName}_${timePeriod}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      // Usar la funcionalidad nativa de impresión del navegador
+      // Esto abrirá el diálogo de impresión donde el usuario puede guardar como PDF
+      window.print();
     } catch (e) {
-      console.error('Error generating PDF:', e);
+      console.error('Error al abrir el diálogo de impresión:', e);
     } finally {
       setPdfLoading(false);
     }
@@ -630,6 +431,7 @@ export default function StationDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-4">
+
         {/* Encabezado */}
         <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-6">
           <div className="mb-6">
@@ -834,7 +636,7 @@ export default function StationDetailPage() {
                           unit="°C"
                           datasets={[
                             { 
-                              label: "Temperatura", 
+                              label: "Datos estación", 
                               color: "#4CAF50",
                               data: climateHistoricalData?.Tmax?.values || [],
                               dates: climateHistoricalData?.Tmax?.dates || []
@@ -848,7 +650,7 @@ export default function StationDetailPage() {
                           unit="mm"
                           datasets={[
                             { 
-                              label: "Precipitación", 
+                              label: "Datos estación", 
                               color: "#2196F3",
                               data: climateHistoricalData?.Prec?.values || [],
                               dates: climateHistoricalData?.Prec?.dates || []
@@ -863,7 +665,7 @@ export default function StationDetailPage() {
                           unit="°C"
                           datasets={[
                             { 
-                              label: "Temperatura", 
+                              label: "Datos estación", 
                               color: "#FF9800",
                               data: climateHistoricalData?.Tmin?.values || [],
                               dates: climateHistoricalData?.Tmin?.dates || []
@@ -877,7 +679,7 @@ export default function StationDetailPage() {
                           unit="MJ/m²"
                           datasets={[
                             { 
-                              label: "Radiación solar", 
+                              label: "Datos estación", 
                               color: "#F44336",
                               data: climateHistoricalData?.Rad?.values || [],
                               dates: climateHistoricalData?.Rad?.dates || []
@@ -1020,7 +822,7 @@ export default function StationDetailPage() {
       
               {/* Botón de descarga - Generar PDF solo al hacer clic */}
               {hasDataForPDF && (
-                <div className="max-w-6xl mx-auto mt-2">
+                <div className="max-w-6xl mx-auto mt-2 no-print">
                   <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center">
                     <button
                       onClick={handleDownloadPDF}
@@ -1033,7 +835,7 @@ export default function StationDetailPage() {
                           Generando PDF...
                         </>
                       ) : (
-                        'Descargar datos de gráficas (PDF)'
+                        'Descargar como PDF'
                       )}
                     </button>
                   </div>

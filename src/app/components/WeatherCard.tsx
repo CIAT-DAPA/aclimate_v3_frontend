@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Thermometer, CloudRain, Sun, Heart } from "lucide-react";
+import { MapPin, Thermometer, CloudRain, Sun, Star } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useEffect, useState } from "react";
@@ -121,7 +121,7 @@ const WeatherCard = () => {
     return (
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
-          <Heart className="mx-auto mb-4 text-amber-50" size={48} />
+          <Star className="mx-auto mb-4 text-amber-50" size={48} />
           <p className="text-lg font-medium">Inicia sesión para ver tus estaciones favoritas</p>
         </div>
       </div>
@@ -143,7 +143,7 @@ const WeatherCard = () => {
     return (
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
-          <Heart className="mx-auto mb-4 text-amber-50" size={48} />
+          <Star className="mx-auto mb-4 text-amber-50" size={48} />
           <p className="text-lg font-medium mb-2">No tienes estaciones favoritas</p>
           <Link 
             href="/locations" 
