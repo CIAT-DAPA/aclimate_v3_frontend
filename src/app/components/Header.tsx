@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } = useAuth();
-  const { countryId } = useCountry();
+  const { countryId, countryName } = useCountry();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -42,15 +42,17 @@ const Header = () => {
             width={32}
             height={32}
           />
-          <span className="text-xl font-normal text-amber-50">AClimate</span>
+          <span className="text-xl font-normal text-amber-50">AClimate {countryName}</span>
         </Link>
         <div className="flex gap-6">
-          <Link
-            href="/locations"
-            className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
-          >
-            Estaciones
-          </Link>
+          {countryName?.toLowerCase() !== "honduras" && (
+            <Link
+              href="/locations"
+              className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
+            >
+              Estaciones
+            </Link>
+          )}
           <Link
             href={`/spatial/${countryId || '1'}`}
             className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
@@ -58,68 +60,70 @@ const Header = () => {
             Datos espaciales
           </Link>
           {/* Botón de login/usuario */}
-          <div className="flex items-center min-w-[40px] min-h-[40px]">
-            {!isMounted ? (
-              // Estado inicial para SSR
-              <div className="w-10 h-10"></div>
-            ) : (
-              <>
-                {loading && (
-                  <div className="animate-spin h-4 w-4 border-2 border-[#ffaf68] border-t-transparent rounded-full"></div>
-                )}
-                
-                {!loading && !authenticated && (
-                  <button 
-                    onClick={login} 
-                    className="flex items-center justify-between p-2 font-medium text-amber-50 hover:text-amber-100 transition-colors"
-                  >
-                    Login
-                  </button>
-                )}
-
-                {!loading && authenticated && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="flex items-center justify-center w-10 h-10 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full hover:bg-[#bc6c25]/90 transition-colors cursor-pointer"
-                      title={userInfo?.preferred_username || userInfo?.name || 'User'}
+          {countryName?.toLowerCase() !== "honduras" && (
+            <div className="flex items-center min-w-[40px] min-h-[40px]">
+              {!isMounted ? (
+                // Estado inicial para SSR
+                <div className="w-10 h-10"></div>
+              ) : (
+                <>
+                  {loading && (
+                    <div className="animate-spin h-4 w-4 border-2 border-[#ffaf68] border-t-transparent rounded-full"></div>
+                  )}
+                  
+                  {!loading && !authenticated && (
+                    <button 
+                      onClick={login} 
+                      className="flex items-center justify-between p-2 font-medium text-amber-50 hover:text-amber-100 transition-colors"
                     >
-                      {getInitials(userInfo?.given_name || '', userInfo?.family_name || '')}
+                      Login
                     </button>
+                  )}
 
-                    {showUserMenu && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[1001]">
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-sm font-medium text-gray-900">
-                            {userInfo?.name || userInfo?.preferred_username}
-                          </p>
-                          <p className="text-xs text-gray-500">{userInfo?.email}</p>
+                  {!loading && authenticated && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="flex items-center justify-center w-10 h-10 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full hover:bg-[#bc6c25]/90 transition-colors cursor-pointer"
+                        title={userInfo?.preferred_username || userInfo?.name || 'User'}
+                      >
+                        {getInitials(userInfo?.given_name || '', userInfo?.family_name || '')}
+                      </button>
+
+                      {showUserMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[1001]">
+                          <div className="px-4 py-2 border-b border-gray-100">
+                            <p className="text-sm font-medium text-gray-900">
+                              {userInfo?.name || userInfo?.preferred_username}
+                            </p>
+                            <p className="text-xs text-gray-500">{userInfo?.email}</p>
+                          </div>
+                          <Link
+                            href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-2" />
+                            Mi perfil
+                          </Link>
+                          <button
+                            onClick={() => {
+                              logout();
+                              setShowUserMenu(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                          >
+                            <FontAwesomeIcon icon={faArrowRightFromBracket} className="h-4 w-4 mr-2" />
+                            Logout
+                          </button>
                         </div>
-                        <Link
-                          href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-2" />
-                          Mi perfil
-                        </Link>
-                        <button
-                          onClick={() => {
-                            logout();
-                            setShowUserMenu(false);
-                          }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-                        >
-                          <FontAwesomeIcon icon={faArrowRightFromBracket} className="h-4 w-4 mr-2" />
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </nav>
     </header>

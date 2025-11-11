@@ -8,9 +8,12 @@ import {
   Popup,
   ZoomControl,
   WMSTileLayer,
-  LayersControl
+  LayersControl,
+  useMapEvents,
+  useMap
 } from "react-leaflet";
 import { Icon, LatLngExpression } from "leaflet";
+import L from "leaflet";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 //import "leaflet/dist/leaflet.css";
@@ -63,6 +66,8 @@ interface WMSLayer {
   styles?: string;
   time?: string;
   cql_filter?: string;
+  title?: string;
+  unit?: string;
 }
 
 interface MapComponentProps {
@@ -202,6 +207,122 @@ const MapComponent = ({
     }
   };
 
+  // Componente para manejar clics en el mapa (solo para datos espaciales)
+  const MapClickHandler = () => {
+    const map = useMap();
+    
+    useMapEvents({
+      click: async (e) => {
+        // Solo procesar clics si hay capas WMS y no estamos en modo de estaciones
+        if (wmsLayers.length === 0 || showMarkers) {
+          return;
+        }
+
+        const { lat, lng } = e.latlng;
+
+        // Crear contenido HTML para el popup con estado de carga
+        const popupContent = document.createElement('div');
+        popupContent.className = 'p-2';
+        popupContent.innerHTML = `
+          <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
+          <div class="text-xs text-gray-600 mb-2">
+            <p>Lat: ${lat.toFixed(5)}</p>
+            <p>Lng: ${lng.toFixed(5)}</p>
+          </div>
+          <p class="text-sm text-gray-500">Cargando...</p>
+        `;
+
+        // Mostrar popup inmediatamente
+        const popup = L.popup()
+          .setLatLng([lat, lng])
+          .setContent(popupContent)
+          .openOn(map);
+
+        // Obtener el valor del píxel
+        try {
+          const layer = wmsLayers[0];
+          const bounds = map.getBounds();
+          const size = map.getSize();
+          
+          // Construir la URL de GetFeatureInfo
+          const point = map.latLngToContainerPoint(e.latlng);
+          
+          const params = new URLSearchParams({
+            SERVICE: 'WMS',
+            VERSION: layer.version || '1.3.0',
+            REQUEST: 'GetFeatureInfo',
+            FORMAT: 'image/png',
+            TRANSPARENT: 'true',
+            QUERY_LAYERS: layer.layers,
+            LAYERS: layer.layers,
+            INFO_FORMAT: 'application/json',
+            I: Math.floor(point.x).toString(),
+            J: Math.floor(point.y).toString(),
+            WIDTH: size.x.toString(),
+            HEIGHT: size.y.toString(),
+            CRS: 'EPSG:4326',
+            BBOX: `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`,
+          });
+
+          // Agregar parámetros adicionales si existen
+          if (layer.time) {
+            params.append('TIME', layer.time);
+          }
+          if (layer.styles) {
+            params.append('STYLES', layer.styles);
+          }
+
+          const url = `${layer.url}?${params.toString()}`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          // Extraer el valor del píxel
+          let pixelValue = 'Sin datos';
+          if (data.features && data.features.length > 0) {
+            const properties = data.features[0].properties;
+            // Buscar la propiedad que contiene el valor
+            const valueKey = Object.keys(properties).find(key => 
+              key.toLowerCase().includes('gray') || 
+              key.toLowerCase().includes('value') ||
+              key === 'GRAY_INDEX'
+            );
+            
+            if (valueKey && properties[valueKey] !== null && properties[valueKey] !== undefined) {
+              pixelValue = Number(properties[valueKey]).toFixed(2);
+            }
+          }
+
+          // Determinar la unidad a mostrar
+          const unit = layer.unit || '';
+
+          // Actualizar el contenido del popup
+          popupContent.innerHTML = `
+            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
+            <div class="text-xs text-gray-600 mb-2">
+              <p>Lat: ${lat.toFixed(5)}</p>
+              <p>Lng: ${lng.toFixed(5)}</p>
+            </div>
+            <p class="text-sm font-medium text-gray-800">
+              Valor: ${pixelValue}${unit ? ' ' + unit : ''}
+            </p>
+          `;
+        } catch (error) {
+          console.error('Error al obtener información del píxel:', error);
+          popupContent.innerHTML = `
+            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
+            <div class="text-xs text-gray-600 mb-2">
+              <p>Lat: ${lat.toFixed(5)}</p>
+              <p>Lng: ${lng.toFixed(5)}</p>
+            </div>
+            <p class="text-sm text-red-600">Error al cargar datos</p>
+          `;
+        }
+      }
+    });
+    
+    return null;
+  };
+
    // Función para formatear los datos de la estación para mostrar en el popup
   const renderStationData = (stationId: string) => {
     const data = stationData[stationId];
@@ -292,6 +413,7 @@ const MapComponent = ({
         className="h-full w-full"
         zoomControl={false}
         ref={mapRef}
+        style={{ cursor: wmsLayers.length > 0 && !showMarkers ? 'crosshair' : 'grab' }}
       >
         <TileLayer
           attribution={rasterLayers[baseLayerIndex].attribution}
@@ -313,9 +435,28 @@ const MapComponent = ({
           </>
         )}
 
+        {/* Capas WMS climáticas (raster) - se dibujan primero */}
+        {wmsLayers.length > 0 && wmsLayers.map((layer, index) => (
+          <WMSTileLayer
+            key={`wms-${index}`}
+            url={layer.url}
+            layers={layer.layers}
+            format={layer.format || "image/png"}
+            transparent={layer.transparent !== false}
+            version={layer.version || "1.3.0"}
+            opacity={layer.opacity || 0.7}
+            styles={layer.styles || ""}
+            attribution={layer.attribution || ""}
+            params={{
+              ...(layer.time && { time: layer.time }),
+              ...(layer.cql_filter && { cql_filter: layer.cql_filter })
+            } as any}
+          />
+        ))}
+
+        {/* Control de capas con la capa administrativa */}
         {wmsLayers.length > 0 && (
           <LayersControl position="topright">
-            {/* Capa administrativa de Honduras */}
             {showAdminLayer && (
               <LayersControl.Overlay 
                 name="Límites Departamentales de Honduras" 
@@ -327,14 +468,18 @@ const MapComponent = ({
                   format="image/png"
                   transparent={true}
                   version="1.1.1"
-                  opacity={0.5}
+                  opacity={0.8}
                   styles=""
                   attribution=""
+                  zIndex={1000}
                 />
               </LayersControl.Overlay>
             )}
           </LayersControl>
         )}
+
+        {/* Manejador de clics para datos espaciales */}
+        {wmsLayers.length > 0 && !showMarkers && <MapClickHandler />}
 
         {showTimeline && wmsLayers.length > 0 && (
           <TimelineController
@@ -370,10 +515,10 @@ const MapComponent = ({
                   <button
                     onClick={(e) => toggleFavorite(station.id.toString(), e)}
                     disabled={loadingFavorites.has(station.id.toString())}
-                    className={`p-1 rounded-full ${
+                    className={`p-1 ${
                       favorites.has(station.id.toString()) 
-                        ? "text-red-500 bg-red-50" 
-                        : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        ? "text-yellow-500" 
+                        : "text-gray-400 hover:text-yellow-500"
                     } transition-colors ${
                       loadingFavorites.has(station.id.toString()) 
                         ? "opacity-50 cursor-not-allowed" 
@@ -392,7 +537,7 @@ const MapComponent = ({
                         stroke="currentColor"
                         strokeWidth="1.5"
                       >
-                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     )}
                   </button>
@@ -422,7 +567,7 @@ const MapComponent = ({
                     disabled={loadingFavorites.has(station.id.toString()) || !authenticated}
                     className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
                       favorites.has(station.id.toString())
-                        ? "text-red-600 border-red-300 bg-red-50 hover:bg-red-100"
+                        ? "text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100"
                         : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
                     } ${
                       loadingFavorites.has(station.id.toString()) || !authenticated
@@ -433,8 +578,15 @@ const MapComponent = ({
                     {loadingFavorites.has(station.id.toString()) ? (
                       <div className="animate-spin h-4 w-4 mr-1 border-2 border-current border-t-transparent rounded-full"></div>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-4 w-4 mr-1" 
+                        viewBox="0 0 20 20" 
+                        fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     )}
                     {!authenticated 

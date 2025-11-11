@@ -260,7 +260,7 @@ export default function SpatialDataPage() {
                         const tooltipId = `tooltip-${layer.variable}`;
 
                         return (
-                          <div key={layer.name} className="h-80 flex flex-col">
+                          <div key={layer.name} className="h-[600px] flex flex-col">
                             <div className="flex items-center gap-2 mb-4">
                               
                               <h3 className="font-semibold text-gray-800 text-lg">
@@ -298,7 +298,7 @@ export default function SpatialDataPage() {
                             </div>
 
                             {layer.available ? (
-                              <div className="h-96 w-full rounded-lg overflow-hidden">
+                              <div className="h-[550px] w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   key={layer.name}
                                   center={currentCountry.center}
@@ -307,7 +307,9 @@ export default function SpatialDataPage() {
                                     url: wmsBaseUrl,
                                     layers: layer.name,
                                     opacity: 0.7,
-                                    transparent: true
+                                    transparent: true,
+                                    title: layer.title,
+                                    unit: unidad
                                   }]}
                                   showMarkers={false}
                                   showZoomControl={true}
@@ -318,7 +320,7 @@ export default function SpatialDataPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="h-96 w-full rounded-lg bg-gray-100 flex items-center justify-center">
+                              <div className="h-[550px] w-full rounded-lg bg-gray-100 flex items-center justify-center">
                                 <div className="text-center">
                                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
