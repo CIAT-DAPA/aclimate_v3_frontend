@@ -1,10 +1,34 @@
 import axios from "axios";
+import { API_URL } from "@/app/config";
 
-interface LayerInfo {
+export interface LayerInfo {
   name: string;
   title: string;
   variable: string;
   available: boolean;
+}
+
+export interface IndicatorCategory {
+  id: number;
+  name: string;
+  description: string;
+  enable: boolean;
+  registered_at: string;
+  updated_at: string;
+}
+
+export interface Indicator {
+  id: number;
+  name: string;
+  short_name: string;
+  unit: string;
+  type: string;
+  temporality: string;
+  indicator_category_id: number;
+  description: string;
+  enable: boolean;
+  registered_at: string;
+  updated_at: string;
 }
 
 export const spatialService = {
@@ -142,6 +166,44 @@ export const spatialService = {
                 variable: variable,
                 available: false
             }));
+        }
+    },
+
+    /**
+     * Obtiene las categorías de indicadores para un país específico
+     * @param countryId - ID del país
+     * @returns Array de categorías de indicadores
+     */
+    getIndicatorCategories: async (countryId: string): Promise<IndicatorCategory[]> => {
+        try {
+            const url = `${API_URL}/indicator-category-mng/by-country?country_id=${countryId}`;
+            const response = await axios.get(url);
+            return response.data.filter((category: IndicatorCategory) => category.enable);
+        } catch (error) {
+            console.error("Error fetching indicator categories:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Obtiene los indicadores climáticos filtrados por país, temporalidad y categoría
+     * @param countryId - ID del país
+     * @param temporality - Período de tiempo (daily, monthly, annual, etc.)
+     * @param categoryId - ID de la categoría de indicador
+     * @returns Array de indicadores
+     */
+    getIndicators: async (
+        countryId: string,
+        temporality: string,
+        categoryId: number
+    ): Promise<Indicator[]> => {
+        try {
+            const url = `${API_URL}/indicator-mng/by-country?country_id=${countryId}&temporality=${temporality}&category_id=${categoryId}&type=CLIMATE`;
+            const response = await axios.get(url);
+            return response.data.filter((indicator: Indicator) => indicator.enable);
+        } catch (error) {
+            console.error("Error fetching indicators:", error);
+            return [];
         }
     }
 }

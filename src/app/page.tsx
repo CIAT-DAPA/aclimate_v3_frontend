@@ -3,7 +3,7 @@ import WeatherCard from "./components/WeatherCard";
 import FeatureCard from "./components/FeatureCard";
 import { Map, LayoutGrid, Newspaper } from "lucide-react";
 import Link from "next/link";
-import { COUNTRY_NAME } from "./config";
+import { COUNTRY_NAME, SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "./config";
 
 export default function Home() {
   return (
@@ -31,14 +31,16 @@ export default function Home() {
                   climátologicas con bases de datos satelitales. Informate sobre
                   como ha sido el clima en las regiones.
                 </p>
-                <div className="flex flex-col md:flex-row gap-4 text-center">
-                  <Link
-                    href="/locations"
-                    className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
-                  >
-                    Explora el clima
-                  </Link>
-                </div>
+                {SHOW_STATIONS_MODULE && (
+                  <div className="flex flex-col md:flex-row gap-4 text-center">
+                    <Link
+                      href="/locations"
+                      className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
+                    >
+                      Explora el clima
+                    </Link>
+                  </div>
+                )}
               </div>
               <WeatherCard />
             </div>
