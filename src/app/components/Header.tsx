@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
+import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
 import { useState, useEffect } from "react";
 import { faArrowRightFromBracket, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -45,7 +46,7 @@ const Header = () => {
           <span className="text-xl font-normal text-amber-50">AClimate {countryName}</span>
         </Link>
         <div className="flex gap-6">
-          {countryName?.toLowerCase() !== "honduras" && (
+          {SHOW_STATIONS_MODULE && (
             <Link
               href="/locations"
               className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
@@ -60,7 +61,7 @@ const Header = () => {
             Datos espaciales
           </Link>
           {/* Botón de login/usuario */}
-          {countryName?.toLowerCase() !== "honduras" && (
+          {SHOW_USERS_MODULE && (
             <div className="flex items-center min-w-[40px] min-h-[40px]">
               {!isMounted ? (
                 // Estado inicial para SSR

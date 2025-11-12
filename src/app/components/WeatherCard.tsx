@@ -3,6 +3,7 @@
 import { MapPin, Thermometer, CloudRain, Sun, Star } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useCountry } from "@/app/contexts/CountryContext";
+import { SHOW_USERS_MODULE } from "@/app/config";
 import { useEffect, useState } from "react";
 import { getUserStations } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
@@ -116,6 +117,11 @@ const WeatherCard = () => {
       day: '2-digit' 
     });
   };
+
+  // Si el módulo de usuarios está deshabilitado, no mostrar nada
+  if (!SHOW_USERS_MODULE) {
+    return null;
+  }
 
   if (!authenticated) {
     return (
