@@ -5,7 +5,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
 import { useCountry } from "@/app/contexts/CountryContext";
-import { spatialService } from "@/app/services/spatialService";
+import { spatialService, IndicatorCategory, Indicator } from "@/app/services/spatialService";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -46,18 +46,39 @@ const countryCodeMap: Record<string, string> = {
   "2": "hn"  // Honduras
 };
 
+// Opciones de período para indicadores
+const indicatorPeriodOptions = [
+  { value: "daily", label: "Diario" },
+  { value: "monthly", label: "Mensual" },
+  { value: "annual", label: "Anual" },
+  { value: "seasonal", label: "Estacional" },
+  { value: "decadal", label: "Decadal" },
+  { value: "other", label: "Otro" },
+];
+
 export default function SpatialDataPage() {
   const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
-  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(false);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  
+  // Estados para datos climáticos
   const [timePeriod, setTimePeriod] = useState<string>("daily");
   const [availableLayers, setAvailableLayers] = useState<LayerInfo[]>([]);
   const [loadingLayers, setLoadingLayers] = useState(false);
 
-  const countryCode = countryCodeMap[countryId || "1"] || "hn";
+  // Estados para indicadores
+  const [indicatorPeriod, setIndicatorPeriod] = useState<string>("annual");
+  const [indicatorCategories, setIndicatorCategories] = useState<IndicatorCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<IndicatorCategory | null>(null);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingIndicators, setLoadingIndicators] = useState(false);
+
+  //const countryId = "2";
+  const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
   
   // Construir workspace y WMS URL dinámicamente
@@ -88,7 +109,7 @@ export default function SpatialDataPage() {
     };
     
     initFlowbite();
-  }, [availableLayers]);
+  }, [availableLayers, selectedCategory]);
 
   // Cargar capas disponibles cuando cambia el período de tiempo
   useEffect(() => {
@@ -112,6 +133,54 @@ export default function SpatialDataPage() {
 
     loadLayers();
   }, [timePeriod, workspace, countryCode]);
+
+  // Cargar categorías de indicadores
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!countryId) return;
+      
+      setLoadingCategories(true);
+      try {
+        const categories = await spatialService.getIndicatorCategories(countryId);
+        setIndicatorCategories(categories);
+        // Seleccionar la primera categoría por defecto
+        if (categories.length > 0) {
+          setSelectedCategory(categories[0]);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías:", error);
+        setIndicatorCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [countryId]);
+
+  // Cargar indicadores cuando cambia la categoría o el período
+  useEffect(() => {
+    const loadIndicators = async () => {
+      if (!countryId || !selectedCategory) return;
+      
+      setLoadingIndicators(true);
+      try {
+        const indicatorsList = await spatialService.getIndicators(
+          countryId,
+          indicatorPeriod,
+          selectedCategory.id
+        );
+        setIndicators(indicatorsList);
+      } catch (error) {
+        console.error("Error cargando indicadores:", error);
+        setIndicators([]);
+      } finally {
+        setLoadingIndicators(false);
+      }
+    };
+
+    loadIndicators();
+  }, [countryId, indicatorPeriod, selectedCategory]);
 
   const handleTimeChange = useCallback((time: string, layerName: string, layerTitle: string) => {
     const bbox = currentCountry.bbox;
@@ -177,23 +246,6 @@ export default function SpatialDataPage() {
               <li>Descargar datos raster para análisis especializados</li>
             </ul>
           </div>
-
-          {/* Selector de período de tiempo */}
-          <div className="mt-6">
-            <label htmlFor="timePeriod" className="block font-medium text-gray-700 mb-2">
-              Período de tiempo
-            </label>
-            <select
-              id="timePeriod"
-              value={timePeriod}
-              onChange={(e) => setTimePeriod(e.target.value)}
-              className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
-            >
-              <option value="daily">Diario</option>
-              <option value="monthly">Mensual</option>
-              <option value="climatology">Climatología</option>
-            </select>
-          </div>
         </div>
       </header>
 
@@ -232,8 +284,27 @@ export default function SpatialDataPage() {
               >
                 <div className="p-5 border border-b-0 border-gray-200">
                   <div className="flex flex-col gap-8">
-                    <p>Explora cómo se comportan las principales variables climáticas en todo el territorio de {COUNTRY_NAME}. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
-                    Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
+                    <div>
+                      <p>Explora cómo se comportan las principales variables climáticas en todo el territorio de {COUNTRY_NAME}. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
+                      Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
+                      
+                      {/* Selector de período de tiempo para datos climáticos */}
+                      <div className="mt-4">
+                        <label htmlFor="timePeriod" className="block font-medium text-gray-700 mb-2">
+                          Período de tiempo
+                        </label>
+                        <select
+                          id="timePeriod"
+                          value={timePeriod}
+                          onChange={(e) => setTimePeriod(e.target.value)}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                        >
+                          <option value="daily">Diario</option>
+                          <option value="monthly">Mensual</option>
+                          <option value="climatology">Climatología</option>
+                        </select>
+                      </div>
+                    </div>
                     
                     {loadingLayers ? (
                       <div className="flex items-center justify-center py-12">
@@ -369,9 +440,131 @@ export default function SpatialDataPage() {
                 aria-labelledby="indicators-accordion-trigger"
               >
                 <div className="p-5 border border-t-0 border-gray-200">
-                  <p>Analiza la evolución de los indicadores climáticos en {COUNTRY_NAME} y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>rango de fechas</strong> para profundizar en los datos que más te interesen.</p>
-                  <div className="h-80 flex items-center justify-center">
-                    <p className="text-gray-500">No hay datos para mostrar</p>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <p>Analiza la evolución de los indicadores climáticos en {COUNTRY_NAME} y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>temporalidad</strong> para profundizar en los datos que más te interesen.</p>
+                    </div>
+
+                    {/* Selectores de temporalidad y categoría en la misma fila */}
+                    <div className="flex gap-4 items-end">
+                      {/* Selector de temporalidad */}
+                      <div>
+                        <label htmlFor="indicatorPeriod" className="block font-medium text-gray-700 mb-2">
+                          Temporalidad
+                        </label>
+                        <select
+                          id="indicatorPeriod"
+                          value={indicatorPeriod}
+                          onChange={(e) => setIndicatorPeriod(e.target.value)}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                        >
+                          {indicatorPeriodOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Selector de categoría */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <label htmlFor="indicatorCategory" className="font-medium text-gray-700">
+                            Categoría
+                          </label>
+                          {selectedCategory && (
+                            <button
+                              data-tooltip-target="category-tooltip"
+                              data-tooltip-placement="right"
+                              type="button"
+                              className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {loadingCategories ? (
+                          <div className="text-gray-500">Cargando categorías...</div>
+                        ) : indicatorCategories.length === 0 ? (
+                          <div className="text-gray-500">No hay categorías disponibles</div>
+                        ) : (
+                          <>
+                            <select
+                              id="indicatorCategory"
+                              value={selectedCategory?.id || ''}
+                              onChange={(e) => {
+                                const category = indicatorCategories.find(cat => cat.id === parseInt(e.target.value));
+                                setSelectedCategory(category || null);
+                              }}
+                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                            >
+                              {indicatorCategories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                            {selectedCategory && (
+                              <div
+                                id="category-tooltip"
+                                role="tooltip"
+                                className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip max-w-xs"
+                              >
+                                {selectedCategory.description}
+                                <div className="tooltip-arrow" data-popper-arrow></div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Mapas de indicadores */}
+                    {loadingIndicators ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                        <span className="ml-3 text-gray-600">Cargando indicadores...</span>
+                      </div>
+                    ) : indicators.length === 0 ? (
+                      <div className="text-center py-12 text-gray-600">
+                        No hay datos disponibles para esta combinación de temporalidad y categoría
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-8">
+                        {indicators.map((indicator) => {
+                          const layerName = `climate_index:climate_index_${indicatorPeriod}_${countryCode}_${indicator.short_name}`;
+                          const indicatorWmsUrl = `${GEOSERVER_URL}/climate_index/wms`;
+                          
+                          return (
+                            <div key={indicator.id}>
+                              <h3 className="font-semibold text-gray-700 mb-2">{indicator.name}</h3>
+                              <div className="h-[550px] w-full rounded-lg overflow-hidden">
+                                <MapComponent
+                                  center={currentCountry.center}
+                                  zoom={currentCountry.zoom}
+                                  wmsLayers={[{
+                                    url: indicatorWmsUrl,
+                                    layers: layerName,
+                                    opacity: 0.7,
+                                    transparent: true,
+                                    title: indicator.name,
+                                    unit: indicator.unit
+                                  }]}
+                                  showMarkers={false}
+                                  showZoomControl={true}
+                                  showTimeline={true}
+                                  showLegend={true}
+                                  showAdminLayer={true}
+                                  onTimeChange={(time) => handleTimeChange(time, layerName, indicator.name)}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
