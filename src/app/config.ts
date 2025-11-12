@@ -16,3 +16,7 @@ export const GEOSERVER_URL = process.env.NEXT_PUBLIC_GEOSERVER_URL || 'https://g
 export const KEYCLOAK_URL = process.env.NEXT_PUBLIC_KEYCLOAK_URL || 'http://localhost:8080';
 export const KEYCLOAK_REALM = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || 'aclimate';
 export const KEYCLOAK_CLIENT_ID = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'aclimate_admin';
+
+// Módulos habilitados/deshabilitados
+export const SHOW_STATIONS_MODULE = process.env.NEXT_PUBLIC_SHOW_STATIONS_MODULE === 'true';
+export const SHOW_USERS_MODULE = process.env.NEXT_PUBLIC_SHOW_USERS_MODULE === 'true';
