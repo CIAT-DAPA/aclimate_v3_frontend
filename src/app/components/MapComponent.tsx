@@ -436,7 +436,8 @@ const MapComponent = ({
         )}
 
         {/* Capas WMS climáticas (raster) - se dibujan primero */}
-        {wmsLayers.length > 0 && wmsLayers.map((layer, index) => (
+        {/* Solo renderizar WMSTileLayer si showTimeline es false, ya que el timeline crea su propia capa */}
+        {wmsLayers.length > 0 && !showTimeline && wmsLayers.map((layer, index) => (
           <WMSTileLayer
             key={`wms-${index}`}
             url={layer.url}
@@ -487,6 +488,7 @@ const MapComponent = ({
             layer={wmsLayers[0].layers}
             onTimeChange={onTimeChange}
             wmsUrl={wmsLayers[0].url}
+            opacity={wmsLayers[0].opacity || 0.7}
           />
         )}
 
