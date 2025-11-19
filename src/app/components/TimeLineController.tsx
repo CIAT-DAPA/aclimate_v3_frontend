@@ -12,6 +12,7 @@ interface TimelineControllerProps {
   layer: string;
   onTimeChange: (time: string) => void;
   wmsUrl: string;
+  opacity?: number;
 }
 
 // Personalizamos el formato de fecha
@@ -35,7 +36,8 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
   dimensionName,
   layer,
   onTimeChange,
-  wmsUrl
+  wmsUrl,
+  opacity = 0.7
 }) => {
   const map = useMap();
   const tdControlRef = useRef<any>(null);
@@ -62,6 +64,7 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
         format: "image/png",
         transparent: true,
         crs: L.CRS.EPSG4326,
+        opacity: opacity,
       });
 
       const tdWmsLayer = (L as any).timeDimension.layer.wms(baseWms, {
