@@ -93,6 +93,10 @@ export default function SpatialDataPage() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingIndicators, setLoadingIndicators] = useState(false);
 
+  // Estados para capas administrativas dinámicas
+  const [adminLayers, setAdminLayers] = useState<Array<{name: string, workspace: string, store: string, layer: string}>>([]);
+  const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
+
   //const countryId = "2";
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
@@ -121,6 +125,24 @@ export default function SpatialDataPage() {
   };
 
   const currentCountry = countryCoordinates[countryCode] || countryCoordinates["hn"];
+
+  // Cargar capas administrativas dinámicamente
+  useEffect(() => {
+    const loadAdminLayers = async () => {
+      setLoadingAdminLayers(true);
+      try {
+        const layers = await spatialService.getAdminLayers(GEOSERVER_URL, countryCode);
+        setAdminLayers(layers);
+      } catch (error) {
+        console.error("Error cargando capas administrativas:", error);
+        setAdminLayers([]);
+      } finally {
+        setLoadingAdminLayers(false);
+      }
+    };
+
+    loadAdminLayers();
+  }, [countryCode]);
 
   // Inicializar tooltips de Flowbite
   useEffect(() => {
@@ -416,6 +438,7 @@ export default function SpatialDataPage() {
                                   showTimeline={true}
                                   showLegend={true}
                                   showAdminLayer={true}
+                                  adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layer.name, layer.title)}
                                 />
                               </div>
@@ -594,6 +617,7 @@ export default function SpatialDataPage() {
                                   showTimeline={true}
                                   showLegend={true}
                                   showAdminLayer={true}
+                                  adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layerName, indicator.name)}
                                 />
                               </div>
