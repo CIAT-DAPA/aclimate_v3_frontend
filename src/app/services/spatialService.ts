@@ -205,5 +205,77 @@ export const spatialService = {
             console.error("Error fetching indicators:", error);
             return [];
         }
+    },
+
+    /**
+     * Obtiene las capas administrativas disponibles para un país desde GeoServer
+     * @param geoserverBaseUrl - URL base del geoserver
+     * @param countryCode - Código del país (ej: hn, co, st)
+     * @returns Array con información de capas administrativas disponibles
+     */
+    getAdminLayers: async (
+        geoserverBaseUrl: string,
+        countryCode: string
+    ): Promise<Array<{name: string, workspace: string, store: string, layer: string}>> => {
+        try {
+            const workspace = "administrative";
+            const wmsUrl = `${geoserverBaseUrl}/${workspace}/wms`;
+            const url = `${wmsUrl}?service=WMS&version=1.3.0&request=GetCapabilities`;
+            
+            const response = await axios.get(url);
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(response.data, "text/xml");
+            const layers = xmlDoc.getElementsByTagName("Layer");
+
+            const adminLayers: Array<{name: string, workspace: string, store: string, layer: string}> = [];
+            
+            // Mapeo de códigos de país a nombres usados en las capas
+            const countryNames: Record<string, string> = {
+                "hn": "honduras",
+                "co": "colombia",
+                "st": "sat_amazonia"
+            };
+            
+            const countryName = countryNames[countryCode] || countryCode;
+
+            // Buscar capas que coincidan con el patrón del país
+            for (let i = 0; i < layers.length; i++) {
+                const nameElement = layers[i].getElementsByTagName("Name")[0];
+                
+                if (nameElement) {
+                    const layerName = nameElement.textContent || "";
+                    
+                    // Buscar capas que contengan el nombre del país y nivel administrativo
+                    // Patrón: {countryName}_adm{level} o administrative:{countryName}_adm{level}
+                    const pattern = new RegExp(`${countryName}_adm(\\d+)$`);
+                    const match = layerName.match(pattern);
+                    
+                    if (match) {
+                        const level = match[1];
+                        const storeName = `${countryName}_adm${level}`;
+                        const fullLayerName = layerName.includes(":") ? layerName : `${workspace}:${storeName}`;
+                        
+                        adminLayers.push({
+                            name: `Nivel Administrativo ${level}`,
+                            workspace: workspace,
+                            store: storeName,
+                            layer: fullLayerName
+                        });
+                    }
+                }
+            }
+
+            // Ordenar por nivel administrativo
+            adminLayers.sort((a, b) => {
+                const levelA = parseInt(a.store.match(/adm(\d+)$/)?.[1] || "0");
+                const levelB = parseInt(b.store.match(/adm(\d+)$/)?.[1] || "0");
+                return levelA - levelB;
+            });
+
+            return adminLayers;
+        } catch (error) {
+            console.error("Error fetching admin layers from GeoServer:", error);
+            return [];
+        }
     }
 }

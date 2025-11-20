@@ -70,6 +70,13 @@ interface WMSLayer {
   unit?: string;
 }
 
+interface AdminLayer {
+  name: string;
+  workspace: string;
+  store: string;
+  layer: string;
+}
+
 interface MapComponentProps {
   center?: [number, number];
   zoom?: number;
@@ -82,6 +89,7 @@ interface MapComponentProps {
   onTimeChange?: (time: string) => void;
   showLegend?: boolean;
   showAdminLayer?: boolean;
+  adminLayers?: AdminLayer[];
   stationData?: Record<string, any[]>;
 }
 
@@ -97,6 +105,7 @@ const MapComponent = ({
   onTimeChange = () => {},
   showLegend = true,
   showAdminLayer = false,
+  adminLayers = [],
   stationData = {},
   
 }: MapComponentProps) => {
@@ -436,7 +445,8 @@ const MapComponent = ({
         )}
 
         {/* Capas WMS climáticas (raster) - se dibujan primero */}
-        {wmsLayers.length > 0 && wmsLayers.map((layer, index) => (
+        {/* Solo renderizar WMSTileLayer si showTimeline es false, ya que el timeline crea su propia capa */}
+        {wmsLayers.length > 0 && !showTimeline && wmsLayers.map((layer, index) => (
           <WMSTileLayer
             key={`wms-${index}`}
             url={layer.url}
@@ -454,27 +464,28 @@ const MapComponent = ({
           />
         ))}
 
-        {/* Control de capas con la capa administrativa */}
-        {wmsLayers.length > 0 && (
+        {/* Control de capas con las capas administrativas dinámicas */}
+        {wmsLayers.length > 0 && showAdminLayer && adminLayers.length > 0 && (
           <LayersControl position="topright">
-            {showAdminLayer && (
+            {adminLayers.map((adminLayer, index) => (
               <LayersControl.Overlay 
-                name="Límites Departamentales de Honduras" 
+                key={`admin-${index}`}
+                name={adminLayer.name}
                 checked={true}
               >
                 <WMSTileLayer
-                  url="https://geo.aclimate.org/geoserver/fc_cenaos_hn/wms"
-                  layers="fc_cenaos_hn:Limite_Departamental_de_Honduras"
+                  url={`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`}
+                  layers={adminLayer.layer}
                   format="image/png"
                   transparent={true}
                   version="1.1.1"
-                  opacity={0.8}
-                  styles=""
+                  opacity={1}
+                  styles="line"
                   attribution=""
-                  zIndex={1000}
+                  zIndex={1000 + index}
                 />
               </LayersControl.Overlay>
-            )}
+            ))}
           </LayersControl>
         )}
 
@@ -487,6 +498,7 @@ const MapComponent = ({
             layer={wmsLayers[0].layers}
             onTimeChange={onTimeChange}
             wmsUrl={wmsLayers[0].url}
+            opacity={wmsLayers[0].opacity || 0.7}
           />
         )}
 

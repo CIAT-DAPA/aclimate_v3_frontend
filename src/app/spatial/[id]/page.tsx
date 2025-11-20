@@ -40,10 +40,26 @@ const variableInfo: Record<string, string> = {
   "Evapotranspiración": "La evapotranspiración es la pérdida de agua del suelo por evaporación y transpiración de las plantas, medida en milímetros (mm)."
 };
 
+// Descripciones detalladas para cada variable climática
+const variableDescriptions: Record<string, string> = {
+  "Precipitación": "Este mapa muestra la distribución de la lluvia en el territorio para la fecha seleccionada. Navega por las zonas coloreadas para conocer los niveles de precipitación y usa la línea de tiempo para explorar otros días.",
+  "Temperatura máxima": "Consulta cómo se comporta la temperatura máxima en distintas regiones del país. Desplázate por el mapa para ver los valores en cada zona y ajusta la fecha para comparar cambios a lo largo del tiempo.",
+  "Temperatura mínima": "Consulta cómo desciende la temperatura en distintas zonas del país durante la fecha seleccionada. Usa el mapa para identificar áreas con noches más frías y compara cambios moviéndote a otras fechas.",
+  "Radiación solar": "Este mapa muestra la cantidad de energía solar que recibe cada región. Explora los colores para reconocer zonas con mayor o menor radiación y ajusta la fecha para ver cómo varía a lo largo del tiempo.",
+  "Evapotranspiración": "Observa cuánto vapor de agua se pierde del suelo y la vegetación en cada área. Recorre el mapa para identificar zonas con mayor demanda hídrica y usa la línea de tiempo para analizar patrones diarios."
+};
+
+// Descripciones para indicadores climáticos específicos
+const indicatorDescriptions: Record<string, string> = {
+  "Annual maximum of daily maximum temperature": "Este mapa muestra el valor más alto de temperatura máxima registrado en cada zona durante el año. Recorre las áreas coloreadas para identificar regiones más cálidas y compara distintos años usando la fecha.",
+  "Tropical nights": "Consulta cuántas noches del año registran temperaturas elevadas en cada región. Usa el mapa para identificar zonas donde las noches cálidas son más frecuentes y ajusta la fecha para analizar su evolución en el tiempo."
+};
+
 // Mapeo de códigos de país a códigos usados en geoserver
 const countryCodeMap: Record<string, string> = {
   "1": "co", // Colombia
-  "2": "hn"  // Honduras
+  "2": "hn",  // Honduras
+  "3": "st",  // SAT AMAZONIA
 };
 
 // Opciones de período para indicadores
@@ -77,6 +93,10 @@ export default function SpatialDataPage() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingIndicators, setLoadingIndicators] = useState(false);
 
+  // Estados para capas administrativas dinámicas
+  const [adminLayers, setAdminLayers] = useState<Array<{name: string, workspace: string, store: string, layer: string}>>([]);
+  const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
+
   //const countryId = "2";
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
@@ -96,10 +116,33 @@ export default function SpatialDataPage() {
       center: [4.5, -74.0],
       zoom: 6,
       bbox: "-79.0,-4.2,-66.9,12.5"
+    },
+    "st": {
+      center: [-1.25, -71.25],
+      zoom: 6,
+      bbox: "-76.0,-5.5,-66.5,3.0"
     }
   };
 
   const currentCountry = countryCoordinates[countryCode] || countryCoordinates["hn"];
+
+  // Cargar capas administrativas dinámicamente
+  useEffect(() => {
+    const loadAdminLayers = async () => {
+      setLoadingAdminLayers(true);
+      try {
+        const layers = await spatialService.getAdminLayers(GEOSERVER_URL, countryCode);
+        setAdminLayers(layers);
+      } catch (error) {
+        console.error("Error cargando capas administrativas:", error);
+        setAdminLayers([]);
+      } finally {
+        setLoadingAdminLayers(false);
+      }
+    };
+
+    loadAdminLayers();
+  }, [countryCode]);
 
   // Inicializar tooltips de Flowbite
   useEffect(() => {
@@ -236,7 +279,8 @@ export default function SpatialDataPage() {
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800">Datos espaciales</h1>
           <p className="text-gray-600 mt-2">
-            Esta herramienta interactiva te permite consultar información histórica sobre indicadores climáticos en {COUNTRY_NAME}.
+            Explora datos e indicadores climáticos de {COUNTRY_NAME} y analiza cómo ha sido el cambio a través del tiempo. 
+            Usa esta vista para identificar patrones, zonas vulnerables y descargar la información que necesites para tus análisis.
           </p>
           <div className="mt-3">
             <p className="text-gray-600">Puedes usarla para:</p>
@@ -285,8 +329,8 @@ export default function SpatialDataPage() {
                 <div className="p-5 border border-b-0 border-gray-200">
                   <div className="flex flex-col gap-8">
                     <div>
-                      <p>Explora cómo se comportan las principales variables climáticas en todo el territorio de {COUNTRY_NAME}. Observa la distribución y evolución de la <strong>temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
-                      Ajusta la visualización con los filtros de fecha para obtener la información que necesites.</p>
+                      <p>Esta sección reúne las principales variables climáticas del país en formato de mapas interactivos. 
+                        Explora cada variable para entender cómo cambian las condiciones en el territorio y usa la fecha para comparar distintos momentos en el tiempo. </p>
                       
                       {/* Selector de período de tiempo para datos climáticos */}
                       <div className="mt-4">
@@ -331,8 +375,8 @@ export default function SpatialDataPage() {
                         const tooltipId = `tooltip-${layer.variable}`;
 
                         return (
-                          <div key={layer.name} className="h-[600px] flex flex-col">
-                            <div className="flex items-center gap-2 mb-4">
+                          <div key={layer.name} className="flex flex-col gap-3">
+                            <div className="flex items-center gap-2">
                               
                               <h3 className="font-semibold text-gray-800 text-lg">
                                 {layer.title} <span className="text-gray-500 text-base">({unidad})</span>
@@ -368,6 +412,13 @@ export default function SpatialDataPage() {
                               )}
                             </div>
 
+                            {/* Descripción detallada de la variable */}
+                            {variableDescriptions[layer.title] && (
+                              <p className="text-sm text-gray-600 leading-relaxed">
+                                {variableDescriptions[layer.title]}
+                              </p>
+                            )}
+
                             {layer.available ? (
                               <div className="h-[550px] w-full rounded-lg overflow-hidden">
                                 <MapComponent
@@ -387,6 +438,7 @@ export default function SpatialDataPage() {
                                   showTimeline={true}
                                   showLegend={true}
                                   showAdminLayer={true}
+                                  adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layer.name, layer.title)}
                                 />
                               </div>
@@ -442,7 +494,7 @@ export default function SpatialDataPage() {
                 <div className="p-5 border border-t-0 border-gray-200">
                   <div className="flex flex-col gap-4">
                     <div>
-                      <p>Analiza la evolución de los indicadores climáticos en {COUNTRY_NAME} y detecta tendencias clave. Filtra por <strong>categoría</strong> y <strong>temporalidad</strong> para profundizar en los datos que más te interesen.</p>
+                      <p>Explora patrones y extremos climáticos del país a lo largo del año. Selecciona la temporalidad y la categoría para visualizar los indicadores que mejor se ajusten a tu análisis.</p>
                     </div>
 
                     {/* Selectores de temporalidad y categoría en la misma fila */}
@@ -538,8 +590,16 @@ export default function SpatialDataPage() {
                           const indicatorWmsUrl = `${GEOSERVER_URL}/climate_index/wms`;
                           
                           return (
-                            <div key={indicator.id}>
-                              <h3 className="font-semibold text-gray-700 mb-2">{indicator.name}</h3>
+                            <div key={indicator.id} className="flex flex-col gap-3">
+                              <div>
+                                <h3 className="font-semibold text-gray-700 text-lg mb-2">{indicator.name}</h3>
+                                {/* Descripción del indicador si existe */}
+                                {indicatorDescriptions[indicator.name] && (
+                                  <p className="text-sm text-gray-600 leading-relaxed">
+                                    {indicatorDescriptions[indicator.name]}
+                                  </p>
+                                )}
+                              </div>
                               <div className="h-[550px] w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   center={currentCountry.center}
@@ -557,6 +617,7 @@ export default function SpatialDataPage() {
                                   showTimeline={true}
                                   showLegend={true}
                                   showAdminLayer={true}
+                                  adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layerName, indicator.name)}
                                 />
                               </div>
