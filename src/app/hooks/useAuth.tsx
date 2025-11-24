@@ -64,8 +64,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const isAuthenticated = await keycloak.current.init({ 
           onLoad: "check-sso",
-          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-          checkLoginIframe: false
+          checkLoginIframe: false,
+          pkceMethod: 'S256'
         });
 
         setAuthenticated(isAuthenticated);
