@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
-import { getUserStations, updateUserStation, deleteUserStation } from "@/app/services/userService";
+import { getUserStations, updateUserStation, deleteUserStation, updateUserProfile, UserProfile } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -133,12 +133,15 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { userValidatedInfo, authenticated, loading: authLoading, userInfo } = useAuth();
+  const { userValidatedInfo, authenticated, loading: authLoading, userInfo, token } = useAuth();
   const [userStations, setUserStations] = useState<UserStation[]>([]);
   const [stationDetails, setStationDetails] = useState<Record<string, Station>>({});
   const [loading, setLoading] = useState(true);
   const [editingStation, setEditingStation] = useState<UserStation | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<'FARMER' | 'TECHNICIAN'>('FARMER');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const userId = params.id as string;
 
@@ -155,6 +158,12 @@ export default function UserProfilePage() {
     if (userIdFromValidated?.toString() !== userId) {
       router.push('/');
       return;
+    }
+
+    // Establecer el perfil actual del usuario
+    const currentProfile = (userValidatedInfo.user?.profile || userValidatedInfo.profile) as UserProfile;
+    if (currentProfile === 'FARMER' || currentProfile === 'TECHNICIAN') {
+      setSelectedProfile(currentProfile);
     }
 
     loadUserStations();
@@ -222,6 +231,33 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    if (!token) {
+      alert("No se encontró el token de autenticación");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      await updateUserProfile(parseInt(userId), selectedProfile, token);
+      
+      // Actualizar el estado local del usuario
+      if (userValidatedInfo.user) {
+        userValidatedInfo.user.profile = selectedProfile;
+      } else {
+        userValidatedInfo.profile = selectedProfile;
+      }
+      
+      setShowProfileModal(false);
+      alert("Perfil actualizado correctamente");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Error al actualizar el perfil");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const getInitials = (firstName?: string, lastName?: string) => {
     const initials = [];
     if (firstName) initials.push(firstName.charAt(0).toUpperCase());
@@ -248,6 +284,7 @@ export default function UserProfilePage() {
   const userName = userInfo?.name || userInfo?.preferred_username || "Usuario";
   const userEmail = userInfo?.email || "";
   const userInitials = getInitials(userInfo?.given_name || '', userInfo?.family_name || '');
+  const currentUserProfile = (userValidatedInfo?.user?.profile || userValidatedInfo?.profile) as UserProfile || 'FARMER';
 
   return (
     <>
@@ -255,18 +292,35 @@ export default function UserProfilePage() {
         <div className="container mx-auto px-4 max-w-4xl">
           {/* User Info Card */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-20 h-20 bg-[#283618] text-[#fefae0] font-bold text-2xl rounded-full">
-                {userInitials}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-20 h-20 bg-[#283618] text-[#fefae0] font-bold text-2xl rounded-full">
+                  {userInitials}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{userName}</h1>
+                  <p className="text-gray-600">{userEmail}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                      {COUNTRY_NAME}
+                    </p>
+                    <span className="text-gray-300">•</span>
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <span className="font-medium">Perfil:</span>
+                      <span className="px-2 py-0.5 bg-[#283618] text-[#fefae0] rounded text-xs font-medium">
+                        {currentUserProfile === 'FARMER' ? 'Agricultor' : 'Técnico'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{userName}</h1>
-                <p className="text-gray-600">{userEmail}</p>
-                <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                  <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                  {COUNTRY_NAME}
-                </p>
-              </div>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="px-4 py-2 text-sm font-medium text-gray-900 bg-[#ffc107] rounded-lg hover:bg-[#ffb300] transition-colors"
+              >
+                Cambiar perfil
+              </button>
             </div>
           </div>
 
@@ -344,6 +398,86 @@ export default function UserProfilePage() {
         }}
         onSave={handleSaveStation}
       />
+
+      {/* Modal de cambio de perfil */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-gray-900">Cambiar perfil de usuario</h3>
+            
+            <p className="text-sm text-gray-600 mb-6">
+              Selecciona el tipo de perfil que mejor describe tu rol en la plataforma.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="profile"
+                  value="FARMER"
+                  checked={selectedProfile === 'FARMER'}
+                  onChange={(e) => setSelectedProfile(e.target.value as UserProfile)}
+                  className="mt-1 w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 focus:ring-[#bc6c25]"
+                />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">Agricultor</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Persona dedicada a la producción agrícola que utiliza la información climática para la toma de decisiones en sus cultivos.
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="profile"
+                  value="TECHNICIAN"
+                  checked={selectedProfile === 'TECHNICIAN'}
+                  onChange={(e) => setSelectedProfile(e.target.value as UserProfile)}
+                  className="mt-1 w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 focus:ring-[#bc6c25]"
+                />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">Técnico</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Profesional o técnico especializado en asesoría agrícola, extensión rural o análisis de información climática.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  // Restaurar el perfil original
+                  const currentProfile = (userValidatedInfo?.user?.profile || userValidatedInfo?.profile) as UserProfile;
+                  if (currentProfile === 'FARMER' || currentProfile === 'TECHNICIAN') {
+                    setSelectedProfile(currentProfile);
+                  }
+                }}
+                disabled={savingProfile}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateProfile}
+                disabled={savingProfile}
+                className="px-4 py-2 text-sm font-medium text-white bg-[#ffc107] rounded-lg hover:bg-[#ffb300] transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingProfile ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar cambios'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
