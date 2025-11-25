@@ -91,6 +91,7 @@ interface MapComponentProps {
   showAdminLayer?: boolean;
   adminLayers?: AdminLayer[];
   stationData?: Record<string, any[]>;
+  selectedStation?: Station | null;
 }
 
 const MapComponent = ({
@@ -107,7 +108,7 @@ const MapComponent = ({
   showAdminLayer = false,
   adminLayers = [],
   stationData = {},
-  
+  selectedStation = null,
 }: MapComponentProps) => {
   const activeStations = stations.filter(station => station.enable);
   const hasStations = activeStations.length > 0;
@@ -122,11 +123,33 @@ const MapComponent = ({
   const mapZoom = singleStationMode ? 13 : zoom;
 
   const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const { userValidatedInfo, authenticated } = useAuth();
 
   // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(new Set());
+
+  // Efecto para centrar el mapa cuando se selecciona una estación desde la búsqueda
+  useEffect(() => {
+    if (selectedStation && mapRef.current) {
+      const map = mapRef.current;
+      const marker = markersRef.current.get(selectedStation.id.toString());
+      
+      // Centrar el mapa en la estación con animación
+      map.setView([selectedStation.latitude, selectedStation.longitude], 12, {
+        animate: true,
+        duration: 1
+      });
+      
+      // Abrir el popup del marcador si existe
+      if (marker) {
+        setTimeout(() => {
+          marker.openPopup();
+        }, 500);
+      }
+    }
+  }, [selectedStation]);
 
   // Cargar favoritos del usuario autenticado
   useEffect(() => {
@@ -517,6 +540,11 @@ const MapComponent = ({
             key={station.id}
             position={[station.latitude, station.longitude] as LatLngExpression}
             icon={customIcon}
+            ref={(ref) => {
+              if (ref) {
+                markersRef.current.set(station.id.toString(), ref);
+              }
+            }}
           >
             <Popup>
               <div className="p-4 min-w-[280px]">
@@ -628,6 +656,11 @@ const MapComponent = ({
             key={station.id}
             position={[station.latitude, station.longitude] as LatLngExpression}
             icon={customIcon}
+            ref={(ref) => {
+              if (ref) {
+                markersRef.current.set(station.id.toString(), ref);
+              }
+            }}
           />
         ))}
       </MapContainer>

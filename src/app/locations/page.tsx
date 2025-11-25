@@ -26,6 +26,7 @@ export default function LocationsPage() {
   const [stationData, setStationData] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,10 +98,19 @@ export default function LocationsPage() {
   return (
     <div className="relative h-screen w-full">
       {/* Componente del mapa con las estaciones */}
-      <MapComponent center={[4.6097, -74.0817]} zoom={6} stations={stations} stationData={stationData} />
+      <MapComponent 
+        center={[4.6097, -74.0817]} 
+        zoom={6} 
+        stations={stations} 
+        stationData={stationData}
+        selectedStation={selectedStation}
+      />
 
       {/* Buscador superpuesto */}
-      <MapSearch stations={stations} />
+      <MapSearch 
+        stations={stations} 
+        onStationSelect={(station) => setSelectedStation(station)}
+      />
 
       {/* Indicador de carga */}
       {loading && (

@@ -17,7 +17,7 @@ interface TokenValidationResponse {
  */
 export const validateToken = async (token: string): Promise<TokenValidationResponse> => {
   try {
-    const base = process.env.NEXT_PUBLIC_AUTH_API_URL || USERS_FRONTEND_API_URL_BASE;
+    const base = USERS_FRONTEND_API_URL_BASE;
     const url = `${base}${base.endsWith('/') ? '' : '/'}auth/token/validate`;
     const response = await fetch(url, {
       method: 'GET',
@@ -75,7 +75,7 @@ interface UserValidationResponse {
  */
 export const validateUser = async (userData: UserValidationRequest): Promise<UserValidationResponse> => {
   try {
-    const base = process.env.NEXT_PUBLIC_API_FRONTEND_BASE_URL || USERS_FRONTEND_API_URL_BASE;
+    const base = USERS_FRONTEND_API_URL_BASE;
     const url = `${base}${base.endsWith('/') ? '' : '/'}validate/user`;
     const response = await fetch(url, {
       method: 'POST',
