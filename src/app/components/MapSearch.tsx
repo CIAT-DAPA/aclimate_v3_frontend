@@ -4,7 +4,12 @@ import { useState, useMemo } from "react";
 import { Frown, MapPin, Search } from "lucide-react";
 import { Station } from "../types/Station";
 
-const MapSearch = ({ stations }: { stations?: Station[] }) => {
+interface MapSearchProps {
+  stations?: Station[];
+  onStationSelect?: (station: Station) => void;
+}
+
+const MapSearch = ({ stations, onStationSelect }: MapSearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredStations = useMemo(() => {
@@ -24,9 +29,12 @@ const MapSearch = ({ stations }: { stations?: Station[] }) => {
   }, [searchTerm, stations]);
 
   const handleStationClick = (station: Station) => {
-    console.log("Estación seleccionada:", station);
-    setSearchTerm(station.name);
-    // TODO: Implementar función para centrar el mapa
+    // Llamar al callback para centrar el mapa y abrir el popup
+    if (onStationSelect) {
+      onStationSelect(station);
+    }
+    // Limpiar la búsqueda
+    setSearchTerm("");
   };
 
   return (
