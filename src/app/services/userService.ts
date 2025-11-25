@@ -257,3 +257,57 @@ export const deleteUserStation = async (userId: number, wsExtId: string): Promis
     throw error;
   }
 };
+
+// User Profile Management
+export type UserProfile = 'FARMER' | 'TECHNICIAN';
+
+interface UpdateProfileRequest {
+  profile: UserProfile;
+}
+
+interface UpdateProfileResponse {
+  id: number;
+  ext_key_clock_id: string;
+  app_id: string;
+  profile: UserProfile;
+  enable: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Update user profile type
+ * @param userId - The ID of the user
+ * @param profile - The new profile type (FARMER or TECHNICIAN)
+ * @param token - Authentication token
+ * @returns The updated user data
+ */
+export const updateUserProfile = async (
+  userId: number,
+  profile: UserProfile,
+  token: string
+): Promise<UpdateProfileResponse> => {
+  try {
+    const baseUrl = USERS_FRONTEND_API_URL_BASE;
+    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user/${userId}/profile`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ profile }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating user profile:', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+};
