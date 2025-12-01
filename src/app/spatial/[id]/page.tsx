@@ -494,7 +494,7 @@ export default function SpatialDataPage() {
                 <div className="p-5 border border-t-0 border-gray-200">
                   <div className="flex flex-col gap-4">
                     <div>
-                      <p>Explora patrones y extremos climáticos del país a lo largo del año. Selecciona la temporalidad y la categoría para visualizar los indicadores que mejor se ajusten a tu análisis.</p>
+                      <p className="text-gray-600 mt-2">Explora patrones y extremos climáticos del país a lo largo del año. Selecciona la temporalidad y la categoría para visualizar los indicadores que mejor se ajusten a tu análisis.</p>
                     </div>
 
                     {/* Selectores de temporalidad y categoría en la misma fila */}
