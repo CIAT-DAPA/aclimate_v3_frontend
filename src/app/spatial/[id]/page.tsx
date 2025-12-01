@@ -329,7 +329,7 @@ export default function SpatialDataPage() {
                 <div className="p-5 border border-b-0 border-gray-200">
                   <div className="flex flex-col gap-8">
                     <div>
-                      <p>Esta sección reúne las principales variables climáticas del país en formato de mapas interactivos. 
+                      <p className="text-gray-600 mt-2">Esta sección reúne las principales variables climáticas del país en formato de mapas interactivos. 
                         Explora cada variable para entender cómo cambian las condiciones en el territorio y usa la fecha para comparar distintos momentos en el tiempo. </p>
                       
                       {/* Selector de período de tiempo para datos climáticos */}
