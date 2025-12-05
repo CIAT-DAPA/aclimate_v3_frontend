@@ -37,7 +37,7 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
       {
         name: 'Alliance Bioversity-CIAT',
         url: 'https://alliancebioversityciat.org/',
-        logo: 'https://www.aclimate.org/images/alliance.png',
+        logo: '/assets/img/partners/alliance.png',
         alt: 'Alliance Bioversity-CIAT logo'
       }
     ]
