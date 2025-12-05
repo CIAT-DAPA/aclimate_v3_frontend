@@ -593,10 +593,9 @@ export default function SpatialDataPage() {
                             <div key={indicator.id} className="flex flex-col gap-3">
                               <div>
                                 <h3 className="font-semibold text-gray-700 text-lg mb-2">{indicator.name}</h3>
-                                {/* Descripción del indicador si existe */}
-                                {indicatorDescriptions[indicator.name] && (
+                                {indicator.description && (
                                   <p className="text-sm text-gray-600 leading-relaxed">
-                                    {indicatorDescriptions[indicator.name]}
+                                    {indicator.description}
                                   </p>
                                 )}
                               </div>
