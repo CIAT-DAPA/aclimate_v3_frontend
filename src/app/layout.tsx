@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
 import { COUNTRY_NAME } from "./config";
+import { GoogleAnalytics  } from '@next/third-parties/google'
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -34,6 +35,7 @@ export default function RootLayout({
           </CountryProvider>
         </AuthProvider>
       </body>
+      <GoogleAnalytics gaId="G-5XT0B5ZC2P" />
     </html>
   );
 }
