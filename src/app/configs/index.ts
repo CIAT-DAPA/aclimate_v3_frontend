@@ -5,15 +5,15 @@ import { COUNTRY_NAME } from '../config';
 
 // Función para obtener el nombre de la rama actual basado en COUNTRY_NAME
 const getCurrentBranch = (): string => {
-  // Usar COUNTRY_NAME tal como está
-  const countryName = COUNTRY_NAME;
+  // Usar COUNTRY_NAME en lowercase para comparación
+  const countryName = COUNTRY_NAME.toLowerCase();
   
-  // Mapear nombres de países a configuraciones
+  // Mapear nombres de países a configuraciones (case insensitive)
   switch (countryName) {
-    case 'Honduras':
+    case 'honduras':
       return 'honduras';
-    case 'Sat Amazonia':
-    case 'Sat':
+    case 'sat amazonia':
+    case 'sat':
       return 'sat';
     default:
       return 'default';
