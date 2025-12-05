@@ -60,6 +60,12 @@ const Header = () => {
           >
             Datos espaciales
           </Link>
+          <Link
+            href="/about"
+            className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
+          >
+            Acerca de
+          </Link>
           {/* Botón de login/usuario */}
           {SHOW_USERS_MODULE && (
             <div className="flex items-center min-w-[40px] min-h-[40px]">
