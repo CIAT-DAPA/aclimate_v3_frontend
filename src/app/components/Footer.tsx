@@ -1,4 +1,4 @@
-import { Waves } from "lucide-react";
+import Link from "next/link";
 
 const Footer = () => {
   return (
@@ -8,9 +8,12 @@ const Footer = () => {
           <div className="h-2 w-24 bg-gray-200 rounded"></div>
         </div>
         <div className="flex gap-4">
-          <Waves className="text-amber-50" />
-          <Waves className="text-amber-50" />
-          <Waves className="text-amber-50" />
+          <Link
+            href="/about"
+            className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+          >
+            Socios
+          </Link>
         </div>
       </div>
     </footer>
