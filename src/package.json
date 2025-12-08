@@ -23,9 +23,9 @@
     "leaflet-timedimension": "^1.1.1",
     "lucide-react": "^0.517.0",
     "next": "^15.5.2",
-    "react": "^19.0.0",
+    "react": "^19.2.1",
     "react-apexcharts": "^1.7.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.2.1",
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
