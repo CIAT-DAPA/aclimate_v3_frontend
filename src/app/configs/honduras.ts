@@ -25,6 +25,12 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
         url: 'http://cenaos.copeco.gob.hn/',
         logo: '/assets/img/partners/copeco_cenaos.jpg',
         alt: 'COPECO-CENAOS logo'
+      },
+      {
+        name: 'SAG',
+        url: 'https://sag.gob.hn/',
+        logo: '/assets/img/partners/sag.jpg',
+        alt: 'SAG logo'
       }
     ]
   },
