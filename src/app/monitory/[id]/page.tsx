@@ -65,6 +65,43 @@ export default function StationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   
+  // Mapeo de variables a configuración de visualización
+  const [variableConfig] = useState<Record<string, { title: string; unit: string; color: string; chartType?: "bar" | "line" | "area" }>>({
+    // Caudales
+    'cmin': { title: 'Caudal Mínimo diario', unit: 'mm³/seg', color: '#2196F3' },
+    'cmax': { title: 'Caudal máximo diario', unit: 'mm³/seg', color: '#1976D2' },
+    'cmean': { title: 'Caudal medio diario', unit: 'mm³/seg', color: '#0D47A1' },
+    
+    // Humedad relativa
+    'hrmax': { title: 'Humedad relativa máxima diaria', unit: '%', color: '#00BCD4' },
+    'hrmin': { title: 'Humedad relativa mínima diaria', unit: '%', color: '#0097A7' },
+    'humidity': { title: 'Humedad relativa', unit: '%', color: '#00BCD4' },
+    
+    // Temperaturas
+    'tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
+    'Tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
+    'tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
+    'Tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
+    'tmean': { title: 'Temperatura media', unit: '°C', color: '#9C27B0' },
+    
+    // Precipitación
+    'prec': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
+    'precipitation': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
+    
+    // Evapotranspiración
+    'et0': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
+    'evapotranspiration': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
+    
+    // Radiación solar
+    'rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+    'Rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+    'radiation': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+    
+    // Viento y presión
+    'wind': { title: 'Velocidad del viento', unit: 'm/s', color: '#607D8B' },
+    'pressure': { title: 'Presión atmosférica', unit: 'hPa', color: '#795548' },
+  });
+  
   // Opciones para el selector de período de indicadores
   const indicatorPeriodOptions = [
     { value: "daily", label: "Diario" },
@@ -256,6 +293,7 @@ export default function StationDetailPage() {
           DataClimaticDates.minDate, 
           DataClimaticDates.maxDate
         );
+        console.log(climateHistorical)
         setClimateHistoricalDataFull(climateHistorical);
       } catch (err) {
         console.error("Error loading climate data:", err);
@@ -630,63 +668,38 @@ export default function StationDetailPage() {
                         ))
                       ) : (
                         <>
-                        <ClimateChart 
-                          key={`climate-tmax-${timePeriod}`}
-                          title="Temperatura máxima" 
-                          unit="°C"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#4CAF50",
-                              data: climateHistoricalData?.Tmax?.values || [],
-                              dates: climateHistoricalData?.Tmax?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
-                        <ClimateChart 
-                          key={`climate-prec-${timePeriod}`}
-                          title="Precipitación" 
-                          unit="mm"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#2196F3",
-                              data: climateHistoricalData?.Prec?.values || [],
-                              dates: climateHistoricalData?.Prec?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                          chartType="bar"
-                        />
-                        <ClimateChart 
-                          key={`climate-tmin-${timePeriod}`}
-                          title="Temperatura mínima" 
-                          unit="°C"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#FF9800",
-                              data: climateHistoricalData?.Tmin?.values || [],
-                              dates: climateHistoricalData?.Tmin?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
-                        <ClimateChart 
-                          key={`climate-rad-${timePeriod}`}
-                          title="Radiación solar" 
-                          unit="MJ/m²"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#F44336",
-                              data: climateHistoricalData?.Rad?.values || [],
-                              dates: climateHistoricalData?.Rad?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
+                        {climateHistoricalData && Object.entries(climateHistoricalData).map(([key, data]) => {
+                          const config = variableConfig[key] || { 
+                            title: key.charAt(0).toUpperCase() + key.slice(1), 
+                            unit: '', 
+                            color: '#9E9E9E' 
+                          };
+
+                          const typedData = data as { values: number[]; dates: string[] };
+                          
+                          // Solo renderizar si hay datos válidos
+                          if (!typedData?.values?.length || !typedData?.dates?.length) {
+                            return null;
+                          }
+
+                          return (
+                            <ClimateChart 
+                              key={`climate-${key}-${timePeriod}`}
+                              title={config.title}
+                              unit={config.unit}
+                              datasets={[
+                                { 
+                                  label: "Datos estación", 
+                                  color: config.color,
+                                  data: typedData.values,
+                                  dates: typedData.dates
+                                }
+                              ]}
+                              period={timePeriod}
+                              chartType={config.chartType}
+                            />
+                          );
+                        })}
                         </>
                         )}
                       </div>
