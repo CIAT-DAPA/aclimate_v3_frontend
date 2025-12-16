@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
+import { StationsProvider } from "@/app/contexts/StationsContext";
 import { COUNTRY_NAME } from "./config";
 import { GoogleAnalytics  } from '@next/third-parties/google'
 
@@ -29,9 +30,11 @@ export default function RootLayout({
       <body className={`${montserrat.variable} antialiased`}>
         <AuthProvider>
           <CountryProvider>
-            <Header />
-            {children}
-            <Footer />
+            <StationsProvider>
+              <Header />
+              {children}
+              <Footer />
+            </StationsProvider>
           </CountryProvider>
         </AuthProvider>
       </body>
