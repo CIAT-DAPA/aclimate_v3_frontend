@@ -241,28 +241,28 @@ export default function SpatialDataPage() {
   const handleTimeChange = useCallback((time: string, layerName: string, layerTitle: string) => {
     const bbox = currentCountry.bboxWMS13;
     
+    // Extraer el workspace del layerName (ej: "climate_index:climate_index_annual_hn_TXx")
+    const workspace = layerName.split(':')[0];
+    const wmsUrl = `${GEOSERVER_URL}/${workspace}/wms`;
+    
     // Crear URL para la capa específica usando formato GeoTIFF
-    const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
+    const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
     
     // Actualizar la referencia sin causar rerender
     rasterFilesRef.current[layerName] = { url, layer: layerName, time, title: layerTitle };
     setDownloadReady(Object.keys(rasterFilesRef.current).length > 0);
-  }, [wmsBaseUrl, currentCountry.bboxWMS13]);
+  }, [currentCountry.bboxWMS13]);
 
   // Función para obtener el archivo raster actual de una capa (usada por los botones individuales)
   const getCurrentRasterFile = useCallback(async (layerName: string, layerTitle: string, wmsUrl: string) => {
     try {
-      console.log(`Getting raster file for: ${layerTitle} (${layerName})`);
-      
       // Si ya existe en la referencia, devolverlo
       if (rasterFilesRef.current[layerName]) {
-        console.log(`Using cached data for: ${layerTitle}`);
         return rasterFilesRef.current[layerName];
       }
 
       // Si no existe, obtener la primera fecha disponible de la capa
       const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
-      console.log(`Fetching capabilities from: ${capabilitiesUrl}`);
       
       const response = await fetch(capabilitiesUrl);
       if (!response.ok) {
@@ -285,7 +285,6 @@ export default function SpatialDataPage() {
           if (dimension && dimension.getAttribute('name') === 'time') {
             const times = dimension.textContent?.trim().split(',') || [];
             timeValue = times[times.length - 1] || ''; // Usar la última fecha disponible
-            console.log(`Found time for ${layerTitle}: ${timeValue}`);
           }
           break;
         }
@@ -298,11 +297,7 @@ export default function SpatialDataPage() {
         const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${timeValue}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
         const fileInfo = { url, layer: layerName, time: timeValue, title: layerTitle };
         rasterFilesRef.current[layerName] = fileInfo;
-        console.log(`Successfully prepared: ${layerTitle}`);
-        console.log(`Download URL: ${url}`);
         return fileInfo;
-      } else {
-        console.warn(`No time dimension found for: ${layerTitle}`);
       }
       
       return null;
@@ -310,7 +305,7 @@ export default function SpatialDataPage() {
       console.error(`Error obteniendo tiempo de capa ${layerTitle}:`, error);
       return null;
     }
-  }, [currentCountry.bbox]);
+  }, [currentCountry.bboxWMS13]);
 
   // Función para descargar todos los archivos
   const downloadAllData = async () => {
@@ -615,7 +610,7 @@ export default function SpatialDataPage() {
                                       downloadRasterFile(rasterFile);
                                     }
                                   }}
-                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors z-[1000]"
+                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                                   title="Descargar capa raster"
                                 >
                                   <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
@@ -810,7 +805,7 @@ export default function SpatialDataPage() {
                                       downloadRasterFile(rasterFile);
                                     }
                                   }}
-                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors z-[1000]"
+                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                                   title="Descargar capa raster"
                                 >
                                   <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
