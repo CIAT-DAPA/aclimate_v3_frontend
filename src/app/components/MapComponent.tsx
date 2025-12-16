@@ -30,6 +30,8 @@ import { faTemperatureArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { faCloudRain } from '@fortawesome/free-solid-svg-icons';
 import { faSun } from '@fortawesome/free-solid-svg-icons';
 import { faChartSimple } from '@fortawesome/free-solid-svg-icons';
+import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import { faMapPin } from '@fortawesome/free-solid-svg-icons';
 
 
 const customIcon = new Icon({
@@ -129,6 +131,9 @@ const MapComponent = ({
   // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(new Set());
+  
+  // Usar ref para evitar múltiples cargas de favoritos
+  const favoritesLoadedRef = useRef(false);
 
   // Efecto para centrar el mapa cuando se selecciona una estación desde la búsqueda
   useEffect(() => {
@@ -154,23 +159,26 @@ const MapComponent = ({
   // Cargar favoritos del usuario autenticado
   useEffect(() => {
     const loadUserFavorites = async () => {
-      if (!authenticated || !userValidatedInfo) {
+      // Solo cargar una vez cuando el usuario esté autenticado
+      if (!authenticated || !userValidatedInfo || favoritesLoadedRef.current) {
         return;
       }
 
       try {
-  const userId = userValidatedInfo.id;
+        favoritesLoadedRef.current = true;
+        const userId = userValidatedInfo.id;
         const userStations = await getUserStations(userId);
-        const favoriteIds = new Set(userStations.map(station => station.ws_ext_id?.toString() || ''));
+        const favoriteIds = new Set(userStations.map(station => station.location_id?.toString() || station.ws_ext_id?.toString() || ''));
         setFavorites(favoriteIds);
       } catch (error) {
         console.error('Error al cargar favoritos:', error);
         setFavorites(new Set());
+        favoritesLoadedRef.current = false; // Permitir reintentar si falla
       }
     };
 
     loadUserFavorites();
-  }, [authenticated, userValidatedInfo]);
+  }, [authenticated]);
 
   const toggleFavorite = async (stationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -257,9 +265,9 @@ const MapComponent = ({
         popupContent.className = 'p-2';
         popupContent.innerHTML = `
           <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-          <div class="text-xs text-gray-600 mb-2">
-            <p>Lat: ${lat.toFixed(5)}</p>
-            <p>Lng: ${lng.toFixed(5)}</p>
+          <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+            <span class="text-sm">📍</span>
+            <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
           </div>
           <p class="text-sm text-gray-500">Cargando...</p>
         `;
@@ -330,9 +338,9 @@ const MapComponent = ({
           // Actualizar el contenido del popup
           popupContent.innerHTML = `
             <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2">
-              <p>Lat: ${lat.toFixed(5)}</p>
-              <p>Lng: ${lng.toFixed(5)}</p>
+            <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+              <span class="text-sm">📍</span>
+              <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
             </div>
             <p class="text-sm font-medium text-gray-800">
               Valor: ${pixelValue}${unit ? ' ' + unit : ''}
@@ -342,9 +350,9 @@ const MapComponent = ({
           console.error('Error al obtener información del píxel:', error);
           popupContent.innerHTML = `
             <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2">
-              <p>Lat: ${lat.toFixed(5)}</p>
-              <p>Lng: ${lng.toFixed(5)}</p>
+            <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+              <span class="text-sm">📍</span>
+              <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
             </div>
             <p class="text-sm text-red-600">Error al cargar datos</p>
           `;
@@ -370,9 +378,9 @@ const MapComponent = ({
     });
 
     return (
-      <div className="mt-3 pt-3 border-t border-gray-200">
+      <div className="">
         <p className="text-xs text-gray-500 mb-3 font-medium">
-          Datos para: {new Date(data[0].date).toLocaleDateString()}
+          Datos actuales: {new Date(data[0].date).toLocaleDateString()}
         </p>
         <div className="grid grid-cols-2 gap-3">
           {/* Temperatura máxima */}
@@ -548,56 +556,22 @@ const MapComponent = ({
           >
             <Popup>
               <div className="p-4 min-w-[280px]">
-                <div className="flex justify-between items-start mb-3">
+                <div className="mb-3">
                   <h3 className="font-bold text-lg text-brand-green">
                     Estación {station.name}
                   </h3>
-                  <button
-                    onClick={(e) => toggleFavorite(station.id.toString(), e)}
-                    disabled={loadingFavorites.has(station.id.toString())}
-                    className={`p-1 ${
-                      favorites.has(station.id.toString()) 
-                        ? "text-yellow-500" 
-                        : "text-gray-400 hover:text-yellow-500"
-                    } transition-colors ${
-                      loadingFavorites.has(station.id.toString()) 
-                        ? "opacity-50 cursor-not-allowed" 
-                        : ""
-                    }`}
-                    aria-label="Agregar a favoritos"
-                  >
-                    {loadingFavorites.has(station.id.toString()) ? (
-                      <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
-                    ) : (
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5" 
-                        viewBox="0 0 20 20" 
-                        fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    )}
-                  </button>
                 </div>
                 
                 <div className="space-y-2 text-sm mb-4">
-                  <p className="text-gray-600">
-                    <span className="font-medium">Ubicación:</span>{" "}
-                    {station.admin2_name}, {station.admin1_name}
-                  </p>
-                  <p className="text-gray-600">
-                    <span className="font-medium">País:</span>{" "}
-                    {station.country_name}
+                  <p className="text-gray-600 flex items-center">
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm mr-2" />
+                    {station.admin1_name}, {station.admin2_name} 
                   </p>
                   
                   {/* Mostrar datos de la última fecha disponible */}
                   {renderStationData(station.id.toString())}
                   
-                  <p className="text-xs text-gray-400 mt-3 pt-2 border-t">
-                    Coordenadas: {station.latitude.toFixed(4)}, {station.longitude.toFixed(4)}
+                  <p className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-200">
                   </p>
                 </div>
                 
@@ -638,11 +612,11 @@ const MapComponent = ({
                   </button>
                   
                   <Link
-                    className="bg-brand-green text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
+                    className="flex items-center justify-center text-xs px-3 py-2 border border-gray-300 text-gray-600 bg-white rounded-md hover:text-gray-800 hover:bg-gray-50 transition-colors"
                     href={`/monitory/${station.id}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <FontAwesomeIcon icon={faChartSimple} />
+                    <FontAwesomeIcon icon={faChartSimple} className="mr-1" />
                     Monitoreo
                   </Link>
                 </div>
