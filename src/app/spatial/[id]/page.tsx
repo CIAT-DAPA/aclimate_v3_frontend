@@ -75,7 +75,7 @@ const indicatorPeriodOptions = [
 ];
 
 export default function SpatialDataPage() {
-  //const { countryId } = useCountry();
+  const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
@@ -100,7 +100,7 @@ export default function SpatialDataPage() {
   const [adminLayers, setAdminLayers] = useState<Array<{name: string, workspace: string, store: string, layer: string}>>([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
 
-  const countryId = "2";
+  //const countryId = "2";
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
   
