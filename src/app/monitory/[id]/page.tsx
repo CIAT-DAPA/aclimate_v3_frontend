@@ -1,7 +1,7 @@
 // app/monitory/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { stationService } from "@/app/services/stationService";
@@ -14,6 +14,44 @@ import { faMapMarkerAlt, faMapPin, faStar as faStarSolid, faFileArrowDown } from
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '@/app/hooks/useAuth';
 import { addUserStation, deleteUserStation, getUserStations } from '@/app/services/userService';
+
+// Configuración dinámica de variables climáticas
+const VARIABLE_CONFIG: Record<string, { title: string; unit: string; color: string; chartType?: "bar" | "line" | "area" }> = {
+  // Caudales
+  'cmin': { title: 'Caudal Mínimo diario', unit: 'mm³/seg', color: '#2196F3' },
+  'cmax': { title: 'Caudal máximo diario', unit: 'mm³/seg', color: '#1976D2' },
+  'cmean': { title: 'Caudal medio diario', unit: 'mm³/seg', color: '#0D47A1' },
+  
+  // Humedad relativa
+  'hrmax': { title: 'Humedad relativa máxima diaria', unit: '%', color: '#00BCD4' },
+  'hrmin': { title: 'Humedad relativa mínima diaria', unit: '%', color: '#0097A7' },
+  'humidity': { title: 'Humedad relativa', unit: '%', color: '#00BCD4' },
+  
+  // Temperaturas
+  'tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
+  'Tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
+  'tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
+  'Tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
+  'tmean': { title: 'Temperatura media', unit: '°C', color: '#9C27B0' },
+  
+  // Precipitación
+  'prec': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
+  'Prec': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
+  'precipitation': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
+  
+  // Evapotranspiración
+  'et0': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
+  'evapotranspiration': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
+  
+  // Radiación solar
+  'rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+  'Rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+  'radiation': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
+  
+  // Viento y presión
+  'wind': { title: 'Velocidad del viento', unit: 'm/s', color: '#607D8B' },
+  'pressure': { title: 'Presión atmosférica', unit: 'hPa', color: '#795548' },
+};
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -86,18 +124,40 @@ export default function StationDetailPage() {
   ];
 
   // Convertir fecha a formato de mes (para climatología)
-  const dateToMonthFormat = (date: string) => {
+  const dateToMonthFormat = useCallback((date: string) => {
     if (!date) return "2000-01";
-    const [year, month] = date.split('-');
+    const month = date.split("-")[1];
     return `2000-${month}`;
-  };
+  }, []);
 
-  const monthToDateFormat = (monthValue: string) => {
+  const monthToDateFormat = useCallback((monthValue: string) => {
     return `2000-${monthValue}`;
-  };
+  }, []);
+
+  // Función para limitar el rango de fechas a máximo 5 años
+  const limitDateRangeToYears = useCallback((startDate: string, endDate: string, maxYears: number = 5) => {
+    if (!startDate || !endDate) return { start: startDate, end: endDate };
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const yearsDiff = end.getFullYear() - start.getFullYear();
+    
+    if (yearsDiff <= maxYears) {
+      return { start: startDate, end: endDate };
+    }
+    
+    // Limitar a los últimos 5 años
+    const limitedStart = new Date(end);
+    limitedStart.setFullYear(end.getFullYear() - maxYears);
+    
+    return {
+      start: limitedStart.toISOString().split('T')[0],
+      end: endDate
+    };
+  }, []);
 
   // Función para filtrar datos climáticos en el cliente
-  const filterClimateData = (data: any, startDate: string, endDate: string, period: string) => {
+  const filterClimateData = useCallback((data: any, startDate: string, endDate: string, period: string) => {
     if (!data) return null;
     
     const filtered: any = {};
@@ -141,10 +201,10 @@ export default function StationDetailPage() {
     }
     
     return filtered;
-  };
+  }, []);
 
   // Función para filtrar datos de indicadores en el cliente
-  const filterIndicatorsData = (data: any, startDate: string, endDate: string) => {
+  const filterIndicatorsData = useCallback((data: any, startDate: string, endDate: string) => {
     if (!data) return null;
     
     const filtered: any = {};
@@ -166,7 +226,57 @@ export default function StationDetailPage() {
     });
     
     return filtered;
-  };
+  }, []);
+
+  // Datos de gráficos climáticos procesados y limitados
+  const climateChartsData = useMemo(() => {
+    if (!climateHistoricalData) return null;
+    
+    const maxPoints = 1000; // Limitar a 1000 puntos para rendimiento
+    const charts: any = {};
+    
+    // Procesar todas las variables que existen en los datos
+    Object.keys(climateHistoricalData).forEach(varKey => {
+      const varData = climateHistoricalData[varKey];
+      const config = VARIABLE_CONFIG[varKey];
+      
+      if (varData && varData.dates && varData.values && config) {
+        let { dates, values } = varData;
+        
+        // Si hay demasiados datos, hacer muestreo uniforme
+        if (dates.length > maxPoints) {
+          const step = Math.floor(dates.length / maxPoints);
+          const sampledDates = [];
+          const sampledValues = [];
+          
+          for (let i = 0; i < dates.length; i += step) {
+            sampledDates.push(dates[i]);
+            sampledValues.push(values[i]);
+          }
+          
+          // Asegurar que se incluya el último punto
+          if (sampledDates[sampledDates.length - 1] !== dates[dates.length - 1]) {
+            sampledDates.push(dates[dates.length - 1]);
+            sampledValues.push(values[values.length - 1]);
+          }
+          
+          dates = sampledDates;
+          values = sampledValues;
+        }
+        
+        charts[varKey] = {
+          title: config.title,
+          unit: config.unit,
+          color: config.color,
+          chartType: config.chartType || 'line',
+          data: values,
+          dates: dates
+        };
+      }
+    });
+    
+    return Object.keys(charts).length > 0 ? charts : null;
+  }, [climateHistoricalData]);
 
  
 
@@ -258,12 +368,11 @@ export default function StationDetailPage() {
   useEffect(() => {
     const fetchDates = async () => {
       try {
-  const dates = await monitoryService.getStationDates(id, timePeriod, false);
-  // Anotar el período para el que se obtuvieron estas fechas
-  setDataClimaticDates({ ...dates, _period: timePeriod });
+        const dates = await monitoryService.getStationDates(id, timePeriod, false);
+        setDataClimaticDates({ ...dates, _period: timePeriod });
         
-  const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
-  setIndicatorsDates({ ...datesIndicators, _period: timePeriodIndicators });
+        const datesIndicators = await monitoryService.getStationDates(id, timePeriodIndicators, true);
+        setIndicatorsDates({ ...datesIndicators, _period: timePeriodIndicators });
 
         // Obtener la fecha mínima y máxima entre ambos objetos
         if (dates.minDate && dates.maxDate && datesIndicators.minDate && datesIndicators.maxDate) {
@@ -278,15 +387,16 @@ export default function StationDetailPage() {
           const end = dateToMonthFormat("2000-12");
           setFilterDatesClimatic({ start, end });
         } else {
-          const start = dates.minDate || "";
-          const end = dates.maxDate || "";
-          setFilterDatesClimatic({ start, end });
+          // Limitar a 5 años máximo
+          const limitedDates = limitDateRangeToYears(dates.minDate || "", dates.maxDate || "");
+          setFilterDatesClimatic({ start: limitedDates.start, end: limitedDates.end });
         }
         
-        // Resetear filtros de indicadores cuando cambia el período
+        // Resetear filtros de indicadores cuando cambia el período (también limitado a 5 años)
+        const limitedIndicatorDates = limitDateRangeToYears(datesIndicators.minDate || "", datesIndicators.maxDate || "");
         setFilterDatesIndicators({ 
-          start: datesIndicators.minDate || "", 
-          end: datesIndicators.maxDate || "" 
+          start: limitedIndicatorDates.start, 
+          end: limitedIndicatorDates.end 
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error loading dates");
@@ -296,7 +406,7 @@ export default function StationDetailPage() {
     if (id) {
       fetchDates();
     }
-  }, [id, timePeriod, timePeriodIndicators]);
+  }, [id, timePeriod, timePeriodIndicators, dateToMonthFormat, limitDateRangeToYears]);
 
   // Al cambiar el período climático, limpiar de inmediato los datos para evitar parpadeo de gráficos anteriores
   useEffect(() => {
@@ -331,6 +441,7 @@ export default function StationDetailPage() {
           DataClimaticDates.minDate, 
           DataClimaticDates.maxDate
         );
+        
         setClimateHistoricalDataFull(climateHistorical);
       } catch (err) {
         console.error("Error loading climate data:", err);
@@ -350,14 +461,19 @@ export default function StationDetailPage() {
       return;
     }
     
-    const filtered = filterClimateData(
-      climateHistoricalDataFull,
-      filterDatesClimatic.start,
-      filterDatesClimatic.end,
-      timePeriod
-    );
-    setClimateHistoricalData(filtered);
-  }, [climateHistoricalDataFull, filterDatesClimatic.start, filterDatesClimatic.end, timePeriod]);
+    // Añadir un pequeño delay para evitar actualizaciones muy rápidas
+    const timeoutId = setTimeout(() => {
+      const filtered = filterClimateData(
+        climateHistoricalDataFull,
+        filterDatesClimatic.start,
+        filterDatesClimatic.end,
+        timePeriod
+      );
+      setClimateHistoricalData(filtered);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [climateHistoricalDataFull, filterDatesClimatic.start, filterDatesClimatic.end, timePeriod, filterClimateData]);
 
   // Efecto para cargar datos de indicadores COMPLETOS cuando cambian las fechas calculadas para el período actual
   useEffect(() => {
@@ -389,13 +505,18 @@ export default function StationDetailPage() {
       return;
     }
     
-    const filtered = filterIndicatorsData(
-      indicatorsDataFull,
-      filterDatesIndicators.start,
-      filterDatesIndicators.end
-    );
-    setIndicatorsData(filtered);
-  }, [indicatorsDataFull, filterDatesIndicators.start, filterDatesIndicators.end]);
+    // Añadir un pequeño delay para evitar actualizaciones muy rápidas
+    const timeoutId = setTimeout(() => {
+      const filtered = filterIndicatorsData(
+        indicatorsDataFull,
+        filterDatesIndicators.start,
+        filterDatesIndicators.end
+      );
+      setIndicatorsData(filtered);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [indicatorsDataFull, filterDatesIndicators.start, filterDatesIndicators.end, filterIndicatorsData]);
 
   // Formatear fechas (calcular antes de useEffect/useMemo)
   const startDate = stationDates?.minDate;
@@ -698,72 +819,36 @@ export default function StationDetailPage() {
                       {/* Gráficas de datos climáticos */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {loadingCharts ? (
-                        // Mostrar esqueletos de carga
-                        Array.from({ length: 4 }).map((_, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                          // Mostrar esqueletos de carga
+                          Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                            </div>
+                          ))
+                        ) : climateChartsData ? (
+                          // Renderizar gráficas dinámicamente
+                          Object.entries(climateChartsData).map(([varKey, chartData]: [string, any]) => (
+                            <ClimateChart 
+                              key={`climate-${varKey}-${timePeriod}`}
+                              title={chartData.title} 
+                              unit={chartData.unit}
+                              datasets={[
+                                { 
+                                  label: "Datos estación", 
+                                  color: chartData.color,
+                                  data: chartData.data,
+                                  dates: chartData.dates
+                                }
+                              ]}
+                              period={timePeriod}
+                              chartType={chartData.chartType}
+                            />
+                          ))
+                        ) : (
+                          // Mostrar mensaje cuando no hay datos
+                          <div className="col-span-full text-center text-gray-500 py-8">
+                            No hay datos climáticos disponibles para el período seleccionado
                           </div>
-                        ))
-                      ) : (
-                        <>
-                        <ClimateChart 
-                          key={`climate-tmax-${timePeriod}`}
-                          title="Temperatura máxima" 
-                          unit="°C"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#4CAF50",
-                              data: climateHistoricalData?.Tmax?.values || [],
-                              dates: climateHistoricalData?.Tmax?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
-                        <ClimateChart 
-                          key={`climate-prec-${timePeriod}`}
-                          title="Precipitación" 
-                          unit="mm"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#2196F3",
-                              data: climateHistoricalData?.Prec?.values || [],
-                              dates: climateHistoricalData?.Prec?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                          chartType="bar"
-                        />
-                        <ClimateChart 
-                          key={`climate-tmin-${timePeriod}`}
-                          title="Temperatura mínima" 
-                          unit="°C"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#FF9800",
-                              data: climateHistoricalData?.Tmin?.values || [],
-                              dates: climateHistoricalData?.Tmin?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
-                        <ClimateChart 
-                          key={`climate-rad-${timePeriod}`}
-                          title="Radiación solar" 
-                          unit="MJ/m²"
-                          datasets={[
-                            { 
-                              label: "Datos estación", 
-                              color: "#F44336",
-                              data: climateHistoricalData?.Rad?.values || [],
-                              dates: climateHistoricalData?.Rad?.dates || []
-                            }
-                          ]}
-                          period={timePeriod}
-                        />
-                        </>
                         )}
                       </div>
                     </div>
