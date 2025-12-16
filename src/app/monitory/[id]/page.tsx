@@ -6,13 +6,15 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
+import { spatialService } from "@/app/services/spatialService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMapMarkerAlt, faMapPin, faStar as faStarSolid, faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faMapMarkerAlt, faMapPin, faStar as faStarSolid, faFileArrowDown, faSatellite } from '@fortawesome/free-solid-svg-icons';
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useCountry } from '@/app/contexts/CountryContext';
 import { addUserStation, deleteUserStation, getUserStations } from '@/app/services/userService';
 
 // Configuración dinámica de variables climáticas
@@ -53,6 +55,13 @@ const VARIABLE_CONFIG: Record<string, { title: string; unit: string; color: stri
   'pressure': { title: 'Presión atmosférica', unit: 'hPa', color: '#795548' },
 };
 
+// Mapeo de códigos de país a códigos usados en geoserver
+const countryCodeMap: Record<string, string> = {
+  "1": "co", // Colombia
+  "2": "hn",  // Honduras
+  "3": "st",  // SAT AMAZONIA
+};
+
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -81,6 +90,7 @@ const MONTHS = [
 export default function StationDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const [timePeriod, setTimePeriod] = useState<string>("daily");
@@ -98,6 +108,12 @@ export default function StationDetailPage() {
   // Estados para favoritos
   const [isFavorite, setIsFavorite] = useState(false);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  
+  // Estados para comparación satelital
+  const [isSatelliteActive, setIsSatelliteActive] = useState(false);
+  const [loadingSatellite, setLoadingSatellite] = useState(false);
+  const [satelliteData, setSatelliteData] = useState<any>(null);
+  
   const { authenticated, userValidatedInfo } = useAuth();
   
   // Datos completos sin filtrar (cargados una sola vez)
@@ -228,6 +244,60 @@ export default function StationDetailPage() {
     return filtered;
   }, []);
 
+  // Función para obtener datos satelitales
+  const toggleSatelliteComparison = useCallback(async () => {
+    if (!station || !filterDatesClimatic.start || !filterDatesClimatic.end) {
+      return;
+    }
+
+    setLoadingSatellite(true);
+
+    try {
+      if (isSatelliteActive) {
+        // Desactivar comparación
+        setIsSatelliteActive(false);
+        setSatelliteData(null);
+      } else {
+        // Al activar comparación satelital, limitar a máximo 3 años
+        const limitedDates = limitDateRangeToYears(filterDatesClimatic.start, filterDatesClimatic.end, 3);
+        
+        // Actualizar las fechas del filtro climático a este rango limitado
+        setFilterDatesClimatic({
+          start: limitedDates.start,
+          end: limitedDates.end
+        });
+        
+        // Obtener código de país dinámicamente
+        const countryCode = countryCodeMap[countryId || "2"] || "hn";
+        
+        // Construir workspace dinámico basado en el período
+        const workspace = `climate_historical_${timePeriod}`;
+        
+        // Construir store dinámico: climate_historical_{timePeriod}_{countryCode}_prec
+        const store = `climate_historical_${timePeriod}_${countryCode}_prec`;
+        
+        // Activar comparación - obtener datos satelitales usando spatialService
+        const satelliteResponse = await spatialService.getPointData({
+          coordinates: [[station.longitude, station.latitude]],
+          start_date: limitedDates.start,
+          end_date: limitedDates.end,
+          workspace: workspace,
+          store: store,
+          temporality: timePeriod === 'climatology' ? 'monthly' : timePeriod
+        });
+        
+        setSatelliteData(satelliteResponse.data);
+        setIsSatelliteActive(true);
+      }
+    } catch (error) {
+      console.error('Error en comparación satelital:', error);
+      setIsSatelliteActive(false);
+      setSatelliteData(null);
+    } finally {
+      setLoadingSatellite(false);
+    }
+  }, [station, filterDatesClimatic.start, filterDatesClimatic.end, timePeriod, isSatelliteActive, countryId, limitDateRangeToYears]);
+
   // Datos de gráficos climáticos procesados y limitados
   const climateChartsData = useMemo(() => {
     if (!climateHistoricalData) return null;
@@ -264,19 +334,89 @@ export default function StationDetailPage() {
           values = sampledValues;
         }
         
+        // Preparar datasets base
+        const datasets = [{
+          label: "Datos estación", 
+          color: config.color,
+          data: values,
+          dates: dates
+        }];
+        
+        // Agregar datos satelitales si están disponibles y es precipitación
+        if (isSatelliteActive && satelliteData && (varKey === 'prec' || varKey === 'Prec' || varKey === 'precipitation')) {
+          // Crear un mapa de fechas de la estación para matching rápido
+          const stationDateMap = new Set(dates);
+          
+          // Obtener el rango de valores de la estación para referencia
+          const stationValues = values.filter(v => v != null && isFinite(v) && v >= 0);
+          const maxStationValue = Math.max(...stationValues, 0);
+          const avgStationValue = stationValues.length > 0 ? stationValues.reduce((a, b) => a + b, 0) / stationValues.length : 0;
+          
+          // Filtrar y mapear datos satelitales que coincidan con las fechas de la estación
+          const matchedSatelliteData = satelliteData
+            .filter((item: any) => {
+              if (!stationDateMap.has(item.date) || typeof item.value !== 'number' || !isFinite(item.value)) {
+                return false;
+              }
+              
+              let value = Number(item.value);
+              
+              // Conversión más agresiva de unidades
+              // Si el valor es extremadamente grande, probablemente está en unidades incorrectas
+              while (value > 1000 && value > maxStationValue * 10) {
+                value = value / 1000;
+              }
+              
+              // Filtrar valores que siguen siendo demasiado grandes después de la conversión
+              return value >= 0 && value < 500; // Máximo razonable para precipitación diaria
+            })
+            .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+          if (matchedSatelliteData.length > 0) {
+            // Crear arrays paralelos para fechas y valores satelitales
+            const satelliteDates = matchedSatelliteData.map((item: any) => item.date);
+            const satelliteValues = matchedSatelliteData.map((item: any) => {
+              let value = Number(item.value);
+              
+              // Conversión más agresiva de unidades
+              while (value > 1000 && value > maxStationValue * 10) {
+                value = value / 1000;
+              }
+              
+              // Si después de la conversión el valor sigue siendo muy alto comparado con la estación
+              if (value > maxStationValue * 5) {
+                value = value / 1000;
+              }
+              
+              // Redondear para evitar decimales excesivos
+              return Math.round(Math.max(0, value) * 100) / 100;
+            });
+            
+            // Solo agregar si hay valores válidos después del procesamiento
+            const validValues = satelliteValues.filter(v => v >= 0 && v < 500);
+            if (validValues.length > 0) {
+              datasets.push({
+                label: "Datos satelitales",
+                color: "#FF6B6B",
+                data: satelliteValues,
+                dates: satelliteDates
+              });
+            }
+          }
+        }
+        
         charts[varKey] = {
           title: config.title,
           unit: config.unit,
           color: config.color,
           chartType: config.chartType || 'line',
-          data: values,
-          dates: dates
+          datasets: datasets
         };
       }
     });
     
     return Object.keys(charts).length > 0 ? charts : null;
-  }, [climateHistoricalData]);
+  }, [climateHistoricalData, isSatelliteActive, satelliteData]);
 
  
 
@@ -832,14 +972,7 @@ export default function StationDetailPage() {
                               key={`climate-${varKey}-${timePeriod}`}
                               title={chartData.title} 
                               unit={chartData.unit}
-                              datasets={[
-                                { 
-                                  label: "Datos estación", 
-                                  color: chartData.color,
-                                  data: chartData.data,
-                                  dates: chartData.dates
-                                }
-                              ]}
+                              datasets={chartData.datasets}
                               period={timePeriod}
                               chartType={chartData.chartType}
                             />
@@ -981,6 +1114,29 @@ export default function StationDetailPage() {
         </main>
 
       
+              {/* Botón flotante para comparación satelital */}
+              <button
+                onClick={toggleSatelliteComparison}
+                disabled={!station || loadingSatellite}
+                className={`fixed bottom-40 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-50 transition-all hover:scale-110 ${
+                  !station
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : isSatelliteActive 
+                      ? 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300' 
+                      : 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-400'
+                } focus:outline-none focus:ring-4`}
+                title={!station ? 'Estación no disponible' : isSatelliteActive ? 'Desactivar comparación satelital' : 'Activar comparación satelital'}
+              >
+                {loadingSatellite ? (
+                  <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+                ) : (
+                  <FontAwesomeIcon 
+                    icon={faSatellite} 
+                    className="h-6 w-6" 
+                  />
+                )}
+              </button>
+
               {/* Botón flotante de favoritos */}
               <button
                 onClick={toggleFavorite}

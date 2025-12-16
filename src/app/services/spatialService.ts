@@ -31,6 +31,21 @@ export interface Indicator {
   updated_at: string;
 }
 
+export interface PointDataRequest {
+  coordinates: number[][];
+  start_date: string;
+  end_date: string;
+  workspace: string;
+  store: string;
+  temporality: string;
+}
+
+export interface PointDataResult {
+  coordinate: number[];
+  date: string;
+  value: number;
+}
+
 export const spatialService = {
     getDatesFromGeoserver: async (wmsUrl: string, layer: string) => {
         try {
@@ -276,6 +291,16 @@ export const spatialService = {
         } catch (error) {
             console.error("Error fetching admin layers from GeoServer:", error);
             return [];
+        }
+    },
+
+    getPointData: async (request: PointDataRequest): Promise<{ data: PointDataResult[] }> => {
+        try {
+            const response = await axios.post(`${API_URL}/geoserver/point-data`, request);
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching point data:", error);
+            throw new Error("Error obteniendo datos satelitales");
         }
     }
 }
