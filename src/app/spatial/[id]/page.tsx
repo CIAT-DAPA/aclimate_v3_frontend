@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { spatialService, IndicatorCategory, Indicator } from "@/app/services/spatialService";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -73,12 +75,13 @@ const indicatorPeriodOptions = [
 ];
 
 export default function SpatialDataPage() {
-  const { countryId } = useCountry();
+  //const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [isPreparingDownload, setIsPreparingDownload] = useState(false);
   
   // Estados para datos climáticos
   const [timePeriod, setTimePeriod] = useState<string>("daily");
@@ -97,7 +100,7 @@ export default function SpatialDataPage() {
   const [adminLayers, setAdminLayers] = useState<Array<{name: string, workspace: string, store: string, layer: string}>>([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
 
-  //const countryId = "2";
+  const countryId = "2";
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
   
@@ -106,21 +109,24 @@ export default function SpatialDataPage() {
   const wmsBaseUrl = `${GEOSERVER_URL}/${workspace}/wms`;
 
   // Coordenadas por país
-  const countryCoordinates: Record<string, { center: [number, number]; zoom: number; bbox: string }> = {
+  const countryCoordinates: Record<string, { center: [number, number]; zoom: number; bbox: string; bboxWMS13: string }> = {
     "hn": {
       center: [14.5, -86.5],
       zoom: 7,
-      bbox: "-89.5,12.9,-83.1,16.5"
+      bbox: "-89.5,12.9,-83.1,16.5", // WMS 1.1.0 format: minx,miny,maxx,maxy
+      bboxWMS13: "12.9,-89.5,16.5,-83.1" // WMS 1.3.0 EPSG:4326 format: miny,minx,maxy,maxx
     },
     "co": {
       center: [4.5, -74.0],
       zoom: 6,
-      bbox: "-79.0,-4.2,-66.9,12.5"
+      bbox: "-79.0,-4.2,-66.9,12.5",
+      bboxWMS13: "-4.2,-79.0,12.5,-66.9"
     },
     "st": {
       center: [-1.25, -71.25],
       zoom: 6,
-      bbox: "-76.0,-5.5,-66.5,3.0"
+      bbox: "-76.0,-5.5,-66.5,3.0",
+      bboxWMS13: "-5.5,-76.0,3.0,-66.5"
     }
   };
 
@@ -225,51 +231,207 @@ export default function SpatialDataPage() {
     loadIndicators();
   }, [countryId, indicatorPeriod, selectedCategory]);
 
+  // Habilitar botón de descarga solo cuando hay capas disponibles
+  useEffect(() => {
+    const hasAvailableLayers = availableLayers.some(layer => layer.available);
+    const hasIndicators = indicators.length > 0;
+    setDownloadReady(hasAvailableLayers || hasIndicators);
+  }, [availableLayers, indicators]);
+
   const handleTimeChange = useCallback((time: string, layerName: string, layerTitle: string) => {
-    const bbox = currentCountry.bbox;
+    const bbox = currentCountry.bboxWMS13;
     
-    // Crear URL para la capa específica
-    const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/tiff&transparent=true&time=${time}&bbox=${bbox}&width=512&height=512&crs=EPSG:4326`;
+    // Crear URL para la capa específica usando formato GeoTIFF
+    const url = `${wmsBaseUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
     
     // Actualizar la referencia sin causar rerender
     rasterFilesRef.current[layerName] = { url, layer: layerName, time, title: layerTitle };
     setDownloadReady(Object.keys(rasterFilesRef.current).length > 0);
-  }, [wmsBaseUrl, currentCountry.bbox]);
+  }, [wmsBaseUrl, currentCountry.bboxWMS13]);
+
+  // Función para obtener el archivo raster actual de una capa (usada por los botones individuales)
+  const getCurrentRasterFile = useCallback(async (layerName: string, layerTitle: string, wmsUrl: string) => {
+    try {
+      console.log(`Getting raster file for: ${layerTitle} (${layerName})`);
+      
+      // Si ya existe en la referencia, devolverlo
+      if (rasterFilesRef.current[layerName]) {
+        console.log(`Using cached data for: ${layerTitle}`);
+        return rasterFilesRef.current[layerName];
+      }
+
+      // Si no existe, obtener la primera fecha disponible de la capa
+      const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
+      console.log(`Fetching capabilities from: ${capabilitiesUrl}`);
+      
+      const response = await fetch(capabilitiesUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, 'text/xml');
+      
+      // Buscar la dimensión de tiempo para esta capa
+      const layers = xmlDoc.getElementsByTagName('Layer');
+      let timeValue = '';
+      
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+        const nameElement = layer.getElementsByTagName('Name')[0];
+        if (nameElement && nameElement.textContent === layerName) {
+          const dimension = layer.getElementsByTagName('Dimension')[0];
+          if (dimension && dimension.getAttribute('name') === 'time') {
+            const times = dimension.textContent?.trim().split(',') || [];
+            timeValue = times[times.length - 1] || ''; // Usar la última fecha disponible
+            console.log(`Found time for ${layerTitle}: ${timeValue}`);
+          }
+          break;
+        }
+      }
+
+      if (timeValue) {
+        const bbox = currentCountry.bboxWMS13;
+        // Usar image/geotiff para obtener los valores reales del raster
+        // WMS 1.3.0 con EPSG:4326 requiere orden: miny,minx,maxy,maxx (lat,lon,lat,lon)
+        const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${timeValue}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
+        const fileInfo = { url, layer: layerName, time: timeValue, title: layerTitle };
+        rasterFilesRef.current[layerName] = fileInfo;
+        console.log(`Successfully prepared: ${layerTitle}`);
+        console.log(`Download URL: ${url}`);
+        return fileInfo;
+      } else {
+        console.warn(`No time dimension found for: ${layerTitle}`);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error obteniendo tiempo de capa ${layerTitle}:`, error);
+      return null;
+    }
+  }, [currentCountry.bbox]);
 
   // Función para descargar todos los archivos
   const downloadAllData = async () => {
-    const files = Object.values(rasterFilesRef.current);
+    if (isPreparingDownload) return; // Evitar múltiples clics
     
-    if (files.length === 0) {
-      alert("No hay datos para descargar. Por favor, selecciona un tiempo para al menos una capa primero.");
-      return;
-    }
-
-    setDownloadProgress(0);
+    setIsPreparingDownload(true);
+    setDownloadProgress(1);
     
     try {
-      for (let i = 0; i < files.length; i++) {
-        const fileInfo = files[i];
-        const link = document.createElement('a');
-        link.href = fileInfo.url;
-        link.download = `${fileInfo.title.replace(/\s+/g, '_')}_${fileInfo.time}.tiff`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      // Obtener todas las capas disponibles (clima + indicadores)
+      const allLayers: Array<{name: string, title: string, wmsUrl: string}> = [];
+      
+      // Agregar capas climáticas disponibles
+      availableLayers.forEach(layer => {
+        if (layer.available) {
+          allLayers.push({
+            name: layer.name,
+            title: layer.title,
+            wmsUrl: wmsBaseUrl
+          });
+        }
+      });
+      
+      // Agregar indicadores disponibles
+      indicators.forEach(indicator => {
+        const layerName = `climate_index:climate_index_${indicatorPeriod}_${countryCode}_${indicator.short_name}`;
+        const indicatorWmsUrl = `${GEOSERVER_URL}/climate_index/wms`;
+        allLayers.push({
+          name: layerName,
+          title: indicator.name,
+          wmsUrl: indicatorWmsUrl
+        });
+      });
+
+      if (allLayers.length === 0) {
+        alert("No hay capas disponibles para descargar.");
+        setDownloadProgress(0);
+        setIsPreparingDownload(false);
+        return;
+      }
+
+      // Obtener los archivos raster para cada capa
+      const filesToDownload: RasterFileInfo[] = [];
+      for (let i = 0; i < allLayers.length; i++) {
+        const layer = allLayers[i];
+        const fileInfo = await getCurrentRasterFile(layer.name, layer.title, layer.wmsUrl);
+        if (fileInfo) {
+          filesToDownload.push(fileInfo);
+        }
+        // Actualizar progreso de preparación (0-50%)
+        setDownloadProgress(Math.round(((i + 1) / allLayers.length) * 50));
+      }
+      
+      if (filesToDownload.length === 0) {
+        alert("No se pudieron obtener los archivos para descargar.");
+        setDownloadProgress(0);
+        setIsPreparingDownload(false);
+        return;
+      }
+
+      // Descargar todos los archivos usando fetch + blob para evitar bloqueos del navegador
+      for (let i = 0; i < filesToDownload.length; i++) {
+        const fileInfo = filesToDownload[i];
         
-        // Actualizar progreso
-        setDownloadProgress(Math.round(((i + 1) / files.length) * 100));
+        try {
+          // Usar fetch para descargar el archivo
+          const response = await fetch(fileInfo.url);
+          if (!response.ok) {
+            console.error(`Failed to download ${fileInfo.title}: HTTP ${response.status}`);
+            continue;
+          }
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${fileInfo.title.replace(/\s+/g, '_')}_${fileInfo.time}.tiff`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Liberar el objeto URL
+          setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        } catch (error) {
+          console.error(`Error downloading ${fileInfo.title}:`, error);
+        }
         
-        // Pequeña pausa entre descargas para evitar sobrecargar el navegador
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Actualizar progreso de descarga (50-100%)
+        setDownloadProgress(50 + Math.round(((i + 1) / filesToDownload.length) * 50));
+        
+        // Pequeña pausa entre descargas para dar tiempo al navegador
+        if (i < filesToDownload.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
       
       // Resetear progreso después de 2 segundos
-      setTimeout(() => setDownloadProgress(0), 2000);
+      setTimeout(() => {
+        setDownloadProgress(0);
+        setIsPreparingDownload(false);
+      }, 2000);
     } catch (error) {
       console.error("Error descargando archivos:", error);
       alert("Ocurrió un error al descargar los archivos. Por favor, intenta nuevamente.");
       setDownloadProgress(0);
+      setIsPreparingDownload(false);
+    }
+  };
+
+  // Función para descargar un archivo raster individual
+  const downloadRasterFile = (fileInfo: RasterFileInfo) => {
+    try {
+      const link = document.createElement('a');
+      link.href = fileInfo.url;
+      link.download = `${fileInfo.title.replace(/\s+/g, '_')}_${fileInfo.time}.tiff`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error descargando archivo:", error);
+      alert("Ocurrió un error al descargar el archivo. Por favor, intenta nuevamente.");
     }
   };
 
@@ -420,7 +582,7 @@ export default function SpatialDataPage() {
                             )}
 
                             {layer.available ? (
-                              <div className="h-[550px] w-full rounded-lg overflow-hidden">
+                              <div className="relative h-[550px] w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   key={layer.name}
                                   center={currentCountry.center}
@@ -441,6 +603,23 @@ export default function SpatialDataPage() {
                                   adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layer.name, layer.title)}
                                 />
+                                {/* Botón de descarga dentro del mapa - posicionado debajo de zoom */}
+                                <button
+                                  onClick={async () => {
+                                    let rasterFile = rasterFilesRef.current[layer.name];
+                                    if (!rasterFile) {
+                                      // Si no existe, obtener la fecha actual del mapa
+                                      rasterFile = await getCurrentRasterFile(layer.name, layer.title, wmsBaseUrl);
+                                    }
+                                    if (rasterFile) {
+                                      downloadRasterFile(rasterFile);
+                                    }
+                                  }}
+                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors z-[1000]"
+                                  title="Descargar capa raster"
+                                >
+                                  <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
+                                </button>
                               </div>
                             ) : (
                               <div className="h-[550px] w-full rounded-lg bg-gray-100 flex items-center justify-center">
@@ -599,7 +778,7 @@ export default function SpatialDataPage() {
                                   </p>
                                 )}
                               </div>
-                              <div className="h-[550px] w-full rounded-lg overflow-hidden">
+                              <div className="relative h-[550px] w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   center={currentCountry.center}
                                   zoom={currentCountry.zoom}
@@ -619,6 +798,23 @@ export default function SpatialDataPage() {
                                   adminLayers={adminLayers}
                                   onTimeChange={(time) => handleTimeChange(time, layerName, indicator.name)}
                                 />
+                                {/* Botón de descarga dentro del mapa - posicionado debajo de zoom */}
+                                <button
+                                  onClick={async () => {
+                                    let rasterFile = rasterFilesRef.current[layerName];
+                                    if (!rasterFile) {
+                                      // Si no existe, obtener la fecha actual del mapa
+                                      rasterFile = await getCurrentRasterFile(layerName, indicator.name, indicatorWmsUrl);
+                                    }
+                                    if (rasterFile) {
+                                      downloadRasterFile(rasterFile);
+                                    }
+                                  }}
+                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors z-[1000]"
+                                  title="Descargar capa raster"
+                                >
+                                  <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
+                                </button>
                               </div>
                             </div>
                           );
@@ -631,27 +827,41 @@ export default function SpatialDataPage() {
             </div>
           </div>
 
-          <div className="p-6 border-t border-gray-200 flex flex-col items-start gap-4">
-            <button 
-              className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              onClick={downloadAllData}
-              disabled={!downloadReady}
-            >
-              {downloadProgress > 0 ? `Descargando... ${downloadProgress}%` : "Descargar todos los datos raster"}
-            </button>
-            
-            {downloadProgress > 0 && (
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-green-600 h-2.5 rounded-full transition-all duration-300" 
-                  style={{ width: `${downloadProgress}%` }}
-                ></div>
-              </div>
-            )}
-            
-          </div>
         </div>
       </main>
+
+      {/* Botón flotante de descarga de todos los rasters */}
+      <button
+        onClick={downloadAllData}
+        disabled={!downloadReady || isPreparingDownload}
+        className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-50 transition-all hover:scale-110"
+        title={
+          !downloadReady 
+            ? "Esperando que las capas se carguen..." 
+            : downloadProgress > 0 
+              ? `Descargando... ${downloadProgress}%` 
+              : "Descargar todos los datos raster"
+        }
+      >
+        {downloadProgress > 0 ? (
+          <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-white inline-block"></span>
+        ) : (
+          <FontAwesomeIcon icon={faFileArrowDown} className="h-8 w-8" />
+        )}
+      </button>
+
+      {/* Barra de progreso flotante */}
+      {downloadProgress > 0 && (
+        <div className="fixed bottom-24 right-8 w-64 bg-white rounded-lg shadow-lg p-4 no-print z-50">
+          <p className="text-sm text-gray-700 mb-2">Descargando... {downloadProgress}%</p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-green-600 h-2.5 rounded-full transition-all duration-300" 
+              style={{ width: `${downloadProgress}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

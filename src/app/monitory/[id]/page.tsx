@@ -9,6 +9,11 @@ import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMapMarkerAlt, faMapPin, faStar as faStarSolid, faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
+import { useAuth } from '@/app/hooks/useAuth';
+import { addUserStation, deleteUserStation, getUserStations } from '@/app/services/userService';
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -52,6 +57,11 @@ export default function StationDetailPage() {
   const [DataClimaticDates, setDataClimaticDates] = useState<any>(null);
   const [IndicatorsDates, setIndicatorsDates] = useState<any>(null);
   
+  // Estados para favoritos
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const { authenticated, userValidatedInfo } = useAuth();
+  
   // Datos completos sin filtrar (cargados una sola vez)
   const [climateHistoricalDataFull, setClimateHistoricalDataFull] = useState<any>(null);
   const [indicatorsDataFull, setIndicatorsDataFull] = useState<any>(null);
@@ -64,43 +74,6 @@ export default function StationDetailPage() {
   const [loadingCharts, setLoadingCharts] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
-  
-  // Mapeo de variables a configuración de visualización
-  const [variableConfig] = useState<Record<string, { title: string; unit: string; color: string; chartType?: "bar" | "line" | "area" }>>({
-    // Caudales
-    'cmin': { title: 'Caudal Mínimo diario', unit: 'mm³/seg', color: '#2196F3' },
-    'cmax': { title: 'Caudal máximo diario', unit: 'mm³/seg', color: '#1976D2' },
-    'cmean': { title: 'Caudal medio diario', unit: 'mm³/seg', color: '#0D47A1' },
-    
-    // Humedad relativa
-    'hrmax': { title: 'Humedad relativa máxima diaria', unit: '%', color: '#00BCD4' },
-    'hrmin': { title: 'Humedad relativa mínima diaria', unit: '%', color: '#0097A7' },
-    'humidity': { title: 'Humedad relativa', unit: '%', color: '#00BCD4' },
-    
-    // Temperaturas
-    'tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
-    'Tmax': { title: 'Temperatura máxima', unit: '°C', color: '#F44336' },
-    'tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
-    'Tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
-    'tmean': { title: 'Temperatura media', unit: '°C', color: '#9C27B0' },
-    
-    // Precipitación
-    'prec': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
-    'precipitation': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
-    
-    // Evapotranspiración
-    'et0': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
-    'evapotranspiration': { title: 'Evapotranspiración', unit: 'mm', color: '#795548' },
-    
-    // Radiación solar
-    'rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
-    'Rad': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
-    'radiation': { title: 'Radiación solar', unit: 'MJ/m²', color: '#FF5722' },
-    
-    // Viento y presión
-    'wind': { title: 'Velocidad del viento', unit: 'm/s', color: '#607D8B' },
-    'pressure': { title: 'Presión atmosférica', unit: 'hPa', color: '#795548' },
-  });
   
   // Opciones para el selector de período de indicadores
   const indicatorPeriodOptions = [
@@ -216,6 +189,71 @@ export default function StationDetailPage() {
     }
   }, [id]);
 
+  // Efecto para cargar estado de favorito
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (!authenticated || !userValidatedInfo || !station) {
+        return;
+      }
+
+      try {
+        const userId = userValidatedInfo.id;
+        const userStations = await getUserStations(userId);
+        // Usar el mismo ID que MapComponent: station.id (location_id en backend)
+        const stationId = station.id?.toString() || '';
+        const isFav = userStations.some(s => 
+          (s.location_id?.toString() || s.ws_ext_id?.toString() || '') === stationId
+        );
+        setIsFavorite(isFav);
+      } catch (error) {
+        console.error('Error al verificar favorito:', error);
+      }
+    };
+
+    checkFavorite();
+  }, [authenticated, userValidatedInfo, station]);
+
+  // Handler para agregar/eliminar favorito
+  const toggleFavorite = async () => {
+    if (!authenticated || !userValidatedInfo) {
+      return;
+    }
+
+    if (!station) {
+      return;
+    }
+
+    setLoadingFavorite(true);
+
+    try {
+      const userId = userValidatedInfo.id;
+      // Usar station.id igual que MapComponent
+      const stationId = station.id?.toString() || '';
+
+      if (isFavorite) {
+        await deleteUserStation(userId, stationId);
+        setIsFavorite(false);
+      } else {
+        await addUserStation(userId, {
+          ws_ext_id: stationId,
+          notification: {
+            email: true,
+            push: false
+          }
+        });
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error('Error al gestionar favorito:', error);
+      // Si el error es porque ya existe, actualizar el estado
+      if (error instanceof Error && error.message.includes('favoritos')) {
+        setIsFavorite(true);
+      }
+    } finally {
+      setLoadingFavorite(false);
+    }
+  };
+
   // Efecto para cargar rangos de fechas cuando cambia el período
   useEffect(() => {
     const fetchDates = async () => {
@@ -293,7 +331,6 @@ export default function StationDetailPage() {
           DataClimaticDates.minDate, 
           DataClimaticDates.maxDate
         );
-        console.log(climateHistorical)
         setClimateHistoricalDataFull(climateHistorical);
       } catch (err) {
         console.error("Error loading climate data:", err);
@@ -480,14 +517,15 @@ export default function StationDetailPage() {
           </div>
           
           <div className="mb-4">
-            <p className="text-gray-500 text-sm">
-              Ubicación: {station?.country_name || "N/A"},{" "}
+            <p className="text-gray-500 text-sm flex items-center gap-2">
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm" />
               {station?.admin1_name || "N/A"}, {station?.admin2_name || "N/A"}
             </p>
-            <p className="text-gray-500 text-sm mt-1">
-              Latitud: {station?.latitude?.toFixed(6) || "N/A"}, Longitud: {station?.longitude?.toFixed(6) || "N/A"}
+            <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+              <FontAwesomeIcon icon={faMapPin} className="text-sm" />
+              {station?.latitude?.toFixed(6) || "N/A"}, {station?.longitude?.toFixed(6) || "N/A"}
             </p>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-gray-500 text-sm mt-1 ms-1">
               Fuente: {station?.source || "N/A"}
             </p>
           </div>
@@ -668,38 +706,63 @@ export default function StationDetailPage() {
                         ))
                       ) : (
                         <>
-                        {climateHistoricalData && Object.entries(climateHistoricalData).map(([key, data]) => {
-                          const config = variableConfig[key] || { 
-                            title: key.charAt(0).toUpperCase() + key.slice(1), 
-                            unit: '', 
-                            color: '#9E9E9E' 
-                          };
-
-                          const typedData = data as { values: number[]; dates: string[] };
-                          
-                          // Solo renderizar si hay datos válidos
-                          if (!typedData?.values?.length || !typedData?.dates?.length) {
-                            return null;
-                          }
-
-                          return (
-                            <ClimateChart 
-                              key={`climate-${key}-${timePeriod}`}
-                              title={config.title}
-                              unit={config.unit}
-                              datasets={[
-                                { 
-                                  label: "Datos estación", 
-                                  color: config.color,
-                                  data: typedData.values,
-                                  dates: typedData.dates
-                                }
-                              ]}
-                              period={timePeriod}
-                              chartType={config.chartType}
-                            />
-                          );
-                        })}
+                        <ClimateChart 
+                          key={`climate-tmax-${timePeriod}`}
+                          title="Temperatura máxima" 
+                          unit="°C"
+                          datasets={[
+                            { 
+                              label: "Datos estación", 
+                              color: "#4CAF50",
+                              data: climateHistoricalData?.Tmax?.values || [],
+                              dates: climateHistoricalData?.Tmax?.dates || []
+                            }
+                          ]}
+                          period={timePeriod}
+                        />
+                        <ClimateChart 
+                          key={`climate-prec-${timePeriod}`}
+                          title="Precipitación" 
+                          unit="mm"
+                          datasets={[
+                            { 
+                              label: "Datos estación", 
+                              color: "#2196F3",
+                              data: climateHistoricalData?.Prec?.values || [],
+                              dates: climateHistoricalData?.Prec?.dates || []
+                            }
+                          ]}
+                          period={timePeriod}
+                          chartType="bar"
+                        />
+                        <ClimateChart 
+                          key={`climate-tmin-${timePeriod}`}
+                          title="Temperatura mínima" 
+                          unit="°C"
+                          datasets={[
+                            { 
+                              label: "Datos estación", 
+                              color: "#FF9800",
+                              data: climateHistoricalData?.Tmin?.values || [],
+                              dates: climateHistoricalData?.Tmin?.dates || []
+                            }
+                          ]}
+                          period={timePeriod}
+                        />
+                        <ClimateChart 
+                          key={`climate-rad-${timePeriod}`}
+                          title="Radiación solar" 
+                          unit="MJ/m²"
+                          datasets={[
+                            { 
+                              label: "Datos estación", 
+                              color: "#F44336",
+                              data: climateHistoricalData?.Rad?.values || [],
+                              dates: climateHistoricalData?.Rad?.dates || []
+                            }
+                          ]}
+                          period={timePeriod}
+                        />
                         </>
                         )}
                       </div>
@@ -833,26 +896,43 @@ export default function StationDetailPage() {
         </main>
 
       
-              {/* Botón de descarga - Generar PDF solo al hacer clic */}
+              {/* Botón flotante de favoritos */}
+              <button
+                onClick={toggleFavorite}
+                disabled={!authenticated || loadingFavorite}
+                className={`fixed bottom-24 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-50 transition-all hover:scale-110 ${
+                  !authenticated 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : isFavorite 
+                      ? 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300' 
+                      : 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-400'
+                } focus:outline-none focus:ring-4`}
+                title={!authenticated ? 'Debe iniciar sesión para agregar a favoritos' : isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+              >
+                {loadingFavorite ? (
+                  <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+                ) : (
+                  <FontAwesomeIcon 
+                    icon={isFavorite ? faStarSolid : faStarRegular} 
+                    className="h-6 w-6" 
+                  />
+                )}
+              </button>
+
+              {/* Botón flotante de descarga PDF */}
               {hasDataForPDF && (
-                <div className="max-w-6xl mx-auto mt-2 no-print">
-                  <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center">
-                    <button
-                      onClick={handleDownloadPDF}
-                      disabled={!hasDataForPDF || pdfLoading}
-                      className="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {pdfLoading ? (
-                        <>
-                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></span>
-                          Generando PDF...
-                        </>
-                      ) : (
-                        'Descargar como PDF'
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={!hasDataForPDF || pdfLoading}
+                  className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-50 transition-all hover:scale-110"
+                  title="Descargar como PDF"
+                >
+                  {pdfLoading ? (
+                    <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+                  ) : (
+                    <FontAwesomeIcon icon={faFileArrowDown} className="h-6 w-6" />
+                  )}
+                </button>
               )}
     </div>
   );
