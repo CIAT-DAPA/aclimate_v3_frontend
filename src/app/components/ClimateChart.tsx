@@ -207,12 +207,11 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
-
-      <h3 className="font-medium text-lg text-gray-800">
-        {title} <span className="text-gray-500 text-sm">({unit})</span>
-      </h3>
-      {/* Botón con tooltip */}
+      <div className="flex items-center gap-2 mb-2">
+        <h3 className="font-medium text-lg text-gray-800">
+          {title} <span className="text-gray-500 text-sm">({unit})</span>
+        </h3>
+        {/* Botón con tooltip */}
         <button 
           data-tooltip-target={tooltipId}
           data-tooltip-placement="right"
@@ -234,6 +233,13 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           <div className="tooltip-arrow" data-popper-arrow></div>
         </div>
       </div>
+
+      {/* Descripción visible con rango de fechas - justo debajo del título */}
+      {description && (
+        <div className="mb-4 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-md">
+          {description}
+        </div>
+      )}
       
       {!hasData ? (
         <div className="h-64 flex items-center justify-center">
