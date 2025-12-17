@@ -37,7 +37,6 @@ export const monitoryService = {
     if (!response.ok) throw new Error("Error fetching dates");
 
   const data = await response.json();
-    
     // Validar que la respuesta sea un array
     if (!Array.isArray(data)) {
         throw new Error("Unexpected response format");
