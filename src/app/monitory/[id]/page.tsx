@@ -798,27 +798,27 @@ export default function StationDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4">
+    <div className="min-h-screen bg-gray-50 pt-4 px-2 sm:px-4">
 
         {/* Encabezado */}
-        <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">Monitoreo</h1>
-            <h2 className="text-2xl font-bold text-gray-800 mt-1">
+        <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Monitoreo</h1>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
               Estación {station?.name || "Desconocida"}
             </h2>
           </div>
           
           <div className="mb-4">
-            <p className="text-gray-500 text-sm flex items-center gap-2">
+            <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-2">
               <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm" />
               {station?.admin1_name || "N/A"}, {station?.admin2_name || "N/A"}
             </p>
-            <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
               <FontAwesomeIcon icon={faMapPin} className="text-sm" />
               {station?.latitude?.toFixed(6) || "N/A"}, {station?.longitude?.toFixed(6) || "N/A"}
             </p>
-            <p className="text-gray-500 text-sm mt-1 ms-1">
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 ms-1">
               Fuente: {station?.source || "N/A"}
             </p>
           </div>
@@ -827,7 +827,7 @@ export default function StationDetailPage() {
           <div className="border-t border-gray-200"></div>
 
           {/* Descripción de la estación */}
-          <div className="mt-4 mb-4 text-gray-700">
+          <div className="mt-4 mb-4 text-sm sm:text-base text-gray-700">
             <p>
               La estación meteorológica <strong>{station?.name || "Desconocida"}</strong> está ubicada en{" "}
               <strong>{station?.admin2_name || "N/A"}, {station?.country_name || "N/A"}</strong> en la latitud{" "}
@@ -886,7 +886,7 @@ export default function StationDetailPage() {
                     <div className="p-5 border border-b-0 border-gray-200">
                       {/* Selector de período de tiempo para datos climáticos */}
                       <div className="mb-6 border-b border-gray-200 pb-4">
-                        <p className="mb-4">Explora cómo han variado las principales variables del clima en esta estación. Visualiza la evolución de la 
+                        <p className="mb-4 text-gray-700">Explora cómo han variado las principales variables del clima en esta estación. Visualiza la evolución de la 
                             <strong> temperatura</strong>, la <strong>precipitación</strong> y la <strong>radiación solar</strong>. 
                             Utiliza los filtros de fecha para ajustar la información a tu interés.</p>
 
@@ -1080,7 +1080,7 @@ export default function StationDetailPage() {
                     <div className="p-5 border border-t-0 border-gray-200">
                       {/* Selector de período de tiempo para indicadores */}
                       <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
-                        <p>Consulta la evolución de los <strong>indicadores climáticos</strong> de esta estación y descubre patrones relevantes. 
+                        <p className="text-gray-700">Consulta la evolución de los <strong>indicadores climáticos</strong> de esta estación y descubre patrones relevantes. 
                           Filtra fácilmente por <strong>categoría</strong> y <strong>rango de fechas</strong> para personalizar tu análisis.</p>
                         <div className="flex items-center gap-6">
                           {/* Selector de período */}
@@ -1178,7 +1178,7 @@ export default function StationDetailPage() {
               <button
                 onClick={toggleSatelliteComparison}
                 disabled={!station || loadingSatellite}
-                className={`fixed bottom-40 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-50 transition-all hover:scale-110 ${
+                className={`fixed bottom-40 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
                   !station
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : isSatelliteActive 
@@ -1201,7 +1201,7 @@ export default function StationDetailPage() {
               <button
                 onClick={toggleFavorite}
                 disabled={!authenticated || loadingFavorite}
-                className={`fixed bottom-24 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-50 transition-all hover:scale-110 ${
+                className={`fixed bottom-24 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
                   !authenticated 
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : isFavorite 
@@ -1225,7 +1225,7 @@ export default function StationDetailPage() {
                 <button
                   onClick={handleDownloadPDF}
                   disabled={!hasDataForPDF || pdfLoading}
-                  className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-50 transition-all hover:scale-110"
+                  className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-[9999] transition-all hover:scale-110"
                   title="Descargar como PDF"
                 >
                   {pdfLoading ? (
