@@ -66,6 +66,9 @@ export const StationsProvider = ({ children }: { children: ReactNode }) => {
           country_id: item.country_id,
           country_name: item.country_name,
           country_iso2: item.country_iso2,
+          source_id: item.source_id,
+          source_name: item.source_name,
+          source_type: item.source_type,
         });
         
         // Agregar los datos si existen

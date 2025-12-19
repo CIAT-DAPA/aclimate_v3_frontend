@@ -17,4 +17,7 @@ export interface Station {
   admin2_name: string; // Municipio
   admin2_ext_id?: string;
   source?: string;
+  source_id?: number;
+  source_name?: string;
+  source_type?: string;
 }
