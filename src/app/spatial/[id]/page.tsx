@@ -431,17 +431,17 @@ export default function SpatialDataPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4">
-      <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-6">
+    <div className="min-h-screen bg-gray-50 pt-4 px-2 sm:px-4 overflow-x-hidden">
+      <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800">Datos espaciales</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Datos espaciales</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Explora datos e indicadores climáticos de {COUNTRY_NAME} y analiza cómo ha sido el cambio a través del tiempo. 
             Usa esta vista para identificar patrones, zonas vulnerables y descargar la información que necesites para tus análisis.
           </p>
           <div className="mt-3">
-            <p className="text-gray-600">Puedes usarla para:</p>
-            <ul className="list-disc list-inside text-gray-600 mt-1 ms-3">
+            <p className="text-sm sm:text-base text-gray-600">Puedes usarla para:</p>
+            <ul className="list-disc list-inside text-sm sm:text-base text-gray-600 mt-1 ms-3">
               <li>Ver cómo varían estos indicadores en diferentes regiones</li>
               <li>Identificar zonas agrícolas con mayor riesgo climático</li>
               <li>Descargar datos raster para análisis especializados</li>
@@ -450,7 +450,7 @@ export default function SpatialDataPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto mt-4">
+      <main className="max-w-6xl mx-auto mt-4 mb-24">
         <div className="bg-white rounded-lg shadow-sm">
           {/* Reemplazo de tabs por acordeones */}
           <div id="accordion-collapse" data-accordion="collapse">
@@ -577,7 +577,7 @@ export default function SpatialDataPage() {
                             )}
 
                             {layer.available ? (
-                              <div className="relative h-[550px] w-full rounded-lg overflow-hidden">
+                              <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   key={layer.name}
                                   center={currentCountry.center}
@@ -604,7 +604,10 @@ export default function SpatialDataPage() {
                                     let rasterFile = rasterFilesRef.current[layer.name];
                                     if (!rasterFile) {
                                       // Si no existe, obtener la fecha actual del mapa
-                                      rasterFile = await getCurrentRasterFile(layer.name, layer.title, wmsBaseUrl);
+                                      const result = await getCurrentRasterFile(layer.name, layer.title, wmsBaseUrl);
+                                      if (result) {
+                                        rasterFile = result;
+                                      }
                                     }
                                     if (rasterFile) {
                                       downloadRasterFile(rasterFile);
@@ -773,7 +776,7 @@ export default function SpatialDataPage() {
                                   </p>
                                 )}
                               </div>
-                              <div className="relative h-[550px] w-full rounded-lg overflow-hidden">
+                              <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
                                 <MapComponent
                                   center={currentCountry.center}
                                   zoom={currentCountry.zoom}
@@ -799,7 +802,10 @@ export default function SpatialDataPage() {
                                     let rasterFile = rasterFilesRef.current[layerName];
                                     if (!rasterFile) {
                                       // Si no existe, obtener la fecha actual del mapa
-                                      rasterFile = await getCurrentRasterFile(layerName, indicator.name, indicatorWmsUrl);
+                                      const result = await getCurrentRasterFile(layerName, indicator.name, indicatorWmsUrl);
+                                      if (result) {
+                                        rasterFile = result;
+                                      }
                                     }
                                     if (rasterFile) {
                                       downloadRasterFile(rasterFile);
@@ -829,7 +835,8 @@ export default function SpatialDataPage() {
       <button
         onClick={downloadAllData}
         disabled={!downloadReady || isPreparingDownload}
-        className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-50 transition-all hover:scale-110"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
+        style={{ zIndex: 9999 }}
         title={
           !downloadReady 
             ? "Esperando que las capas se carguen..." 
@@ -839,15 +846,15 @@ export default function SpatialDataPage() {
         }
       >
         {downloadProgress > 0 ? (
-          <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-white inline-block"></span>
+          <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
         ) : (
-          <FontAwesomeIcon icon={faFileArrowDown} className="h-8 w-8" />
+          <FontAwesomeIcon icon={faFileArrowDown} className="h-6 w-6 sm:h-8 sm:w-8" />
         )}
       </button>
 
       {/* Barra de progreso flotante */}
       {downloadProgress > 0 && (
-        <div className="fixed bottom-24 right-8 w-64 bg-white rounded-lg shadow-lg p-4 no-print z-50">
+        <div className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 w-56 sm:w-64 bg-white rounded-lg shadow-lg p-3 sm:p-4 no-print" style={{ zIndex: 9999 }}>
           <p className="text-sm text-gray-700 mb-2">Descargando... {downloadProgress}%</p>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div 

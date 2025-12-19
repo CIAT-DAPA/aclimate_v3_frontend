@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 
 const Chart = dynamic(() => import("react-apexcharts"), { 
   ssr: false,
-  loading: () => <div className="h-full w-full flex items-center justify-center">Cargando gráfica...</div>
+  loading: () => <div className="h-full w-full flex items-center justify-center text-gray-600">Cargando gráfica...</div>
 });
 
 interface DatasetConfig {
@@ -173,7 +173,31 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       show: false
     },
     tooltip: {
+      theme: 'light',
+      style: {
+        fontSize: '12px',
+        fontFamily: undefined
+      },
+      fillSeriesColor: false,
+      custom: undefined,
+      inverseOrder: false,
+      shared: true,
+      followCursor: false,
+      intersect: false,
+      marker: {
+        show: true,
+      },
+      items: {
+        display: 'flex',
+      },
+      fixed: {
+        enabled: false,
+        position: 'topRight',
+        offsetX: 0,
+        offsetY: 0,
+      },
       x: {
+        show: true,
         formatter: function(value: number, context: { dataPointIndex: number; w: { globals: { categoryLabels: string[] } } }) {
           if (isClimatology) {
             // Para climatología, mostrar directamente el nombre del mes
@@ -187,6 +211,9 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       y: {
         formatter: function(val: number) {
           return val.toFixed(2) + " " + unit;
+        },
+        title: {
+          formatter: (seriesName: string) => seriesName
         }
       }
     }
@@ -254,7 +281,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
                   className="w-3 h-3 rounded-full mr-2" 
                   style={{ backgroundColor: dataset.color }}
                 ></div>
-                <span className="text-sm">{dataset.label}</span>
+                <span className="text-sm text-gray-700">{dataset.label}</span>
               </div>
             ))}
           </div>
