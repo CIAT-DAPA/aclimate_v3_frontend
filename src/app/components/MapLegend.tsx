@@ -5,23 +5,30 @@ import React, { useState, useEffect } from "react";
 import { useMap } from "react-leaflet";
 
 interface MapLegendProps {
-  wmsUrl: string;
-  layerName: string;
+  wmsUrl?: string;
+  layerName?: string;
   position?: "bottomright" | "bottomleft" | "topright" | "topleft";
   time?: string;
+  title?: string;
+  children?: React.ReactNode;
+  maxHeight?: string;
 }
 
 const MapLegend: React.FC<MapLegendProps> = ({
   wmsUrl,
   layerName,
   position = "bottomright",
-  time
+  time,
+  title = "Leyenda",
+  children,
+  maxHeight = "230px"
 }) => {
   const map = useMap();
   const [legendUrl, setLegendUrl] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
   useEffect(() => {
+    // Solo obtener WMS legend si se proporcionan wmsUrl y layerName
     if (!wmsUrl || !layerName) return;
 
     const params = new URLSearchParams({
@@ -44,25 +51,33 @@ const MapLegend: React.FC<MapLegendProps> = ({
     setLegendUrl(url);
   }, [wmsUrl, layerName, time]);
 
-  if (!legendUrl) return null;
+  // No renderizar si no hay ni WMS legend ni children
+  if (!legendUrl && !children) return null;
+
+  // Mapear posición a clases de Tailwind
+  const positionClasses = {
+    topright: 'top-24 right-2',
+    topleft: 'top-2 left-2',
+    bottomright: 'bottom-2 right-2',
+    bottomleft: 'bottom-2 left-2',
+  };
 
   return (
-    <div className={`leaflet-${position}`}>
-      <div className="leaflet-control leaflet-bar">
-        <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-semibold text-sm">Leyenda</h4>
+    <div className={`absolute ${positionClasses[position]} z-[1000]`}>
+      <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
+        <div className="flex justify-between items-center mb-2">
+            <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-gray-500 hover:text-gray-700"
             >
-              {isOpen ? " −" : " +"}
+              {isOpen ? "−" : "+"}
             </button>
           </div>
           {isOpen && (
             <div
               className="legend-content"
-              style={{ maxHeight: "230px", overflowY: "auto", cursor: "grab" }}
+              style={{ maxHeight, overflowY: "auto", cursor: "grab" }}
               onMouseDown={e => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -88,18 +103,21 @@ const MapLegend: React.FC<MapLegendProps> = ({
                 el.style.cursor = "grabbing";
               }}
             >
-              <img
-                src={legendUrl}
-                alt="Leyenda"
-                className="max-w-full h-auto"
-                onError={e => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                }}
-              />
+              {children ? (
+                children
+              ) : legendUrl ? (
+                <img
+                  src={legendUrl}
+                  alt="Leyenda"
+                  className="max-w-full h-auto"
+                  onError={e => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                  }}
+                />
+              ) : null}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
