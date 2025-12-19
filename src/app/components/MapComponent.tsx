@@ -1,8 +1,7 @@
 // app/components/MapComponent.tsx
 "use client";
 
-import {
-  MapContainer,
+import {  MapContainer,
   TileLayer,
   Marker,
   Popup,
@@ -12,7 +11,7 @@ import {
   useMapEvents,
   useMap
 } from "react-leaflet";
-import { Icon, LatLngExpression } from "leaflet";
+import { Icon, LatLngExpression, DivIcon } from "leaflet";
 import L from "leaflet";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
@@ -20,7 +19,7 @@ import Link from "next/link";
 import TimelineController from "./TimeLineController";
 import MapLegend from "./MapLegend";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -33,11 +32,45 @@ import { faChartSimple } from '@fortawesome/free-solid-svg-icons';
 import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { faMapPin } from '@fortawesome/free-solid-svg-icons';
 
+// Paleta de colores accesibles con buen contraste
+const ACCESSIBLE_COLORS = [
+  '#1f77b4', // Azul
+  '#ff7f0e', // Naranja
+  '#2ca02c', // Verde
+  '#d62728', // Rojo
+  '#9467bd', // Púrpura
+  '#8c564b', // Marrón
+  '#e377c2', // Rosa
+  '#7f7f7f', // Gris
+  '#bcbd22', // Amarillo oliva
+  '#17becf', // Cyan
+  '#aec7e8', // Azul claro
+  '#ffbb78', // Naranja claro
+  '#98df8a', // Verde claro
+  '#ff9896', // Rojo claro
+  '#c5b0d5', // Púrpura claro
+];
 
-const customIcon = new Icon({
-  iconUrl: "/assets/img/marker.png",
-  iconSize: [48, 48],
-});
+
+// Función para crear íconos con color dinámico
+const createColoredIcon = (color: string): DivIcon => {
+  return L.divIcon({
+    className: 'custom-marker-icon',
+    html: `
+      <div style="position: relative; width: 48px; height: 48px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" 
+                fill="${color}" 
+                stroke="#ffffff" 
+                stroke-width="0.5"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [48, 48],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -48]
+  });
+};
 
 const rasterLayers = [
   {
@@ -134,6 +167,23 @@ const MapComponent = ({
   
   // Usar ref para evitar múltiples cargas de favoritos
   const favoritesLoadedRef = useRef(false);
+
+  // Calcular el mapeo de fuentes a colores usando useMemo
+  const sourceColorMap = useMemo(() => {
+    const uniqueSources = new Set<string>();
+    activeStations.forEach(station => {
+      if (station.source_name) {
+        uniqueSources.add(station.source_name);
+      }
+    });
+    
+    const colorMap: Record<string, string> = {};
+    Array.from(uniqueSources).forEach((source, index) => {
+      colorMap[source] = ACCESSIBLE_COLORS[index % ACCESSIBLE_COLORS.length];
+    });
+    
+    return colorMap;
+  }, [activeStations]);
 
   // Efecto para centrar el mapa cuando se selecciona una estación desde la búsqueda
   useEffect(() => {
@@ -388,7 +438,7 @@ const MapComponent = ({
             <div className="flex items-center">
               <FontAwesomeIcon 
                 icon={faTemperatureArrowUp} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color rojo
+                className="text-xl text-black-500 mr-2"
               />
               <div>
                 <p className="text-xs text-gray-500">Temperatura máxima</p>
@@ -402,7 +452,7 @@ const MapComponent = ({
             <div className="flex items-center">
               <FontAwesomeIcon 
                 icon={faTemperatureArrowDown} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color azul
+                className="text-xl text-black-500 mr-2"
               />
               <div>
                 <p className="text-xs text-gray-500">Temperatura mínima</p>
@@ -416,7 +466,7 @@ const MapComponent = ({
             <div className="flex items-center">
               <FontAwesomeIcon 
                 icon={faCloudRain} 
-                className="text-xl text-black-400 mr-2" // Aumentado a xl y color azul claro
+                className="text-xl text-black-400 mr-2"
               />
               <div>
                 <p className="text-xs text-gray-500">Precipitación</p>
@@ -430,7 +480,7 @@ const MapComponent = ({
             <div className="flex items-center">
               <FontAwesomeIcon 
                 icon={faSun} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color amarillo
+                className="text-xl text-black-500 mr-2"
               />
               <div>
                 <p className="text-xs text-gray-500">Radiación</p>
@@ -543,11 +593,14 @@ const MapComponent = ({
 
         {showZoomControl && <ZoomControl position="topright" />}
 
-        {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => (
+        {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => {
+          const markerColor = station.source_name ? sourceColorMap[station.source_name] : ACCESSIBLE_COLORS[0];
+          
+          return (
           <Marker
             key={station.id}
             position={[station.latitude, station.longitude] as LatLngExpression}
-            icon={customIcon}
+            icon={createColoredIcon(markerColor)}
             ref={(ref) => {
               if (ref) {
                 markersRef.current.set(station.id.toString(), ref);
@@ -567,6 +620,12 @@ const MapComponent = ({
                     <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm mr-2" />
                     {station.admin1_name}, {station.admin2_name} 
                   </p>
+                  {station.source_name && (
+                    <p className="text-xs text-gray-500">
+                      Fuente: <span className="font-medium">{station.source_name}</span>
+                      {station.source_type && ` (${station.source_type === 'MA' ? 'Manual' : station.source_type === 'AU' ? 'Automática' : station.source_type})`}
+                    </p>
+                  )}
                   
                   {/* Mostrar datos de la última fecha disponible */}
                   {renderStationData(station.id.toString())}
@@ -623,20 +682,42 @@ const MapComponent = ({
               </div>
             </Popup>
           </Marker>
-        ))}
+        );})}
 
-        {showMarkers && singleStationMode && activeStations.map((station) => (
+        {showMarkers && singleStationMode && activeStations.map((station) => {
+          const markerColor = station.source_name ? sourceColorMap[station.source_name] : ACCESSIBLE_COLORS[0];
+          
+          return (
           <Marker
             key={station.id}
             position={[station.latitude, station.longitude] as LatLngExpression}
-            icon={customIcon}
+            icon={createColoredIcon(markerColor)}
             ref={(ref) => {
               if (ref) {
                 markersRef.current.set(station.id.toString(), ref);
               }
             }}
           />
-        ))}
+        );})}
+
+        {/* Leyenda de fuentes - solo mostrar cuando hay estaciones con marcadores */}
+        {showMarkers && hasStations && Object.keys(sourceColorMap).length > 0 && (
+          <MapLegend position="topright" title="Fuentes de datos " maxHeight="200px">
+            <div className="space-y-1">
+              {Object.entries(sourceColorMap).map(([source, color]) => (
+                <div key={source} className="flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" 
+                          fill={color} 
+                          stroke="#ffffff" 
+                          strokeWidth="0.5"/>
+                  </svg>
+                  <span className="text-xs text-gray-600">{source}</span>
+                </div>
+              ))}
+            </div>
+          </MapLegend>
+        )}
       </MapContainer>
     </div>
   );
