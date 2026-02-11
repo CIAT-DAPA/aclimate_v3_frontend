@@ -2,6 +2,7 @@ export interface Station {
   id: number;
   name: string;
   ext_id: string;
+  machine_name: string;
   latitude: number;
   longitude: number;
   altitude?: number;
