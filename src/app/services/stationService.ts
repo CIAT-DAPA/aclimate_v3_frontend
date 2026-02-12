@@ -32,4 +32,10 @@ export const stationService = {
     if (!response.ok) throw new Error("Error fetching station details");
     return response.json();
   },
+
+  async getByMachineName(machineName: string) {
+    const response = await fetch(`${API_URL}/locations/by-machine-name?machine_name=${machineName}`);
+    if (!response.ok) throw new Error("Error fetching station by machine name");
+    return response.json();
+  }
 };
