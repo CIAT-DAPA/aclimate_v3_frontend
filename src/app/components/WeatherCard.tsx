@@ -14,6 +14,7 @@ import Link from "next/link";
 interface StationData {
   id: string;
   name: string;
+  machine_name: string;
   admin1_name: string;
   admin2_name: string;
   country_name: string;
@@ -167,7 +168,7 @@ const WeatherCard = () => {
       {favoriteStations.map((station) => (
         <Link
           key={station.id}
-          href={`/monitory/${station.id}`}
+          href={`/m/${station.machine_name}`}
           className="block transition-transform hover:scale-105"
         >
           <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg">

@@ -672,7 +672,7 @@ const MapComponent = ({
                   
                   <Link
                     className="flex items-center justify-center text-xs px-3 py-2 border border-gray-300 text-gray-600 bg-white rounded-md hover:text-gray-800 hover:bg-gray-50 transition-colors"
-                    href={`/monitory/${station.id}`}
+                    href={`/m/${station.machine_name}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <FontAwesomeIcon icon={faChartSimple} className="mr-1" />
