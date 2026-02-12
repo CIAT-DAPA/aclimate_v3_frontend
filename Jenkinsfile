@@ -25,6 +25,22 @@ pipeline {
                 }
             }
         }
+        stage('Update Code') {
+            steps {
+                script {
+                    try {
+                        sshCommand remote: remote, command: """
+                            cd /var/www/aclimate/aclimate_v3_frontend_sat/src
+                            git checkout aclimate_sat
+                            git pull origin aclimate_sat
+                        """
+                    } catch (Exception e) {
+                        echo "Git Pull Error: ${e.message}"
+                        error("Failed to update code: ${e.message}")
+                    }
+                }
+            }
+        }
         stage('Download latest release') {
             steps {
                 script {
@@ -34,7 +50,9 @@ pipeline {
                         conda activate /home/aclimate_v3/miniforge3/envs/aclimate_v3
                         npm install
                         npm run build
-                        pm2 restart aclimate_v3_sat
+                        cd /var/www/aclimate/aclimate_v3_frontend_sat
+                        pm2 stop aclimate_v3_sat || pm2 delete aclimate_v3_sat
+                        pm2 start ecosystem.config.js
                     """
                 }
             }
