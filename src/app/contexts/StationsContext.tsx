@@ -52,6 +52,7 @@ export const StationsProvider = ({ children }: { children: ReactNode }) => {
           id: item.id,
           name: item.name,
           ext_id: item.ext_id,
+          machine_name: item.machine_name,
           enable: item.enable,
           altitude: item.altitude,
           latitude: item.latitude,
