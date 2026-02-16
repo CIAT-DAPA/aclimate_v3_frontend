@@ -94,6 +94,10 @@ export default function StationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // Estados para períodos disponibles de indicadores
+  const [availableIndicatorPeriods, setAvailableIndicatorPeriods] = useState<Array<{value: string, label: string}>>([]);
+  const [loadingPeriods, setLoadingPeriods] = useState(true);
+
   // Estados para control de búsqueda manual
   const [searchTrigger, setSearchTrigger] = useState(0);
 
@@ -562,6 +566,58 @@ export default function StationDetailPage() {
     satelliteData,
   ]);
 
+  // Efecto para cargar períodos disponibles de indicadores
+  useEffect(() => {
+    const fetchAvailablePeriods = async () => {
+      if (!machine_name) return;
+      
+      try {
+        setLoadingPeriods(true);
+        // Primero obtener el station id desde machine_name
+        const stationData = await stationService.getByMachineName(machine_name);
+        if (!stationData || stationData.length === 0) return;
+        
+        const stationId = stationData[0].id.toString();
+        const periods = await monitoryService.getAvailablePeriods(stationId);
+        
+        // Mapeo de labels en inglés a español
+        const labelMap: Record<string, string> = {
+          "Daily": "Diario",
+          "Monthly": "Mensual",
+          "Annual": "Anual",
+          "Seasonal": "Estacional",
+          "Decadal": "Decadal",
+          "Other": "Otro"
+        };
+        
+        // Filtrar solo los períodos que tienen datos y traducir labels
+        const periodsWithData = periods
+          .filter(period => period.has_data)
+          .map(period => ({
+            value: period.value,
+            label: labelMap[period.label] || period.label
+          }));
+        setAvailableIndicatorPeriods(periodsWithData);
+        
+        // Si el período actual no está disponible, seleccionar el primero disponible
+        if (periodsWithData.length > 0 && !periodsWithData.some(p => p.value === timePeriodIndicators)) {
+          setTimePeriodIndicators(periodsWithData[0].value);
+        }
+      } catch (error) {
+        console.error('Error cargando períodos disponibles:', error);
+        // En caso de error, mantener las opciones por defecto
+        setAvailableIndicatorPeriods([
+          { value: "monthly", label: "Mensual" },
+          { value: "annual", label: "Anual" }
+        ]);
+      } finally {
+        setLoadingPeriods(false);
+      }
+    };
+
+    fetchAvailablePeriods();
+  }, [machine_name]);
+
   // Efecto para cargar datos de la estación (solo una vez al montar)
   useEffect(() => {
     const fetchStation = async () => {
@@ -704,14 +760,23 @@ export default function StationDetailPage() {
             });
           }
 
-          // Resetear filtros de indicadores - también últimos 30 días para consistencia
-          const last30DaysIndicators = getLast30Days(
-            datesIndicators.maxDate || "",
-          );
-          setFilterDatesIndicators({
-            start: last30DaysIndicators.start,
-            end: last30DaysIndicators.end,
-          });
+          // Resetear filtros de indicadores según el período
+          // Para 'monthly', 'annual' o 'seasonal', usar todo el rango disponible
+          // Para otros períodos, usar los últimos 30 días
+          if (timePeriodIndicators === "monthly" || timePeriodIndicators === "annual" || timePeriodIndicators === "seasonal") {
+            setFilterDatesIndicators({ 
+              start: datesIndicators.minDate || "", 
+              end: datesIndicators.maxDate || "" 
+            });
+          } else {
+            const last30DaysIndicators = getLast30Days(
+              datesIndicators.maxDate || "",
+            );
+            setFilterDatesIndicators({
+              start: last30DaysIndicators.start,
+              end: last30DaysIndicators.end,
+            });
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Error loading dates");
         }
@@ -832,11 +897,12 @@ export default function StationDetailPage() {
   useEffect(() => {
     const fetchIndicatorsData = async () => {
       try {
+        if (!station) return;
         if (!IndicatorsDates?.minDate || !IndicatorsDates?.maxDate) return;
         if (IndicatorsDates?._period !== timePeriodIndicators) return;
 
         const indicators = await monitoryService.getIndicatorsHistorical(
-          machine_name,
+          station.id.toString(),
           timePeriodIndicators,
           IndicatorsDates.minDate,
           IndicatorsDates.maxDate,
@@ -850,7 +916,7 @@ export default function StationDetailPage() {
 
     fetchIndicatorsData();
   }, [
-    machine_name,
+    station,
     IndicatorsDates?.minDate,
     IndicatorsDates?.maxDate,
     IndicatorsDates?._period,
@@ -1118,7 +1184,7 @@ export default function StationDetailPage() {
                             id="period-climatic"
                             value={timePeriod}
                             onChange={(e) => setTimePeriod(e.target.value)}
-                            className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                           >
                             <option value="daily">Diario</option>
                             <option value="monthly">Mensual</option>
@@ -1373,13 +1439,20 @@ export default function StationDetailPage() {
                             onChange={(e) =>
                               setTimePeriodIndicators(e.target.value)
                             }
-                            className="px-4 py-2 text-gray-900 bg-transparent focus:outline-none"
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            disabled={loadingPeriods || availableIndicatorPeriods.length === 0}
                           >
-                            {indicatorPeriodOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
+                            {loadingPeriods ? (
+                              <option>Cargando...</option>
+                            ) : availableIndicatorPeriods.length > 0 ? (
+                              availableIndicatorPeriods.map(option => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))
+                            ) : (
+                              <option>No hay datos disponibles</option>
+                            )}
                           </select>
                         </div>
                       </div>
