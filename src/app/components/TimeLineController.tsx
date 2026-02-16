@@ -37,7 +37,7 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
   layer,
   onTimeChange,
   wmsUrl,
-  opacity = 0.7
+  opacity = 1.0
 }) => {
   const map = useMap();
   const tdControlRef = useRef<any>(null);
