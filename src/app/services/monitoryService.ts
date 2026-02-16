@@ -16,6 +16,12 @@ interface IndicatorRawItem {
   value: number;
 }
 
+interface PeriodAvailability {
+  value: string;
+  label: string;
+  has_data: boolean;
+}
+
 export const monitoryService = {
 
   async getStationDates(stationId: string, period: string, indicator: boolean): Promise<{ minDate: string | null; maxDate: string | null}> {
@@ -288,5 +294,30 @@ processClimateData(data: DailyDataItem[], period: string): Record<string, { date
     });
 
     return result;
-  }
+  },
+  
+  /**
+   * Obtiene todos los periodos disponibles y cuáles tienen datos para una estación específica
+   * @param stationId ID de la estación
+   * @returns Array de periodos con información sobre disponibilidad de datos
+   */
+  async getAvailablePeriods(stationId: string): Promise<PeriodAvailability[]> {
+    try {
+      const response = await fetch(`${API_URL}/periods/available?location_id=${stationId}`);
+      if (!response.ok) throw new Error("Error fetching available periods");
+      return await response.json();
+    } catch (error) {
+      console.warn("Aviso en getAvailablePeriods:", error);
+      // Retornar estructura por defecto si falla
+      return [
+        { value: "daily", label: "Daily", has_data: false },
+        { value: "monthly", label: "Monthly", has_data: false },
+        { value: "annual", label: "Annual", has_data: false },
+        { value: "seasonal", label: "Seasonal", has_data: false },
+        { value: "decadal", label: "Decadal", has_data: false },
+        { value: "other", label: "Other", has_data: false }
+      ];
+    }
+  },
+
 };
