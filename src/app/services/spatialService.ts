@@ -302,5 +302,53 @@ export const spatialService = {
             console.error("Error fetching point data:", error);
             throw new Error("Error obteniendo datos satelitales");
         }
+    },
+
+    /**
+     * Obtiene las temporalidades disponibles para indicadores climáticos de un país
+     * @param geoserverBaseUrl - URL base del geoserver
+     * @param countryCode - Código del país (ej: hn, co, st)
+     * @returns Array de temporalidades disponibles (daily, monthly, annual, etc.)
+     */
+    getAvailableTemporalities: async (
+        geoserverBaseUrl: string,
+        countryCode: string
+    ): Promise<string[]> => {
+        try {
+            const wmsUrl = `${geoserverBaseUrl}/climate_index/wms`;
+            const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
+            
+            const response = await axios.get(capabilitiesUrl);
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(response.data, 'text/xml');
+            
+            // Buscar todas las capas que coincidan con el patrón del país
+            const layers = xmlDoc.getElementsByTagName('Layer');
+            const foundTemporalities = new Set<string>();
+            
+            // Todas las temporalidades posibles
+            const allTemporalities = ['daily', 'monthly', 'annual', 'seasonal', 'decadal', 'other'];
+            
+            for (let i = 0; i < layers.length; i++) {
+                const nameElement = layers[i].getElementsByTagName('Name')[0];
+                if (nameElement) {
+                    const layerName = nameElement.textContent || '';
+                    
+                    // Buscar capas que coincidan con el patrón: climate_index_{temporality}_{country}_*
+                    allTemporalities.forEach(temp => {
+                        const pattern = `climate_index_${temp}_${countryCode}_`;
+                        if (layerName.includes(pattern)) {
+                            foundTemporalities.add(temp);
+                        }
+                    });
+                }
+            }
+            
+            return Array.from(foundTemporalities);
+        } catch (error) {
+            console.error("Error fetching available temporalities from GeoServer:", error);
+            // En caso de error, devolver todas las opciones
+            return ['daily', 'monthly', 'annual', 'seasonal', 'decadal', 'other'];
+        }
     }
 }

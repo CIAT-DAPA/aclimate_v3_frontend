@@ -165,6 +165,9 @@ const MapComponent = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(new Set());
   
+  // Estado para guardar el tiempo actual de la capa
+  const [currentTime, setCurrentTime] = useState<string>('');
+  
   // Usar ref para evitar múltiples cargas de favoritos
   const favoritesLoadedRef = useRef(false);
 
@@ -297,6 +300,12 @@ const MapComponent = ({
     }
   };
 
+  // Wrapper para onTimeChange que también actualiza el estado local
+  const handleTimeChange = (time: string) => {
+    setCurrentTime(time);
+    onTimeChange(time);
+  };
+
   // Componente para manejar clics en el mapa (solo para datos espaciales)
   const MapClickHandler = () => {
     const map = useMap();
@@ -337,48 +346,49 @@ const MapComponent = ({
           // Construir la URL de GetFeatureInfo
           const point = map.latLngToContainerPoint(e.latlng);
           
+          // Para WMS 1.3.0 con EPSG:4326, el orden del BBOX es: miny,minx,maxy,maxx (lat,lon,lat,lon)
+          const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+          
+          // Verificar que tengamos el tiempo (desde el estado o desde la capa)
+          const timeToUse = currentTime || layer.time;
+          
           const params = new URLSearchParams({
             SERVICE: 'WMS',
             VERSION: layer.version || '1.3.0',
             REQUEST: 'GetFeatureInfo',
-            FORMAT: 'image/png',
-            TRANSPARENT: 'true',
-            QUERY_LAYERS: layer.layers,
             LAYERS: layer.layers,
-            INFO_FORMAT: 'application/json',
-            I: Math.floor(point.x).toString(),
-            J: Math.floor(point.y).toString(),
+            QUERY_LAYERS: layer.layers,
+            STYLES: layer.styles || '',
+            BBOX: bbox,
             WIDTH: size.x.toString(),
             HEIGHT: size.y.toString(),
             CRS: 'EPSG:4326',
-            BBOX: `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`,
+            FORMAT: 'image/png',
+            TRANSPARENT: 'true',
+            INFO_FORMAT: 'application/json',
+            FEATURE_COUNT: '1',
+            I: Math.floor(point.x).toString(),
+            J: Math.floor(point.y).toString(),
           });
 
           // Agregar parámetros adicionales si existen
-          if (layer.time) {
-            params.append('TIME', layer.time);
-          }
-          if (layer.styles) {
-            params.append('STYLES', layer.styles);
+          if (timeToUse) {
+            params.append('TIME', timeToUse);
           }
 
           const url = `${layer.url}?${params.toString()}`;
           const response = await fetch(url);
           const data = await response.json();
 
-          // Extraer el valor del píxel
           let pixelValue = 'Sin datos';
+          
           if (data.features && data.features.length > 0) {
             const properties = data.features[0].properties;
-            // Buscar la propiedad que contiene el valor
-            const valueKey = Object.keys(properties).find(key => 
-              key.toLowerCase().includes('gray') || 
-              key.toLowerCase().includes('value') ||
-              key === 'GRAY_INDEX'
-            );
+            const grayIndex = properties.GRAY_INDEX;
             
-            if (valueKey && properties[valueKey] !== null && properties[valueKey] !== undefined) {
-              pixelValue = Number(properties[valueKey]).toFixed(2);
+            if (grayIndex !== null && grayIndex !== undefined) {
+              // GRAY_INDEX contiene el valor real del pixel
+              pixelValue = Number(grayIndex).toFixed(2);
             }
           }
 
@@ -420,12 +430,13 @@ const MapComponent = ({
       return <p className="text-gray-500 text-sm">No hay datos disponibles</p>;
     }
 
-    // Agrupar datos por medida
-    type Measure = { value: number };
-    const measures: Record<string, Measure> = {};
-    data.forEach((item: { measure_short_name: string; value: number }) => {
-      measures[item.measure_short_name] = { value: item.value };
-    });
+    // Mapeo de medidas a iconos y configuración
+    const measureConfig: Record<string, { icon: any; label?: string; unit?: string }> = {
+      'Tmax': { icon: faTemperatureArrowUp, label: 'Temperatura máxima', unit: '°C' },
+      'Tmin': { icon: faTemperatureArrowDown, label: 'Temperatura mínima', unit: '°C' },
+      'Prec': { icon: faCloudRain, label: 'Precipitación', unit: 'mm' },
+      'Rad': { icon: faSun, label: 'Radiación', unit: 'MJ/m²' },
+    };
 
     return (
       <div className="">
@@ -433,61 +444,30 @@ const MapComponent = ({
           Datos actuales: {new Date(data[0].date).toLocaleDateString()}
         </p>
         <div className="grid grid-cols-2 gap-3">
-          {/* Temperatura máxima */}
-          {measures.Tmax && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faTemperatureArrowUp} 
-                className="text-xl text-black-500 mr-2"
-              />
-              <div>
-                <p className="text-xs text-gray-500">Temperatura máxima</p>
-                <p className="text-sm font-semibold">{Number(measures.Tmax.value).toFixed(1)}°C</p>
+          {/* Renderizar todas las medidas disponibles dinámicamente */}
+          {data.map((item: any, index: number) => {
+            const config = measureConfig[item.measure_short_name];
+            const label = config?.label || item.measure_name || item.measure_short_name;
+            const unit = config?.unit || item.measure_unit || '';
+            const icon = config?.icon;
+
+            return (
+              <div key={index} className="flex items-center">
+                {icon && (
+                  <FontAwesomeIcon 
+                    icon={icon} 
+                    className="text-xl text-black-500 mr-2"
+                  />
+                )}
+                <div>
+                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-sm font-semibold">
+                    {Number(item.value).toFixed(1)}{unit}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* Temperatura mínima */}
-          {measures.Tmin && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faTemperatureArrowDown} 
-                className="text-xl text-black-500 mr-2"
-              />
-              <div>
-                <p className="text-xs text-gray-500">Temperatura mínima</p>
-                <p className="text-sm font-semibold">{Number(measures.Tmin.value).toFixed(1)}°C</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Precipitación */}
-          {measures.Prec && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faCloudRain} 
-                className="text-xl text-black-400 mr-2"
-              />
-              <div>
-                <p className="text-xs text-gray-500">Precipitación</p>
-                <p className="text-sm font-semibold">{Number(measures.Prec.value).toFixed(1)}mm</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Radiación solar */}
-          {measures.Rad && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faSun} 
-                className="text-xl text-black-500 mr-2"
-              />
-              <div>
-                <p className="text-xs text-gray-500">Radiación</p>
-                <p className="text-sm font-semibold">{Number(measures.Rad.value).toFixed(1)}MJ/m²</p>
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
     );
@@ -535,7 +515,7 @@ const MapComponent = ({
             format={layer.format || "image/png"}
             transparent={layer.transparent !== false}
             version={layer.version || "1.3.0"}
-            opacity={layer.opacity || 0.7}
+            opacity={layer.opacity !== undefined ? layer.opacity : 1.0}
             styles={layer.styles || ""}
             attribution={layer.attribution || ""}
             params={{
@@ -577,9 +557,9 @@ const MapComponent = ({
           <TimelineController
             dimensionName="time"
             layer={wmsLayers[0].layers}
-            onTimeChange={onTimeChange}
+            onTimeChange={handleTimeChange}
             wmsUrl={wmsLayers[0].url}
-            opacity={wmsLayers[0].opacity || 0.7}
+            opacity={wmsLayers[0].opacity !== undefined ? wmsLayers[0].opacity : 1.0}
           />
         )}
 
