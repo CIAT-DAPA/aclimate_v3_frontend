@@ -7,7 +7,7 @@ import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { spatialService, IndicatorCategory, Indicator } from "@/app/services/spatialService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faFileArrowDown, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -82,6 +82,7 @@ export default function SpatialDataPage() {
   const [downloadReady, setDownloadReady] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [isPreparingDownload, setIsPreparingDownload] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   
   // Estados para datos climáticos
   const [timePeriod, setTimePeriod] = useState<string>("daily");
@@ -95,6 +96,7 @@ export default function SpatialDataPage() {
   const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingIndicators, setLoadingIndicators] = useState(false);
+  const [availableTemporalities, setAvailableTemporalities] = useState<string[]>([]);
 
   // Estados para capas administrativas dinámicas
   const [adminLayers, setAdminLayers] = useState<Array<{name: string, workspace: string, store: string, layer: string}>>([]);
@@ -206,6 +208,29 @@ export default function SpatialDataPage() {
 
     loadCategories();
   }, [countryId]);
+
+  // Detectar temporalidades disponibles en el geoserver
+  useEffect(() => {
+    const detectAvailableTemporalities = async () => {
+      if (!selectedCategory) return;
+
+      try {
+        const availableTemps = await spatialService.getAvailableTemporalities(GEOSERVER_URL, countryCode);
+        setAvailableTemporalities(availableTemps);
+        
+        // Si la temporalidad actual no está disponible, cambiar a la primera disponible
+        if (availableTemps.length > 0 && !availableTemps.includes(indicatorPeriod)) {
+          setIndicatorPeriod(availableTemps[0]);
+        }
+      } catch (error) {
+        console.error("Error detectando temporalidades:", error);
+        // En caso de error, mostrar todas las opciones
+        setAvailableTemporalities(['daily', 'monthly', 'annual', 'seasonal', 'decadal', 'other']);
+      }
+    };
+
+    detectAvailableTemporalities();
+  }, [selectedCategory, countryCode]);
 
   // Cargar indicadores cuando cambia la categoría o el período
   useEffect(() => {
@@ -430,6 +455,27 @@ export default function SpatialDataPage() {
     }
   };
 
+  // Generar y descargar PDF bajo demanda cuando el usuario hace clic
+  const handleDownloadPDF = async () => {
+    if (!hasDataForPDF || pdfLoading) return;
+    try {
+      setPdfLoading(true);
+      // Usar la funcionalidad nativa de impresión del navegador
+      // Esto abrirá el diálogo de impresión donde el usuario puede guardar como PDF
+      window.print();
+    } catch (e) {
+      console.error('Error al abrir el diálogo de impresión:', e);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  // Verificar si hay datos suficientes para mostrar el botón PDF
+  const hasDataForPDF = (
+    (availableLayers && availableLayers.some(layer => layer.available)) ||
+    (indicators && indicators.length > 0)
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 pt-4 px-2 sm:px-4 overflow-x-hidden">
       <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
@@ -585,7 +631,7 @@ export default function SpatialDataPage() {
                                   wmsLayers={[{
                                     url: wmsBaseUrl,
                                     layers: layer.name,
-                                    opacity: 0.7,
+                                    opacity: 1.0,
                                     transparent: true,
                                     title: layer.title,
                                     unit: unidad
@@ -686,69 +732,59 @@ export default function SpatialDataPage() {
                           value={indicatorPeriod}
                           onChange={(e) => setIndicatorPeriod(e.target.value)}
                           className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                          disabled={availableTemporalities.length === 0}
                         >
-                          {indicatorPeriodOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
+                          {availableTemporalities.length === 0 ? (
+                            <option value="">Cargando opciones...</option>
+                          ) : (
+                            indicatorPeriodOptions
+                              .filter(option => availableTemporalities.includes(option.value))
+                              .map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))
+                          )}
                         </select>
                       </div>
 
                       {/* Selector de categoría */}
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <label htmlFor="indicatorCategory" className="font-medium text-gray-700">
-                            Categoría
-                          </label>
-                          {selectedCategory && (
-                            <button
-                              data-tooltip-target="category-tooltip"
-                              data-tooltip-placement="right"
-                              type="button"
-                              className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
+                        <label htmlFor="indicatorCategory" className="block font-medium text-gray-700 mb-2">
+                          Categoría
+                        </label>
                         {loadingCategories ? (
                           <div className="text-gray-500">Cargando categorías...</div>
                         ) : indicatorCategories.length === 0 ? (
                           <div className="text-gray-500">No hay categorías disponibles</div>
                         ) : (
-                          <>
-                            <select
-                              id="indicatorCategory"
-                              value={selectedCategory?.id || ''}
-                              onChange={(e) => {
-                                const category = indicatorCategories.find(cat => cat.id === parseInt(e.target.value));
-                                setSelectedCategory(category || null);
-                              }}
-                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
-                            >
-                              {indicatorCategories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                  {category.name}
-                                </option>
-                              ))}
-                            </select>
-                            {selectedCategory && (
-                              <div
-                                id="category-tooltip"
-                                role="tooltip"
-                                className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip max-w-xs"
-                              >
-                                {selectedCategory.description}
-                                <div className="tooltip-arrow" data-popper-arrow></div>
-                              </div>
-                            )}
-                          </>
+                          <select
+                            id="indicatorCategory"
+                            value={selectedCategory?.id || ''}
+                            onChange={(e) => {
+                              const category = indicatorCategories.find(cat => cat.id === parseInt(e.target.value));
+                              setSelectedCategory(category || null);
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                          >
+                            {indicatorCategories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
                         )}
                       </div>
                     </div>
+
+                    {/* Descripción de la categoría seleccionada */}
+                    {selectedCategory && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          Los indicadores climáticos de <span className="font-semibold">{selectedCategory.name}</span> {selectedCategory.description.charAt(0).toLowerCase() + selectedCategory.description.slice(1)}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Mapas de indicadores */}
                     {loadingIndicators ? (
@@ -783,7 +819,7 @@ export default function SpatialDataPage() {
                                   wmsLayers={[{
                                     url: indicatorWmsUrl,
                                     layers: layerName,
-                                    opacity: 0.7,
+                                    opacity: 1.0,
                                     transparent: true,
                                     title: indicator.name,
                                     unit: indicator.unit
@@ -835,7 +871,7 @@ export default function SpatialDataPage() {
       <button
         onClick={downloadAllData}
         disabled={!downloadReady || isPreparingDownload}
-        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
+        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
         style={{ zIndex: 9999 }}
         title={
           !downloadReady 
@@ -848,7 +884,7 @@ export default function SpatialDataPage() {
         {downloadProgress > 0 ? (
           <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
         ) : (
-          <FontAwesomeIcon icon={faFileArrowDown} className="h-6 w-6 sm:h-8 sm:w-8" />
+          <FontAwesomeIcon icon={faDownload} className="h-6 w-6 sm:h-8 sm:w-8" />
         )}
       </button>
 
@@ -863,6 +899,23 @@ export default function SpatialDataPage() {
             ></div>
           </div>
         </div>
+      )}
+
+      {/* Botón flotante de descarga PDF */}
+      {hasDataForPDF && (
+        <button
+          onClick={handleDownloadPDF}
+          disabled={!hasDataForPDF || pdfLoading}
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
+          style={{ zIndex: 9999 }}
+          title="Descargar como PDF"
+        >
+          {pdfLoading ? (
+            <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
+          ) : (
+            <FontAwesomeIcon icon={faFileArrowDown} className="h-6 w-6 sm:h-8 sm:w-8" />
+          )}
+        </button>
       )}
     </div>
   );
