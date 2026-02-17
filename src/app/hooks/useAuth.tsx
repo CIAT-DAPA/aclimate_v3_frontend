@@ -7,7 +7,7 @@ import React, {
   useContext,
   createContext,
 } from "react";
-import Keycloak, { KeycloakTokenParsed, KeycloakProfile } from "keycloak-js";
+import Keycloak, { KeycloakTokenParsed } from "keycloak-js";
 import { validateToken, validateUser, UserValidationRequest } from "@/app/services/userService";
 import { APP_ID, KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from "@/app/config";
 
@@ -76,22 +76,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setTokenParsed(keycloak.current.tokenParsed || null);
 
           try {
-            const kcProfile = (await keycloak.current.loadUserInfo()) as KeycloakProfile;
-            setUserInfo(kcProfile);
-
-            // Validar usuario con el backend
+            // Load user info from Keycloak
+            const userInfo = await keycloak.current.loadUserInfo();
+            setUserInfo(userInfo);
+            
+            // Validar usuario con el backend usando los nombres correctos de campos
             const userValidationData: UserValidationRequest = {
-              email: kcProfile.email || "",
-              email_verified: Boolean((kcProfile as any).email_verified),
-              family_name: kcProfile.lastName || "",
-              given_name: kcProfile.firstName || "",
-              name: kcProfile.username || kcProfile.email || "",
-              preferred_username: kcProfile.username || "",
-              sub: (keycloak.current.tokenParsed?.sub as string) || "",
-              app_id: APP_ID, // toma el valor unificado desde config
-              profile: (kcProfile as any).profile || ""
+              email: (userInfo as any).email || "",
+              email_verified: Boolean((userInfo as any).email_verified),
+              family_name: (userInfo as any).family_name || "",
+              given_name: (userInfo as any).given_name || "",
+              name: (userInfo as any).name || (userInfo as any).preferred_username || "",
+              preferred_username: (userInfo as any).preferred_username || "",
+              sub: (userInfo as any).sub || "",
+              app_id: APP_ID,
+              profile: (userInfo as any).profile || ""
             };
-
+            
             const validatedUser = await validateUser(userValidationData);
             setUserValidatedInfo(validatedUser.user);
 
@@ -102,7 +103,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
           } catch (userError) {
-            console.error("Error loading/validating user:", userError);
+            console.error("Error loading user info:", userError);
+            // Fallback to tokenParsed if loadUserInfo fails
+            setUserInfo(keycloak.current.tokenParsed || null);
             setAuthenticated(false);
           }
         }
@@ -128,6 +131,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const currentToken = keycloak.current.token;
           setToken(currentToken || null);
           setTokenParsed(keycloak.current.tokenParsed || null);
+          
+          // Reload user info after token refresh
+          try {
+            const userInfo = await keycloak.current.loadUserInfo();
+            setUserInfo(userInfo);
+          } catch (error) {
+            console.error("Error loading user info after refresh:", error);
+            setUserInfo(keycloak.current.tokenParsed || null);
+          }
         }
       } catch (error) {
         // Si falla el refresh, no forzar logout/redirect cuando no corresponde.
