@@ -3,13 +3,23 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
-import { getUserStations, updateUserStation, deleteUserStation, updateUserProfile, UserProfile } from "@/app/services/userService";
+import {
+  getUserStations,
+  updateUserStation,
+  deleteUserStation,
+  updateUserProfile,
+  UserProfile,
+} from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTemperatureHalf, faCloudRain, faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faTemperatureHalf,
+  faCloudRain,
+  faPencil,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { COUNTRY_NAME } from "@/app/config";
-
 
 interface UserStation {
   id: number;
@@ -25,10 +35,19 @@ interface EditModalProps {
   station: UserStation | null;
   stationDetails: Station | null;
   onClose: () => void;
-  onSave: (wsExtId: string, notification: { email: boolean; push: boolean }) => Promise<void>;
+  onSave: (
+    wsExtId: string,
+    notification: { email: boolean; push: boolean },
+  ) => Promise<void>;
 }
 
-const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, onClose, onSave }) => {
+const EditModal: React.FC<EditModalProps> = ({
+  isOpen,
+  station,
+  stationDetails,
+  onClose,
+  onSave,
+}) => {
   const [emailNotification, setEmailNotification] = useState(false);
   const [pushNotification, setPushNotification] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,12 +61,12 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
 
   const handleSave = async () => {
     if (!station) return;
-    
+
     setSaving(true);
     try {
       await onSave(station.ws_ext_id, {
         email: emailNotification,
-        push: pushNotification
+        push: pushNotification,
       });
       onClose();
     } catch (error) {
@@ -63,14 +82,17 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-xl font-semibold mb-4 text-gray-900">Editar suscripción</h3>
-        
+        <h3 className="text-xl font-semibold mb-4 text-gray-900">
+          Editar suscripción
+        </h3>
+
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">
             <strong>Estación:</strong> {stationDetails.name}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>Ubicación:</strong> {stationDetails.admin2_name}, {stationDetails.country_name}
+            <strong>Ubicación:</strong> {stationDetails.admin2_name},{" "}
+            {stationDetails.country_name}
           </p>
         </div>
 
@@ -83,7 +105,10 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
               onChange={(e) => setEmailNotification(e.target.checked)}
               className="w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 rounded focus:ring-[#bc6c25]"
             />
-            <label htmlFor="email" className="ml-2 text-sm font-medium text-gray-900">
+            <label
+              htmlFor="email"
+              className="ml-2 text-sm font-medium text-gray-900"
+            >
               Notificaciones por correo electrónico
             </label>
           </div>
@@ -96,7 +121,10 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
               onChange={(e) => setPushNotification(e.target.checked)}
               className="w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 rounded focus:ring-[#bc6c25]"
             />
-            <label htmlFor="push" className="ml-2 text-sm font-medium text-gray-900">
+            <label
+              htmlFor="push"
+              className="ml-2 text-sm font-medium text-gray-900"
+            >
               Notificaciones push
             </label>
           </div>
@@ -121,7 +149,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
                 Guardando...
               </>
             ) : (
-              'Guardar'
+              "Guardar"
             )}
           </button>
         </div>
@@ -133,14 +161,26 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, station, stationDetails, 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { userValidatedInfo, authenticated, loading: authLoading, userInfo, token } = useAuth();
+  const {
+    userValidatedInfo,
+    authenticated,
+    loading: authLoading,
+    userInfo,
+    token,
+  } = useAuth();
   const [userStations, setUserStations] = useState<UserStation[]>([]);
-  const [stationDetails, setStationDetails] = useState<Record<string, Station>>({});
+  const [stationDetails, setStationDetails] = useState<Record<string, Station>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
-  const [editingStation, setEditingStation] = useState<UserStation | null>(null);
+  const [editingStation, setEditingStation] = useState<UserStation | null>(
+    null,
+  );
   const [showEditModal, setShowEditModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<'FARMER' | 'TECHNICIAN'>('FARMER');
+  const [selectedProfile, setSelectedProfile] = useState<
+    "FARMER" | "TECHNICIAN"
+  >("FARMER");
   const [savingProfile, setSavingProfile] = useState(false);
 
   const userId = params.id as string;
@@ -149,20 +189,22 @@ export default function UserProfilePage() {
     if (authLoading) return;
 
     if (!authenticated || !userValidatedInfo) {
-      router.push('/');
+      router.push("/");
       return;
     }
 
     // Verificar que el usuario esté accediendo a su propio perfil
-    const userIdFromValidated = userValidatedInfo.user?.id || userValidatedInfo.id;
+    const userIdFromValidated =
+      userValidatedInfo.user?.id || userValidatedInfo.id;
     if (userIdFromValidated?.toString() !== userId) {
-      router.push('/');
+      router.push("/");
       return;
     }
 
     // Establecer el perfil actual del usuario
-    const currentProfile = (userValidatedInfo.user?.profile || userValidatedInfo.profile) as UserProfile;
-    if (currentProfile === 'FARMER' || currentProfile === 'TECHNICIAN') {
+    const currentProfile = (userValidatedInfo.user?.profile ||
+      userValidatedInfo.profile) as UserProfile;
+    if (currentProfile === "FARMER" || currentProfile === "TECHNICIAN") {
       setSelectedProfile(currentProfile);
     }
 
@@ -180,8 +222,10 @@ export default function UserProfilePage() {
       await Promise.all(
         stations.map(async (station) => {
           try {
-            const detailResponse = await stationService.getById(station.ws_ext_id);
-                        
+            const detailResponse = await stationService.getById(
+              station.ws_ext_id,
+            );
+
             // La API devuelve un array, tomamos el primer elemento
             if (Array.isArray(detailResponse) && detailResponse.length > 0) {
               details[station.ws_ext_id] = detailResponse[0];
@@ -192,7 +236,7 @@ export default function UserProfilePage() {
           } catch (error) {
             console.error(`Error loading station ${station.ws_ext_id}:`, error);
           }
-        })
+        }),
       );
       setStationDetails(details);
     } catch (error) {
@@ -207,7 +251,10 @@ export default function UserProfilePage() {
     setShowEditModal(true);
   };
 
-  const handleSaveStation = async (wsExtId: string, notification: { email: boolean; push: boolean }) => {
+  const handleSaveStation = async (
+    wsExtId: string,
+    notification: { email: boolean; push: boolean },
+  ) => {
     try {
       await updateUserStation(parseInt(userId), wsExtId, { notification });
       await loadUserStations();
@@ -240,14 +287,14 @@ export default function UserProfilePage() {
     setSavingProfile(true);
     try {
       await updateUserProfile(parseInt(userId), selectedProfile, token);
-      
+
       // Actualizar el estado local del usuario
       if (userValidatedInfo.user) {
         userValidatedInfo.user.profile = selectedProfile;
       } else {
         userValidatedInfo.profile = selectedProfile;
       }
-      
+
       setShowProfileModal(false);
       alert("Perfil actualizado correctamente");
     } catch (error) {
@@ -276,15 +323,19 @@ export default function UserProfilePage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="animate-spin h-12 w-12 border-4 border-[#bc6c25] border-t-transparent rounded-full"></div>
         </div>
-   
       </>
     );
   }
 
   const userName = userInfo?.name || userInfo?.preferred_username || "Usuario";
   const userEmail = userInfo?.email || "";
-  const userInitials = getInitials(userInfo?.given_name || '', userInfo?.family_name || '');
-  const currentUserProfile = (userValidatedInfo?.user?.profile || userValidatedInfo?.profile) as UserProfile || 'FARMER';
+  const userInitials = getInitials(
+    userInfo?.given_name || "",
+    userInfo?.family_name || "",
+  );
+  const currentUserProfile =
+    ((userValidatedInfo?.user?.profile ||
+      userValidatedInfo?.profile) as UserProfile) || "FARMER";
 
   return (
     <>
@@ -298,18 +349,24 @@ export default function UserProfilePage() {
                   {userInitials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{userName}</h1>
-                  <p className="text-sm sm:text-base text-gray-600 truncate">{userEmail}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    {userName}
+                  </h1>
+                  <p className="text-sm sm:text-base text-gray-600 truncate">
+                    {userEmail}
+                  </p>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
                     <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1">
                       <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                      {COUNTRY_NAME}
+                      {COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía")}
                     </p>
                     <span className="text-gray-300 hidden sm:inline">•</span>
                     <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1">
                       <span className="font-medium">Perfil:</span>
                       <span className="px-2 py-0.5 bg-[#283618] text-[#fefae0] rounded text-xs font-medium">
-                        {currentUserProfile === 'FARMER' ? 'Agricultor' : 'Técnico'}
+                        {currentUserProfile === "FARMER"
+                          ? "Agricultor"
+                          : "Técnico"}
                       </span>
                     </p>
                   </div>
@@ -326,31 +383,47 @@ export default function UserProfilePage() {
 
           {/* Subscriptions Section */}
           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Boletines suscritos</h2>
-            <p className="text-gray-600 mb-6">Este es un listado a los boletines que estas suscrito</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Boletines suscritos
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Este es un listado a los boletines que estas suscrito
+            </p>
 
             {/* Climate Bulletins */}
             <div className="mb-6">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-4">
-                <FontAwesomeIcon icon={faTemperatureHalf} className="text-[#bc6c25]" />
+                <FontAwesomeIcon
+                  icon={faTemperatureHalf}
+                  className="text-[#bc6c25]"
+                />
                 Boletines climáticos
               </h3>
 
               {userStations.length === 0 ? (
-                <p className="text-gray-500 text-sm italic">No tienes estaciones suscritas</p>
+                <p className="text-gray-500 text-sm italic">
+                  No tienes estaciones suscritas
+                </p>
               ) : (
                 <div className="space-y-4">
                   {userStations.map((station) => {
                     const details = stationDetails[station.ws_ext_id];
                     return (
-                      <div key={station.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                      <div
+                        key={station.id}
+                        className="border border-gray-200 rounded-lg p-3 sm:p-4"
+                      >
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                           <div className="flex-1 w-full sm:w-auto">
                             <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
-                              {details ? details.name : `Estación #${station.ws_ext_id}`}
+                              {details
+                                ? details.name
+                                : `Estación #${station.ws_ext_id}`}
                             </h4>
                             <p className="text-xs sm:text-sm text-gray-600">
-                              {details ? `${details.admin2_name}, ${details.country_name}` : 'Cargando...'}
+                              {details
+                                ? `${details.admin2_name}, ${details.country_name}`
+                                : "Cargando..."}
                             </p>
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -358,15 +431,31 @@ export default function UserProfilePage() {
                               onClick={() => handleEditStation(station)}
                               className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-900 bg-[#ffc107] rounded-lg hover:bg-[#ffb300] transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
-                              <FontAwesomeIcon icon={faPencil} className="h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="whitespace-nowrap">Editar suscripción</span>
+                              <FontAwesomeIcon
+                                icon={faPencil}
+                                className="h-3 w-3 sm:h-4 sm:w-4"
+                              />
+                              <span className="whitespace-nowrap">
+                                Editar suscripción
+                              </span>
                             </button>
                             <button
-                              onClick={() => handleDeleteStation(station.ws_ext_id, details?.name || `Estación #${station.ws_ext_id}`)}
+                              onClick={() =>
+                                handleDeleteStation(
+                                  station.ws_ext_id,
+                                  details?.name ||
+                                    `Estación #${station.ws_ext_id}`,
+                                )
+                              }
                               className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-[#f44336] rounded-lg hover:bg-[#d32f2f] transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
-                              <FontAwesomeIcon icon={faTrash} className="h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="whitespace-nowrap">Desuscribirse</span>
+                              <FontAwesomeIcon
+                                icon={faTrash}
+                                className="h-3 w-3 sm:h-4 sm:w-4"
+                              />
+                              <span className="whitespace-nowrap">
+                                Desuscribirse
+                              </span>
                             </button>
                           </div>
                         </div>
@@ -380,10 +469,15 @@ export default function UserProfilePage() {
             {/* Forecast Bulletins - Placeholder for future implementation */}
             <div>
               <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-800 mb-4">
-                <FontAwesomeIcon icon={faCloudRain} className="text-[#bc6c25]" />
+                <FontAwesomeIcon
+                  icon={faCloudRain}
+                  className="text-[#bc6c25]"
+                />
                 Boletines de pronósticos
               </h3>
-              <p className="text-gray-500 text-sm italic">Próximamente disponible</p>
+              <p className="text-gray-500 text-sm italic">
+                Próximamente disponible
+              </p>
             </div>
           </div>
         </div>
@@ -391,7 +485,9 @@ export default function UserProfilePage() {
       <EditModal
         isOpen={showEditModal}
         station={editingStation}
-        stationDetails={editingStation ? stationDetails[editingStation.ws_ext_id] : null}
+        stationDetails={
+          editingStation ? stationDetails[editingStation.ws_ext_id] : null
+        }
         onClose={() => {
           setShowEditModal(false);
           setEditingStation(null);
@@ -403,10 +499,13 @@ export default function UserProfilePage() {
       {showProfileModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-4 text-gray-900">Cambiar perfil de usuario</h3>
-            
+            <h3 className="text-xl font-semibold mb-4 text-gray-900">
+              Cambiar perfil de usuario
+            </h3>
+
             <p className="text-sm text-gray-600 mb-6">
-              Selecciona el tipo de perfil que mejor describe tu rol en la plataforma.
+              Selecciona el tipo de perfil que mejor describe tu rol en la
+              plataforma.
             </p>
 
             <div className="space-y-3 mb-6">
@@ -415,14 +514,20 @@ export default function UserProfilePage() {
                   type="radio"
                   name="profile"
                   value="FARMER"
-                  checked={selectedProfile === 'FARMER'}
-                  onChange={(e) => setSelectedProfile(e.target.value as UserProfile)}
+                  checked={selectedProfile === "FARMER"}
+                  onChange={(e) =>
+                    setSelectedProfile(e.target.value as UserProfile)
+                  }
                   className="mt-1 w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 focus:ring-[#bc6c25]"
                 />
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Agricultor</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    Agricultor
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Persona dedicada a la producción agrícola que utiliza la información climática para la toma de decisiones en sus cultivos.
+                    Persona dedicada a la producción agrícola que utiliza la
+                    información climática para la toma de decisiones en sus
+                    cultivos.
                   </p>
                 </div>
               </label>
@@ -432,14 +537,17 @@ export default function UserProfilePage() {
                   type="radio"
                   name="profile"
                   value="TECHNICIAN"
-                  checked={selectedProfile === 'TECHNICIAN'}
-                  onChange={(e) => setSelectedProfile(e.target.value as UserProfile)}
+                  checked={selectedProfile === "TECHNICIAN"}
+                  onChange={(e) =>
+                    setSelectedProfile(e.target.value as UserProfile)
+                  }
                   className="mt-1 w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 focus:ring-[#bc6c25]"
                 />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900">Técnico</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Profesional o técnico especializado en asesoría agrícola, extensión rural o análisis de información climática.
+                    Profesional o técnico especializado en asesoría agrícola,
+                    extensión rural o análisis de información climática.
                   </p>
                 </div>
               </label>
@@ -450,8 +558,12 @@ export default function UserProfilePage() {
                 onClick={() => {
                   setShowProfileModal(false);
                   // Restaurar el perfil original
-                  const currentProfile = (userValidatedInfo?.user?.profile || userValidatedInfo?.profile) as UserProfile;
-                  if (currentProfile === 'FARMER' || currentProfile === 'TECHNICIAN') {
+                  const currentProfile = (userValidatedInfo?.user?.profile ||
+                    userValidatedInfo?.profile) as UserProfile;
+                  if (
+                    currentProfile === "FARMER" ||
+                    currentProfile === "TECHNICIAN"
+                  ) {
                     setSelectedProfile(currentProfile);
                   }
                 }}
@@ -471,7 +583,7 @@ export default function UserProfilePage() {
                     Guardando...
                   </>
                 ) : (
-                  'Guardar cambios'
+                  "Guardar cambios"
                 )}
               </button>
             </div>
