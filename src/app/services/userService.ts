@@ -5,7 +5,7 @@ interface TokenValidationResponse {
     sub?: string;
     email?: string;
     name?: string;
-    [key: string]: any;  // Para otros campos que puedan venir en el payload
+    [key: string]: any; // Para otros campos que puedan venir en el payload
   };
   error?: string;
 }
@@ -15,30 +15,43 @@ interface TokenValidationResponse {
  * @param token - El token JWT a validar
  * @returns TokenValidationResponse con el resultado de la validación
  */
-export const validateToken = async (token: string): Promise<TokenValidationResponse> => {
+export const validateToken = async (
+  token: string,
+): Promise<TokenValidationResponse> => {
   try {
     const base = USERS_FRONTEND_API_URL_BASE;
-    const url = `${base}${base.endsWith('/') ? '' : '/'}auth/token/validate`;
+    const url = `${base}${base.endsWith("/") ? "" : "/"}auth/token/validate`;
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      if (response.status === 401) {
+        // Token inválido o expirado es un resultado esperado, no una excepción
+        return { valid: false, error: "Token unauthorized or expired" };
+      }
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     const data: TokenValidationResponse = await response.json();
     return data;
   } catch (error) {
-    console.error('Error validating token:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error validating token:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     return {
       valid: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };
@@ -73,30 +86,39 @@ interface UserValidationResponse {
  * @param userData - Los datos del usuario a validar
  * @returns UserValidationResponse con el resultado de la validación
  */
-export const validateUser = async (userData: UserValidationRequest): Promise<UserValidationResponse> => {
+export const validateUser = async (
+  userData: UserValidationRequest,
+): Promise<UserValidationResponse> => {
   try {
     const base = USERS_FRONTEND_API_URL_BASE;
-    const url = `${base}${base.endsWith('/') ? '' : '/'}validate/user`;
+    const url = `${base}${base.endsWith("/") ? "" : "/"}validate/user`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     const data: UserValidationResponse = await response.json();
     return data;
   } catch (error) {
-    console.error('Error validating user:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error validating user:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
-}
+};
 
 // Interfaces for User Stations
 interface WsInterestedRequest {
@@ -122,15 +144,17 @@ interface WsInterestedRead {
  * @param userId - The ID of the user
  * @returns List of weather stations the user is interested in
  */
-export const getUserStations = async (userId: number): Promise<WsInterestedRead[]> => {
+export const getUserStations = async (
+  userId: number,
+): Promise<WsInterestedRead[]> => {
   try {
     const baseUrl = USERS_FRONTEND_API_URL_BASE;
-    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
-    
+    const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}user-stations/${userId}`;
+
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -140,17 +164,24 @@ export const getUserStations = async (userId: number): Promise<WsInterestedRead[
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
     // Si es un error de red o cualquier otro error que no sea 404
-    if (error instanceof Error && error.message.includes('404')) {
+    if (error instanceof Error && error.message.includes("404")) {
       return [];
     }
-    console.error('Error getting user stations:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error getting user stations:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 };
@@ -161,33 +192,47 @@ export const getUserStations = async (userId: number): Promise<WsInterestedRead[
  * @param stationData - Weather station data including ws_ext_id and notification settings
  * @returns The created weather station interest record
  */
-export const addUserStation = async (userId: number, stationData: WsInterestedRequest): Promise<WsInterestedRead> => {
+export const addUserStation = async (
+  userId: number,
+  stationData: WsInterestedRequest,
+): Promise<WsInterestedRead> => {
   try {
     const baseUrl = USERS_FRONTEND_API_URL_BASE;
-    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}`;
-    
+    const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}user-stations/${userId}`;
+
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(stationData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+
       // Si es un error 400, probablemente la estación ya está agregada
       if (response.status === 400) {
-        throw new Error(errorData.detail || errorData.message || 'La estación ya está en favoritos');
+        throw new Error(
+          errorData.detail ||
+            errorData.message ||
+            "La estación ya está en favoritos",
+        );
       }
-      
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error adding user station:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error adding user station:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 };
@@ -202,28 +247,35 @@ export const addUserStation = async (userId: number, stationData: WsInterestedRe
 export const updateUserStation = async (
   userId: number,
   wsExtId: string,
-  updateData: WsInterestedUpdateRequest
+  updateData: WsInterestedUpdateRequest,
 ): Promise<WsInterestedRead> => {
   try {
     const baseUrl = USERS_FRONTEND_API_URL_BASE;
-    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
-    
+    const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}user-stations/${userId}/${wsExtId}`;
+
     const response = await fetch(url, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(updateData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error updating user station:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error updating user station:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 };
@@ -234,32 +286,42 @@ export const updateUserStation = async (
  * @param wsExtId - The external weather station ID to remove
  * @returns Success message
  */
-export const deleteUserStation = async (userId: number, wsExtId: string): Promise<{ message: string }> => {
+export const deleteUserStation = async (
+  userId: number,
+  wsExtId: string,
+): Promise<{ message: string }> => {
   try {
     const baseUrl = USERS_FRONTEND_API_URL_BASE;
-    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user-stations/${userId}/${wsExtId}`;
-    
+    const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}user-stations/${userId}/${wsExtId}`;
+
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error deleting user station:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error deleting user station:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 };
 
 // User Profile Management
-export type UserProfile = 'FARMER' | 'TECHNICIAN';
+export type UserProfile = "FARMER" | "TECHNICIAN";
 
 interface UpdateProfileRequest {
   profile: UserProfile;
@@ -285,29 +347,36 @@ interface UpdateProfileResponse {
 export const updateUserProfile = async (
   userId: number,
   profile: UserProfile,
-  token: string
+  token: string,
 ): Promise<UpdateProfileResponse> => {
   try {
     const baseUrl = USERS_FRONTEND_API_URL_BASE;
-    const url = `${baseUrl}${baseUrl.endsWith('/') ? '' : '/'}user/${userId}/profile`;
-    
+    const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}user/${userId}/profile`;
+
     const response = await fetch(url, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ profile }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error updating user profile:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "Error updating user profile:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 };
