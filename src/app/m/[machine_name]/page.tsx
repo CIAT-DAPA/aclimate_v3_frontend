@@ -17,6 +17,7 @@ import {
   faStar as faStarSolid,
   faFileArrowDown,
   faSatellite,
+  faDatabase,
 } from "@fortawesome/free-solid-svg-icons";
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -737,20 +738,31 @@ export default function StationDetailPage() {
           });
 
           // Obtener la fecha mínima y máxima entre ambos objetos
-          if (
-            dates.minDate &&
-            dates.maxDate &&
-            datesIndicators.minDate &&
-            datesIndicators.maxDate
-          ) {
-            const minDate =
-              new Date(dates.minDate) < new Date(datesIndicators.minDate)
-                ? dates.minDate
-                : datesIndicators.minDate;
-            const maxDate =
-              new Date(dates.maxDate) > new Date(datesIndicators.maxDate)
-                ? dates.maxDate
-                : datesIndicators.maxDate;
+          // Si alguno tiene datos, usamos esos. Si ambos tienen, comparamos.
+          let minDate = "";
+          let maxDate = "";
+
+          if (dates.minDate && dates.maxDate) {
+            minDate = dates.minDate;
+            maxDate = dates.maxDate;
+          }
+
+          if (datesIndicators.minDate && datesIndicators.maxDate) {
+            if (
+              !minDate ||
+              new Date(datesIndicators.minDate) < new Date(minDate)
+            ) {
+              minDate = datesIndicators.minDate;
+            }
+            if (
+              !maxDate ||
+              new Date(datesIndicators.maxDate) > new Date(maxDate)
+            ) {
+              maxDate = datesIndicators.maxDate;
+            }
+          }
+
+          if (minDate && maxDate) {
             setStationDates({ minDate, maxDate });
           }
 
@@ -1096,7 +1108,8 @@ export default function StationDetailPage() {
             {station?.latitude?.toFixed(6) || "N/A"},{" "}
             {station?.longitude?.toFixed(6) || "N/A"}
           </p>
-          <p className="text-gray-500 text-xs sm:text-sm mt-1 ms-1">
+          <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+            <FontAwesomeIcon icon={faDatabase} className="text-sm" />
             Fuente: {station?.source || "N/A"}
           </p>
         </div>
@@ -1108,16 +1121,14 @@ export default function StationDetailPage() {
         <div className="mt-4 mb-4 text-sm sm:text-base text-gray-700">
           <p>
             La estación meteorológica{" "}
-            <strong>{station?.name || "Desconocida"}</strong> está ubicada en{" "}
+            <strong>{station?.name || "Desconocida"}</strong>, situada en{" "}
             <strong>
               {station?.admin2_name || "N/A"}, {station?.country_name || "N/A"}
-            </strong>{" "}
-            en la latitud{" "}
-            <strong>{station?.latitude?.toFixed(4) || "N/A"}</strong> y longitud{" "}
-            <strong>{station?.longitude?.toFixed(4) || "N/A"}</strong>, ha
-            registrado datos desde el <strong>{startDate}</strong> hasta el{" "}
-            <strong>{endDate}</strong>, cubriendo variables clave para el
-            monitoreo agroclimático.
+            </strong>
+            , cuenta con registros históricos desde el{" "}
+            <strong>{startDate || "..."}</strong> hasta el{" "}
+            <strong>{endDate || "..."}</strong>, proporcionando información
+            clave para el monitoreo agroclimático.
           </p>
         </div>
 
