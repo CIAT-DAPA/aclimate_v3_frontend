@@ -25,14 +25,16 @@ export default function Home() {
             <div className="space-y-8 sm:space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
               <div className="space-y-3">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-amber-50 text-balance">
-                  Bienvenido a AClimate {COUNTRY_NAME}
+                  Bienvenido a AClimate{" "}
+                  {COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía")}
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-amber-50 text-pretty">
-                  Explora, monitorea y compara datos satelitales, informate sobre como ha sido el clima en las regiones.
+                  Explora, monitorea y compara datos satelitales, informate
+                  sobre como ha sido el clima en las regiones.
                 </p>
                 <div className="flex flex-col md:flex-row gap-4 text-center">
                   <Link
-                    href={`/spatial/${countryId || '1'}`}
+                    href={`/spatial/${countryId || "1"}`}
                     className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-6 sm:px-8 rounded-full hover:bg-amber-700 transition-colors text-base sm:text-lg"
                   >
                     Explorar
@@ -44,7 +46,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

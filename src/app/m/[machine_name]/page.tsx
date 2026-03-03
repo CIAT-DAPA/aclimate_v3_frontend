@@ -17,6 +17,7 @@ import {
   faStar as faStarSolid,
   faFileArrowDown,
   faSatellite,
+  faDatabase,
 } from "@fortawesome/free-solid-svg-icons";
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -95,7 +96,9 @@ export default function StationDetailPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
 
   // Estados para períodos disponibles de indicadores
-  const [availableIndicatorPeriods, setAvailableIndicatorPeriods] = useState<Array<{value: string, label: string}>>([]);
+  const [availableIndicatorPeriods, setAvailableIndicatorPeriods] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
 
   // Estados para control de búsqueda manual
@@ -451,12 +454,15 @@ export default function StationDetailPage() {
           const stationDateMap = new Set(dates);
 
           // Obtener el rango de valores de la estación para referencia
-          const stationValues = values.filter((v) => v != null && isFinite(v));
+          const stationValues = values.filter(
+            (v: any) => v != null && isFinite(v),
+          );
           const maxStationValue = Math.max(...stationValues, 0);
           const minStationValue = Math.min(...stationValues, 0);
           const avgStationValue =
             stationValues.length > 0
-              ? stationValues.reduce((a, b) => a + b, 0) / stationValues.length
+              ? stationValues.reduce((a: any, b: any) => a + b, 0) /
+                stationValues.length
               : 0;
 
           // Filtrar y mapear datos satelitales que coincidan con las fechas de la estación
@@ -570,45 +576,48 @@ export default function StationDetailPage() {
   useEffect(() => {
     const fetchAvailablePeriods = async () => {
       if (!machine_name) return;
-      
+
       try {
         setLoadingPeriods(true);
         // Primero obtener el station id desde machine_name
         const stationData = await stationService.getByMachineName(machine_name);
         if (!stationData || stationData.length === 0) return;
-        
+
         const stationId = stationData[0].id.toString();
         const periods = await monitoryService.getAvailablePeriods(stationId);
-        
+
         // Mapeo de labels en inglés a español
         const labelMap: Record<string, string> = {
-          "Daily": "Diario",
-          "Monthly": "Mensual",
-          "Annual": "Anual",
-          "Seasonal": "Estacional",
-          "Decadal": "Decadal",
-          "Other": "Otro"
+          Daily: "Diario",
+          Monthly: "Mensual",
+          Annual: "Anual",
+          Seasonal: "Estacional",
+          Decadal: "Decadal",
+          Other: "Otro",
         };
-        
+
         // Filtrar solo los períodos que tienen datos y traducir labels
         const periodsWithData = periods
-          .filter(period => period.has_data)
-          .map(period => ({
+          .filter((period) => period.has_data)
+          .map((period) => ({
             value: period.value,
-            label: labelMap[period.label] || period.label
+            label: labelMap[period.label] || period.label,
           }));
         setAvailableIndicatorPeriods(periodsWithData);
-        
+
         // Si el período actual no está disponible, seleccionar el primero disponible
-        if (periodsWithData.length > 0 && !periodsWithData.some(p => p.value === timePeriodIndicators)) {
+        if (
+          periodsWithData.length > 0 &&
+          !periodsWithData.some((p) => p.value === timePeriodIndicators)
+        ) {
           setTimePeriodIndicators(periodsWithData[0].value);
         }
       } catch (error) {
-        console.error('Error cargando períodos disponibles:', error);
+        console.error("Error cargando períodos disponibles:", error);
         // En caso de error, mantener las opciones por defecto
         setAvailableIndicatorPeriods([
           { value: "monthly", label: "Mensual" },
-          { value: "annual", label: "Anual" }
+          { value: "annual", label: "Anual" },
         ]);
       } finally {
         setLoadingPeriods(false);
@@ -652,7 +661,7 @@ export default function StationDetailPage() {
         // Usar el mismo ID que MapComponent: station.id (location_id en backend)
         const stationId = station.id?.toString() || "";
         const isFav = userStations.some(
-          (s) =>
+          (s: any) =>
             (s.location_id?.toString() || s.ws_ext_id?.toString() || "") ===
             stationId,
         );
@@ -729,20 +738,31 @@ export default function StationDetailPage() {
           });
 
           // Obtener la fecha mínima y máxima entre ambos objetos
-          if (
-            dates.minDate &&
-            dates.maxDate &&
-            datesIndicators.minDate &&
-            datesIndicators.maxDate
-          ) {
-            const minDate =
-              new Date(dates.minDate) < new Date(datesIndicators.minDate)
-                ? dates.minDate
-                : datesIndicators.minDate;
-            const maxDate =
-              new Date(dates.maxDate) > new Date(datesIndicators.maxDate)
-                ? dates.maxDate
-                : datesIndicators.maxDate;
+          // Si alguno tiene datos, usamos esos. Si ambos tienen, comparamos.
+          let minDate = "";
+          let maxDate = "";
+
+          if (dates.minDate && dates.maxDate) {
+            minDate = dates.minDate;
+            maxDate = dates.maxDate;
+          }
+
+          if (datesIndicators.minDate && datesIndicators.maxDate) {
+            if (
+              !minDate ||
+              new Date(datesIndicators.minDate) < new Date(minDate)
+            ) {
+              minDate = datesIndicators.minDate;
+            }
+            if (
+              !maxDate ||
+              new Date(datesIndicators.maxDate) > new Date(maxDate)
+            ) {
+              maxDate = datesIndicators.maxDate;
+            }
+          }
+
+          if (minDate && maxDate) {
             setStationDates({ minDate, maxDate });
           }
 
@@ -763,10 +783,14 @@ export default function StationDetailPage() {
           // Resetear filtros de indicadores según el período
           // Para 'monthly', 'annual' o 'seasonal', usar todo el rango disponible
           // Para otros períodos, usar los últimos 30 días
-          if (timePeriodIndicators === "monthly" || timePeriodIndicators === "annual" || timePeriodIndicators === "seasonal") {
-            setFilterDatesIndicators({ 
-              start: datesIndicators.minDate || "", 
-              end: datesIndicators.maxDate || "" 
+          if (
+            timePeriodIndicators === "monthly" ||
+            timePeriodIndicators === "annual" ||
+            timePeriodIndicators === "seasonal"
+          ) {
+            setFilterDatesIndicators({
+              start: datesIndicators.minDate || "",
+              end: datesIndicators.maxDate || "",
             });
           } else {
             const last30DaysIndicators = getLast30Days(
@@ -837,8 +861,6 @@ export default function StationDetailPage() {
       };
       fetchClimateData();
     }
-
-    
   }, [
     station,
     DataClimaticDates?.minDate,
@@ -1086,7 +1108,8 @@ export default function StationDetailPage() {
             {station?.latitude?.toFixed(6) || "N/A"},{" "}
             {station?.longitude?.toFixed(6) || "N/A"}
           </p>
-          <p className="text-gray-500 text-xs sm:text-sm mt-1 ms-1">
+          <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+            <FontAwesomeIcon icon={faDatabase} className="text-sm" />
             Fuente: {station?.source || "N/A"}
           </p>
         </div>
@@ -1098,16 +1121,14 @@ export default function StationDetailPage() {
         <div className="mt-4 mb-4 text-sm sm:text-base text-gray-700">
           <p>
             La estación meteorológica{" "}
-            <strong>{station?.name || "Desconocida"}</strong> está ubicada en{" "}
+            <strong>{station?.name || "Desconocida"}</strong>, situada en{" "}
             <strong>
               {station?.admin2_name || "N/A"}, {station?.country_name || "N/A"}
-            </strong>{" "}
-            en la latitud{" "}
-            <strong>{station?.latitude?.toFixed(4) || "N/A"}</strong> y longitud{" "}
-            <strong>{station?.longitude?.toFixed(4) || "N/A"}</strong>, ha
-            registrado datos desde el <strong>{startDate}</strong> hasta el{" "}
-            <strong>{endDate}</strong>, cubriendo variables clave para el
-            monitoreo agroclimático.
+            </strong>
+            , cuenta con registros históricos desde el{" "}
+            <strong>{startDate || "..."}</strong> hasta el{" "}
+            <strong>{endDate || "..."}</strong>, proporcionando información
+            clave para el monitoreo agroclimático.
           </p>
         </div>
 
@@ -1440,12 +1461,15 @@ export default function StationDetailPage() {
                               setTimePeriodIndicators(e.target.value)
                             }
                             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            disabled={loadingPeriods || availableIndicatorPeriods.length === 0}
+                            disabled={
+                              loadingPeriods ||
+                              availableIndicatorPeriods.length === 0
+                            }
                           >
                             {loadingPeriods ? (
                               <option>Cargando...</option>
                             ) : availableIndicatorPeriods.length > 0 ? (
-                              availableIndicatorPeriods.map(option => (
+                              availableIndicatorPeriods.map((option) => (
                                 <option key={option.value} value={option.value}>
                                   {option.label}
                                 </option>

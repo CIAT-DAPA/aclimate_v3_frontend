@@ -5,11 +5,15 @@ import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
 import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
 import { useState, useEffect } from "react";
-import { faArrowRightFromBracket, faUser } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowRightFromBracket,
+  faUser,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
-  const { userInfo, userValidatedInfo, loading, authenticated, login, logout } = useAuth();
+  const { userInfo, userValidatedInfo, loading, authenticated, login, logout } =
+    useAuth();
   const { countryId, countryName } = useCountry();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -44,19 +48,36 @@ const Header = () => {
             width={32}
             height={32}
           />
-          <span className="text-lg sm:text-xl font-normal text-amber-50">AClimate {countryName}</span>
+          <span className="text-lg sm:text-xl font-normal text-amber-50">
+            AClimate {countryName.replace(/Amazonia/gi, "Amazonía")}
+          </span>
         </Link>
-        
+
         {/* Menú hamburguesa para móvil */}
         <button
           className="md:hidden text-amber-50 p-2"
           onClick={() => setShowMobileMenu(!showMobileMenu)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             {showMobileMenu ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             )}
           </svg>
         </button>
@@ -72,7 +93,7 @@ const Header = () => {
             </Link>
           )}
           <Link
-            href={`/spatial/${countryId || '1'}`}
+            href={`/spatial/${countryId || "1"}`}
             className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
           >
             Datos espaciales
@@ -94,10 +115,10 @@ const Header = () => {
                   {loading && (
                     <div className="animate-spin h-4 w-4 border-2 border-[#ffaf68] border-t-transparent rounded-full"></div>
                   )}
-                  
+
                   {!loading && !authenticated && (
-                    <button 
-                      onClick={login} 
+                    <button
+                      onClick={login}
                       className="flex items-center justify-between p-2 font-medium text-amber-50 hover:text-amber-100 transition-colors"
                     >
                       Login
@@ -109,9 +130,16 @@ const Header = () => {
                       <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center justify-center w-10 h-10 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full hover:bg-[#bc6c25]/90 transition-colors cursor-pointer"
-                        title={userInfo?.preferred_username || userInfo?.name || 'User'}
+                        title={
+                          userInfo?.preferred_username ||
+                          userInfo?.name ||
+                          "User"
+                        }
                       >
-                        {getInitials(userInfo?.given_name || '', userInfo?.family_name || '')}
+                        {getInitials(
+                          userInfo?.given_name || "",
+                          userInfo?.family_name || "",
+                        )}
                       </button>
 
                       {showUserMenu && (
@@ -120,14 +148,19 @@ const Header = () => {
                             <p className="text-sm font-medium text-gray-900">
                               {userInfo?.name || userInfo?.preferred_username}
                             </p>
-                            <p className="text-xs text-gray-500">{userInfo?.email}</p>
+                            <p className="text-xs text-gray-500">
+                              {userInfo?.email}
+                            </p>
                           </div>
                           <Link
                             href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             onClick={() => setShowUserMenu(false)}
                           >
-                            <FontAwesomeIcon icon={faUser} className="h-4 w-4 mr-2" />
+                            <FontAwesomeIcon
+                              icon={faUser}
+                              className="h-4 w-4 mr-2"
+                            />
                             Mi perfil
                           </Link>
                           <button
@@ -137,7 +170,10 @@ const Header = () => {
                             }}
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                           >
-                            <FontAwesomeIcon icon={faArrowRightFromBracket} className="h-4 w-4 mr-2" />
+                            <FontAwesomeIcon
+                              icon={faArrowRightFromBracket}
+                              className="h-4 w-4 mr-2"
+                            />
                             Logout
                           </button>
                         </div>
@@ -164,7 +200,7 @@ const Header = () => {
                 </Link>
               )}
               <Link
-                href={`/spatial/${countryId || '1'}`}
+                href={`/spatial/${countryId || "1"}`}
                 className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                 onClick={() => setShowMobileMenu(false)}
               >
@@ -180,8 +216,11 @@ const Header = () => {
               {SHOW_USERS_MODULE && (
                 <div className="py-2 px-2 border-t border-[#3a4a26] mt-2">
                   {!loading && !authenticated && (
-                    <button 
-                      onClick={() => { login(); setShowMobileMenu(false); }} 
+                    <button
+                      onClick={() => {
+                        login();
+                        setShowMobileMenu(false);
+                      }}
                       className="text-amber-50 hover:text-amber-100 transition-colors w-full text-left"
                     >
                       Login
@@ -195,12 +234,20 @@ const Header = () => {
                         onClick={() => setShowMobileMenu(false)}
                       >
                         <div className="w-8 h-8 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full flex items-center justify-center text-sm">
-                          {getInitials(userInfo?.given_name || '', userInfo?.family_name || '')}
+                          {getInitials(
+                            userInfo?.given_name || "",
+                            userInfo?.family_name || "",
+                          )}
                         </div>
-                        <span className="text-sm">{userInfo?.name || userInfo?.preferred_username}</span>
+                        <span className="text-sm">
+                          {userInfo?.name || userInfo?.preferred_username}
+                        </span>
                       </Link>
                       <button
-                        onClick={() => { logout(); setShowMobileMenu(false); }}
+                        onClick={() => {
+                          logout();
+                          setShowMobileMenu(false);
+                        }}
                         className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
                       >
                         Logout

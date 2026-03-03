@@ -43,10 +43,10 @@ const WeatherCard = () => {
       try {
         setLoading(true);
         const userId = userValidatedInfo.id;
-        
+
         // Obtener IDs de estaciones favoritas
         const userStations = await getUserStations(userId);
-        
+
         if (userStations.length === 0) {
           setFavoriteStations([]);
           return;
@@ -54,16 +54,22 @@ const WeatherCard = () => {
 
         // Obtener información completa de cada estación
         const allStations = await stationService.getAll(countryId);
-        const favoriteStationIds = new Set(userStations.map(s => s.ws_ext_id));
-        
+        const favoriteStationIds = new Set(
+          userStations.map((s) => s.ws_ext_id),
+        );
+
         const stationsWithData = await Promise.all(
           allStations
-            .filter((station: Station) => favoriteStationIds.has(station.id.toString()))
+            .filter((station: Station) =>
+              favoriteStationIds.has(station.id.toString()),
+            )
             .slice(0, 3) // Mostrar máximo 3 estaciones
             .map(async (station: Station) => {
               try {
-                const latestData = await monitoryService.getLatestDailyData(station.id.toString());
-                
+                const latestData = await monitoryService.getLatestDailyData(
+                  station.id.toString(),
+                );
+
                 const dataByMeasure: Record<string, number> = {};
                 latestData.forEach((item: any) => {
                   dataByMeasure[item.measure_short_name] = item.value;
@@ -72,33 +78,41 @@ const WeatherCard = () => {
                 return {
                   id: station.id.toString(),
                   name: station.name,
+                  machine_name: station.machine_name,
                   admin1_name: station.admin1_name,
                   admin2_name: station.admin2_name,
                   country_name: station.country_name,
-                  latestData: latestData.length > 0 ? {
-                    date: latestData[0].date,
-                    tmin: dataByMeasure['Tmin'],
-                    tmax: dataByMeasure['Tmax'],
-                    prec: dataByMeasure['Prec'],
-                    rad: dataByMeasure['Rad'],
-                  } : undefined
+                  latestData:
+                    latestData.length > 0
+                      ? {
+                          date: latestData[0].date,
+                          tmin: dataByMeasure["Tmin"],
+                          tmax: dataByMeasure["Tmax"],
+                          prec: dataByMeasure["Prec"],
+                          rad: dataByMeasure["Rad"],
+                        }
+                      : undefined,
                 };
               } catch (error) {
-                console.warn(`Error loading data for station ${station.id}:`, error);
+                console.warn(
+                  `Error loading data for station ${station.id}:`,
+                  error,
+                );
                 return {
                   id: station.id.toString(),
                   name: station.name,
+                  machine_name: station.machine_name,
                   admin1_name: station.admin1_name,
                   admin2_name: station.admin2_name,
                   country_name: station.country_name,
                 };
               }
-            })
+            }),
         );
 
         setFavoriteStations(stationsWithData);
       } catch (error) {
-        console.error('Error loading favorite stations:', error);
+        console.error("Error loading favorite stations:", error);
         setFavoriteStations([]);
       } finally {
         setLoading(false);
@@ -109,13 +123,13 @@ const WeatherCard = () => {
   }, [authenticated, userValidatedInfo, countryId]);
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin datos';
+    if (!dateString) return "Sin datos";
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit' 
+    return date.toLocaleDateString("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -129,7 +143,9 @@ const WeatherCard = () => {
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
-          <p className="text-lg font-medium">Inicia sesión para ver tus estaciones favoritas</p>
+          <p className="text-lg font-medium">
+            Inicia sesión para ver tus estaciones favoritas
+          </p>
         </div>
       </div>
     );
@@ -151,9 +167,11 @@ const WeatherCard = () => {
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
-          <p className="text-lg font-medium mb-2">No tienes estaciones favoritas</p>
-          <Link 
-            href="/locations" 
+          <p className="text-lg font-medium mb-2">
+            No tienes estaciones favoritas
+          </p>
+          <Link
+            href="/locations"
             className="text-sm text-amber-200 hover:text-amber-100 underline"
           >
             Explora el mapa para agregar favoritos
@@ -164,14 +182,14 @@ const WeatherCard = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="flex flex-wrap gap-6">
       {favoriteStations.map((station) => (
         <Link
           key={station.id}
           href={`/m/${station.machine_name}`}
-          className="block transition-transform hover:scale-105"
+          className="block transition-transform hover:scale-105 flex-grow md:flex-grow-0 w-full md:w-auto"
         >
-          <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg">
+          <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-5 rounded-2xl shadow-lg min-w-full md:min-w-[300px] md:max-w-[400px] flex flex-col h-full">
             <div className="absolute top-0 right-0 w-[200px] h-[120px] z-0">
               <svg
                 className="absolute -top-5 -right-4"
@@ -196,48 +214,104 @@ const WeatherCard = () => {
               </svg>
             </div>
 
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{station.name}</h3>
-                  <div className="flex items-center text-amber-50 text-sm gap-1">
-                    <MapPin size={14} />
-                    <span>{station.admin2_name}, {station.admin1_name}</span>
-                  </div>
-                </div>
-                <div className="text-right text-sm text-amber-50">
-                  {station.latestData ? formatDate(station.latestData.date) : 'Sin datos'}
+            <div className="relative z-10 flex-1 flex flex-col h-full">
+              <div className="flex justify-between items-start gap-3 mb-3">
+                <h3
+                  className="font-bold text-lg leading-tight break-words pr-2"
+                  title={station.name}
+                >
+                  {station.name}
+                </h3>
+                <div className="text-right text-[10px] font-medium text-amber-200 shrink-0 whitespace-nowrap mt-1 bg-black/20 rounded-full px-2 py-0.5">
+                  {station.latestData
+                    ? formatDate(station.latestData.date)
+                    : "Sin datos"}
                 </div>
               </div>
 
               {station.latestData ? (
-                <div className="space-y-2">
-                    {(station.latestData.tmin !== undefined || station.latestData.tmax !== undefined) && (
-                      <div className="flex items-center gap-3">
-                        <Thermometer className="text-amber-50" size={18} />
-                        <span className="text-sm">
-                          {station.latestData.tmin?.toFixed(1) || '--'} °C - {station.latestData.tmax?.toFixed(1) || '--'} °C
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {(station.latestData.tmin !== undefined ||
+                      station.latestData.tmax !== undefined) && (
+                      <div className="col-span-2 flex items-center justify-between bg-white/10 p-2.5 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Thermometer
+                            className="text-amber-300 shrink-0"
+                            size={18}
+                          />
+                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                            T. Min/Max
+                          </span>
+                        </div>
+                        <span className="text-base font-bold whitespace-nowrap">
+                          {station.latestData.tmin?.toFixed(1) || "--"}{" "}
+                          <span className="text-xs font-normal text-amber-200">
+                            /
+                          </span>{" "}
+                          {station.latestData.tmax?.toFixed(1) || "--"}{" "}
+                          <span className="text-xs font-normal text-amber-200">
+                            °C
+                          </span>
                         </span>
                       </div>
                     )}
+
                     {station.latestData.prec !== undefined && (
-                      <div className="flex items-center gap-3">
-                        <CloudRain className="text-amber-50" size={18} />
-                        <span className="text-sm">{station.latestData.prec.toFixed(1)} mm</span>
+                      <div className="flex flex-col items-center justify-center bg-white/10 p-2.5 rounded-lg text-center">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <CloudRain className="text-blue-300" size={16} />
+                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                            Precip.
+                          </span>
+                        </div>
+                        <span className="text-base font-bold whitespace-nowrap">
+                          {station.latestData.prec.toFixed(1)}{" "}
+                          <span className="text-[10px] font-normal text-amber-200">
+                            mm
+                          </span>
+                        </span>
                       </div>
                     )}
+
                     {station.latestData.rad !== undefined && (
-                      <div className="flex items-center gap-3">
-                        <Sun className="text-amber-50" size={18} />
-                        <span className="text-sm">{station.latestData.rad.toFixed(1)} MJ/m²</span>
+                      <div className="flex flex-col items-center justify-center bg-white/10 p-2.5 rounded-lg text-center">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <Sun className="text-yellow-300" size={16} />
+                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                            Rad.
+                          </span>
+                        </div>
+                        <span className="text-base font-bold whitespace-nowrap">
+                          {station.latestData.rad.toFixed(1)}{" "}
+                          <span className="text-[10px] font-normal text-amber-200">
+                            MJ/m²
+                          </span>
+                        </span>
                       </div>
                     )}
                   </div>
+                </div>
               ) : (
-                <div className="text-sm text-amber-200 mt-4">
-                  Sin datos disponibles
+                <div className="flex items-center justify-center h-20 bg-white/5 rounded-lg border border-white/10 mt-3">
+                  <div className="text-amber-200 italic text-sm flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500/50"></span>
+                    Sin datos recientes
+                  </div>
                 </div>
               )}
+
+              <div className="mt-3 pt-3 border-t border-white/5 flex items-end">
+                <div className="flex items-center text-amber-100 text-xs gap-1.5 font-medium w-full truncate">
+                  <MapPin size={14} className="shrink-0 text-amber-300" />
+                  <span
+                    className="truncate"
+                    title={`${station.admin2_name}, ${station.admin1_name}`}
+                  >
+                    {station.admin2_name}, {station.admin1_name}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </Link>

@@ -7,7 +7,7 @@ import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
 import { StationsProvider } from "@/app/contexts/StationsContext";
 import { COUNTRY_NAME } from "./config";
-import { GoogleAnalytics  } from '@next/third-parties/google'
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: `AClimate ${COUNTRY_NAME}`,
+  title: `AClimate ${COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía")}`,
   description:
     "Explora, monitorea y compara los datos de las estaciones climátologicas con bases de datos satelitales. Informate sobre como ha sido el clima en las regiones.",
 };
