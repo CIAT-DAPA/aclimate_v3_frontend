@@ -16,30 +16,36 @@ export interface BranchConfig {
       alt: string;
     }>;
   };
+  showScenario?: boolean;
   colors?: {
     primary: string;
     secondary: string;
     accent: string;
   };
+  spatial?: {
+    showClimateIndicator: boolean;
+    showClimateData: boolean;
+    showHydrologicalIndicator: boolean;
+  };
 }
 
 export const getDefaultConfig = (): BranchConfig => ({
-  name: 'default',
-  displayName: 'AClimate',
+  name: "default",
+  displayName: "AClimate",
   aboutUs: {
-    title: 'Sobre la herramienta',
+    title: "Sobre la herramienta",
     description: `AClimate es una herramienta diseñada para apoyar la toma de decisiones en el sector agropecuario.
 Proporciona la capacidad de analizar datos climáticos y generar reportes detallados para diferentes regiones.`,
-    projectTitle: 'Proyecto',
-    projectDescription: 'Descripción del proyecto.',
-    partnersTitle: 'Socios',
+    projectTitle: "Proyecto",
+    projectDescription: "Descripción del proyecto.",
+    partnersTitle: "Socios",
     partners: [
       {
-        name: 'Alliance Bioversity-CIAT',
-        url: 'https://alliancebioversityciat.org/',
-        logo: '/assets/img/partners/alliance.png',
-        alt: 'Alliance Bioversity-CIAT logo'
-      }
-    ]
-  }
+        name: "Alliance Bioversity-CIAT",
+        url: "https://alliancebioversityciat.org/",
+        logo: "/assets/img/partners/alliance.png",
+        alt: "Alliance Bioversity-CIAT logo",
+      },
+    ],
+  },
 });
