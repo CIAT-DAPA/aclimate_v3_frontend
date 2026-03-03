@@ -7,6 +7,7 @@ import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { spatialService, IndicatorCategory, Indicator } from "@/app/services/spatialService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useBranchConfig } from "@/app/configs/index";
 import { faFileArrowDown, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 // Cargar el mapa dinámicamente sin SSR
@@ -75,6 +76,7 @@ const indicatorPeriodOptions = [
 ];
 
 export default function SpatialDataPage() {
+  const config = useBranchConfig();
   const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
@@ -501,6 +503,7 @@ export default function SpatialDataPage() {
           {/* Reemplazo de tabs por acordeones */}
           <div id="accordion-collapse" data-accordion="collapse">
             {/* Acordeón para Datos climáticos */}
+            {config.spatial?.showClimateData && (
             <div id="climatic-accordion">
               <h2 id="climatic-accordion-trigger">
                 <button
@@ -684,8 +687,10 @@ export default function SpatialDataPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Acordeón para Indicadores climáticos */}
+            {config.spatial?.showClimateIndicator && (
             <div id="indicators-accordion">
               <h2 id="indicators-accordion-trigger">
                 <button
@@ -862,6 +867,7 @@ export default function SpatialDataPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
 
         </div>
