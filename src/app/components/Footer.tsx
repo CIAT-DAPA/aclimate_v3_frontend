@@ -27,7 +27,7 @@ const Footer = () => {
             href="/about"
             className="text-amber-50 hover:text-amber-100 transition-colors text-xs sm:text-sm"
           >
-            Socios
+            Acerca de
           </Link>
         </div>
       </div>
