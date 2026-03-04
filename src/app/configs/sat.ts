@@ -26,7 +26,7 @@ export const amazoniaConfig: BranchConfig = {
       },
     ],
   },
-  showScenario: true,
+  showScenario: false,
   colors: {
     primary: "#2563eb",
     secondary: "#3b82f6",
@@ -35,6 +35,6 @@ export const amazoniaConfig: BranchConfig = {
   spatial: {
     showClimateIndicator: false,
     showClimateData: true,
-    showHydrologicalIndicator: false,
+    showHydrologicalIndicator: true,
   },
 };
