@@ -91,24 +91,41 @@ const indicatorPeriodOptions = [
   { value: "other", label: "Otro" },
 ];
 
-const hydrologicalCommunities = [
-  { id: "leticia", label: "Leticia" },
-  { id: "puerto_nariño", label: "Puerto Nariño" },
+const departments = [
+  { id: "amazonas", label: "Amazonas" },
+  { id: "caqueta", label: "Caquetá" },
 ];
+
+const departmentCommunities: Record<
+  string,
+  Array<{ id: string; label: string }>
+> = {
+  amazonas: [
+    { id: "leticia", label: "Leticia" },
+    { id: "puerto_nariño", label: "Puerto Nariño" },
+  ],
+  caqueta: [{ id: "san_jose_del_fragua", label: "San José del Fragua" }],
+};
 
 const hydrologicalCommunityCoordinates: Record<
   string,
   { center: [number, number]; zoom: number }
 > = {
   leticia: {
-    center: [-4.2153, -69.9406],
+    center: [-3.997, -70.11],
     zoom: 12,
   },
   puerto_nariño: {
-    center: [-3.7758, -70.3639],
-    zoom: 12,
+    center: [-3.592, -70.595],
+    zoom: 10,
+  },
+  san_jose_del_fragua: {
+    center: [1.266, -76.2],
+    zoom: 10,
   },
 };
+
+const hydrologicalScenarios = [{ id: "baseline", label: "Línea Base" }];
 
 const hydrologicalIndicators = [
   { id: "bflow", label: "Blow", unit: "m", description: "Nivel del agua" },
@@ -144,11 +161,17 @@ export default function SpatialDataPage() {
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const [isHydrologicalOpen, setIsHydrologicalOpen] = useState(true);
+  const [selectedHydrologicalDepartment, setSelectedHydrologicalDepartment] =
+    useState<string>("amazonas");
   const [selectedHydrologicalCommunity, setSelectedHydrologicalCommunity] =
     useState<string>("leticia");
+  const [selectedHydrologicalScenario, setSelectedHydrologicalScenario] =
+    useState<string>("baseline");
   // Estado para guardar los bounds de cada indicador hidrológico
-  const [hydrologicalBounds, setHydrologicalBounds] = useState<Record<string, [[number, number], [number, number]] | undefined>>({});
-  
+  const [hydrologicalBounds, setHydrologicalBounds] = useState<
+    Record<string, [[number, number], [number, number]] | undefined>
+  >({});
+
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
@@ -297,13 +320,19 @@ export default function SpatialDataPage() {
   // Cargar bounds para indicadores hidrologicos
   useEffect(() => {
     const fetchBounds = async () => {
-      const newBounds: Record<string, [[number, number], [number, number]] | undefined> = {};
+      const newBounds: Record<
+        string,
+        [[number, number], [number, number]] | undefined
+      > = {};
       const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
-      
+
       for (const indicator of hydrologicalIndicators) {
         const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.id}_baseline`;
         try {
-          const bounds = await spatialService.getLayerBounds(workspaceUrl, layerName);
+          const bounds = await spatialService.getLayerBounds(
+            workspaceUrl,
+            layerName,
+          );
           if (bounds) {
             newBounds[indicator.id] = bounds;
           }
@@ -313,7 +342,7 @@ export default function SpatialDataPage() {
       }
       setHydrologicalBounds(newBounds);
     };
-    
+
     fetchBounds();
   }, [selectedHydrologicalCommunity]);
 
@@ -1186,35 +1215,95 @@ export default function SpatialDataPage() {
                         </p>
                       </div>
 
-                      {/* Selector de comunidad */}
-                      <div>
-                        <label
-                          htmlFor="hydrologicalCommunity"
-                          className="block font-medium text-gray-700 mb-2"
-                        >
-                          Comunidad
-                        </label>
-                        <select
-                          id="hydrologicalCommunity"
-                          value={selectedHydrologicalCommunity}
-                          onChange={(e) =>
-                            setSelectedHydrologicalCommunity(e.target.value)
-                          }
-                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full sm:w-64"
-                        >
-                          {hydrologicalCommunities.map((community) => (
-                            <option key={community.id} value={community.id}>
-                              {community.label}
-                            </option>
-                          ))}
-                        </select>
+                      {/* Selectores de departamento y comunidad */}
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="w-full sm:w-64">
+                          <label
+                            htmlFor="hydrologicalDepartment"
+                            className="block font-medium text-gray-700 mb-2"
+                          >
+                            Departamento
+                          </label>
+                          <select
+                            id="hydrologicalDepartment"
+                            value={selectedHydrologicalDepartment}
+                            onChange={(e) => {
+                              const newDept = e.target.value;
+                              setSelectedHydrologicalDepartment(newDept);
+                              const communities =
+                                departmentCommunities[newDept] || [];
+                              if (communities.length > 0) {
+                                setSelectedHydrologicalCommunity(
+                                  communities[0].id,
+                                );
+                              }
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
+                          >
+                            {departments.map((dept) => (
+                              <option key={dept.id} value={dept.id}>
+                                {dept.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="w-full sm:w-64">
+                          <label
+                            htmlFor="hydrologicalCommunity"
+                            className="block font-medium text-gray-700 mb-2"
+                          >
+                            Comunidad
+                          </label>
+                          <select
+                            id="hydrologicalCommunity"
+                            value={selectedHydrologicalCommunity}
+                            onChange={(e) =>
+                              setSelectedHydrologicalCommunity(e.target.value)
+                            }
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
+                          >
+                            {(
+                              departmentCommunities[
+                                selectedHydrologicalDepartment
+                              ] || []
+                            ).map((community) => (
+                              <option key={community.id} value={community.id}>
+                                {community.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="w-full sm:w-64">
+                          <label
+                            htmlFor="hydrologicalScenario"
+                            className="block font-medium text-gray-700 mb-2"
+                          >
+                            Escenario
+                          </label>
+                          <select
+                            id="hydrologicalScenario"
+                            value={selectedHydrologicalScenario}
+                            onChange={(e) =>
+                              setSelectedHydrologicalScenario(e.target.value)
+                            }
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
+                          >
+                            {hydrologicalScenarios.map((scenario) => (
+                              <option key={scenario.id} value={scenario.id}>
+                                {scenario.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       {/* Mapas de indicadores hidrológicos */}
                       <div className="flex flex-col gap-8 mt-4">
                         {hydrologicalIndicators.map((indicator) => {
                           // Construir el nombre de la capa
-                          const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.id}_baseline`;
+                          const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.id}_${selectedHydrologicalScenario}`;
                           const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
 
                           // Obtener coordenadas de la comunidad o usar las del país por defecto
@@ -1248,7 +1337,7 @@ export default function SpatialDataPage() {
 
                               <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
                                 <MapComponent
-                                  key={`${indicator.id}-${selectedHydrologicalCommunity}`}
+                                  key={`${indicator.id}-${selectedHydrologicalCommunity}-${selectedHydrologicalScenario}`}
                                   center={communityCoords.center}
                                   zoom={communityCoords.zoom}
                                   bounds={hydrologicalBounds[indicator.id]}

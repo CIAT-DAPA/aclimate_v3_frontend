@@ -171,6 +171,16 @@ const MapComponent = ({
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const { userValidatedInfo, authenticated } = useAuth();
 
+  // Fix for "Map container is being reused by another instance" error during HMR/Strict Mode
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
   // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(
