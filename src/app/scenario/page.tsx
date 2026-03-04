@@ -14,7 +14,11 @@ import {
 import React, { useRef, useCallback } from "react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
-import MapComponent from "../components/MapComponent";
+import dynamic from "next/dynamic";
+
+const MapComponent = dynamic(() => import("../components/MapComponent"), {
+  ssr: false,
+});
 
 export default function ScenarioPage() {
   const contentRef = useRef<HTMLDivElement>(null);
