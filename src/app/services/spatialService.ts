@@ -72,12 +72,26 @@ const getParsedLayers = async (wmsUrl: string): Promise<ParsedLayer[]> => {
 
       // Extract BoundingBox
       let bounds: [number, number, number, number] | undefined;
-      const bboxElement = layer.getElementsByTagName("EX_GeographicBoundingBox")[0];
+      const bboxElement = layer.getElementsByTagName(
+        "EX_GeographicBoundingBox",
+      )[0];
       if (bboxElement) {
-        const west = parseFloat(bboxElement.getElementsByTagName("westBoundLongitude")[0]?.textContent || "0");
-        const east = parseFloat(bboxElement.getElementsByTagName("eastBoundLongitude")[0]?.textContent || "0");
-        const south = parseFloat(bboxElement.getElementsByTagName("southBoundLatitude")[0]?.textContent || "0");
-        const north = parseFloat(bboxElement.getElementsByTagName("northBoundLatitude")[0]?.textContent || "0");
+        const west = parseFloat(
+          bboxElement.getElementsByTagName("westBoundLongitude")[0]
+            ?.textContent || "0",
+        );
+        const east = parseFloat(
+          bboxElement.getElementsByTagName("eastBoundLongitude")[0]
+            ?.textContent || "0",
+        );
+        const south = parseFloat(
+          bboxElement.getElementsByTagName("southBoundLatitude")[0]
+            ?.textContent || "0",
+        );
+        const north = parseFloat(
+          bboxElement.getElementsByTagName("northBoundLatitude")[0]
+            ?.textContent || "0",
+        );
         if (!isNaN(west) && !isNaN(east) && !isNaN(south) && !isNaN(north)) {
           bounds = [south, west, north, east];
         }
@@ -324,6 +338,22 @@ export const spatialService = {
       return response.data.filter((indicator: Indicator) => indicator.enable);
     } catch (error) {
       console.error("Error fetching indicators:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Obtiene los indicadores por ID de categoría
+   * @param categoryId - ID de la categoría
+   * @returns Array de indicadores
+   */
+  getIndicatorsByCategory: async (categoryId: number): Promise<Indicator[]> => {
+    try {
+      const url = `${API_URL}/indicator-mng/by-category-id?category_id=${categoryId}`;
+      const response = await axios.get(url);
+      return response.data.filter((indicator: Indicator) => indicator.enable);
+    } catch (error) {
+      console.error("Error fetching indicators by category:", error);
       return [];
     }
   },

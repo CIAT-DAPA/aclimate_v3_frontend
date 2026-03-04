@@ -127,34 +127,6 @@ const hydrologicalCommunityCoordinates: Record<
 
 const hydrologicalScenarios = [{ id: "baseline", label: "Línea Base" }];
 
-const hydrologicalIndicators = [
-  { id: "bflow", label: "Blow", unit: "m", description: "Nivel del agua" },
-  {
-    id: "erosion",
-    label: "Erosión",
-    unit: "ton/ha",
-    description: "Pérdida de suelo",
-  },
-  {
-    id: "inundacion",
-    label: "Inundación",
-    unit: "%",
-    description: "Probabilidad de inundación",
-  },
-  {
-    id: "sedimentacion",
-    label: "Sedimentación",
-    unit: "ton",
-    description: "Acumulación de sedimentos",
-  },
-  {
-    id: "wyield",
-    label: "Rendimiento Hídrico",
-    unit: "mm",
-    description: "Producción de agua",
-  },
-];
-
 export default function SpatialDataPage() {
   const config = useBranchConfig();
   const { countryId } = useCountry();
@@ -167,6 +139,19 @@ export default function SpatialDataPage() {
     useState<string>("leticia");
   const [selectedHydrologicalScenario, setSelectedHydrologicalScenario] =
     useState<string>("baseline");
+  const [selectedHydrologicalCategory, setSelectedHydrologicalCategory] =
+    useState<IndicatorCategory | null>(null);
+  const [hydrologicalCategories, setHydrologicalCategories] = useState<
+    IndicatorCategory[]
+  >([]);
+  const [hydrologicalIndicatorsList, setHydrologicalIndicatorsList] = useState<
+    Indicator[]
+  >([]);
+  const [loadingHydrologicalCategories, setLoadingHydrologicalCategories] =
+    useState(false);
+  const [loadingHydrologicalIndicators, setLoadingHydrologicalIndicators] =
+    useState(false);
+
   // Estado para guardar los bounds de cada indicador hidrológico
   const [hydrologicalBounds, setHydrologicalBounds] = useState<
     Record<string, [[number, number], [number, number]] | undefined>
@@ -317,6 +302,53 @@ export default function SpatialDataPage() {
     loadCategories();
   }, [countryId]);
 
+  // Cargar categorías de indicadores hidrológicos
+  useEffect(() => {
+    const loadHydrologicalCategories = async () => {
+      if (!countryId) return; // Ensure countryId is not null
+
+      setLoadingHydrologicalCategories(true);
+      try {
+        const categories =
+          await spatialService.getIndicatorCategories(countryId);
+        setHydrologicalCategories(categories);
+        // Seleccionar la primera categoría por defecto si hay disponibles
+        if (categories.length > 0) {
+          setSelectedHydrologicalCategory(categories[0]);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías hidrológicas:", error);
+        setHydrologicalCategories([]);
+      } finally {
+        setLoadingHydrologicalCategories(false);
+      }
+    };
+
+    if (countryId) loadHydrologicalCategories();
+  }, [countryId]);
+
+  // Cargar indicadores hidrológicos al cambiar la categoría seleccionada
+  useEffect(() => {
+    const loadHydrologicalIndicators = async () => {
+      if (!selectedHydrologicalCategory) return;
+
+      setLoadingHydrologicalIndicators(true);
+      try {
+        const fetchedIndicators = await spatialService.getIndicatorsByCategory(
+          selectedHydrologicalCategory.id,
+        );
+        setHydrologicalIndicatorsList(fetchedIndicators);
+      } catch (error) {
+        console.error("Error cargando indicadores hidrológicos:", error);
+        setHydrologicalIndicatorsList([]);
+      } finally {
+        setLoadingHydrologicalIndicators(false);
+      }
+    };
+
+    if (selectedHydrologicalCategory) loadHydrologicalIndicators();
+  }, [selectedHydrologicalCategory]);
+
   // Cargar bounds para indicadores hidrologicos
   useEffect(() => {
     const fetchBounds = async () => {
@@ -326,8 +358,8 @@ export default function SpatialDataPage() {
       > = {};
       const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
 
-      for (const indicator of hydrologicalIndicators) {
-        const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.id}_baseline`;
+      for (const indicator of hydrologicalIndicatorsList) {
+        const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.short_name}_${selectedHydrologicalScenario}`;
         try {
           const bounds = await spatialService.getLayerBounds(
             workspaceUrl,
@@ -343,8 +375,14 @@ export default function SpatialDataPage() {
       setHydrologicalBounds(newBounds);
     };
 
-    fetchBounds();
-  }, [selectedHydrologicalCommunity]);
+    if (hydrologicalIndicatorsList.length > 0) {
+      fetchBounds();
+    }
+  }, [
+    hydrologicalIndicatorsList,
+    selectedHydrologicalCommunity,
+    selectedHydrologicalScenario,
+  ]);
 
   // Detectar temporalidades disponibles en el geoserver
   useEffect(() => {
@@ -1299,107 +1337,149 @@ export default function SpatialDataPage() {
                         </div>
                       </div>
 
-                      {/* Mapas de indicadores hidrológicos */}
-                      <div className="flex flex-col gap-8 mt-4">
-                        {hydrologicalIndicators.map((indicator) => {
-                          // Construir el nombre de la capa
-                          const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.id}_${selectedHydrologicalScenario}`;
-                          const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
+                      {/* Selector de Categoría (fila separada) */}
+                      <div className="mt-4 w-full">
+                        <label
+                          htmlFor="hydrologicalCategory"
+                          className="block font-medium text-gray-700 mb-2"
+                        >
+                          Categoría
+                        </label>
+                        <select
+                          id="hydrologicalCategory"
+                          value={selectedHydrologicalCategory?.id || ""}
+                          onChange={(e) => {
+                            const category = hydrologicalCategories.find(
+                              (c) => c.id.toString() === e.target.value,
+                            );
+                            setSelectedHydrologicalCategory(category || null);
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full sm:w-64"
+                          disabled={loadingHydrologicalCategories}
+                        >
+                          {hydrologicalCategories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
 
-                          // Obtener coordenadas de la comunidad o usar las del país por defecto
-                          const communityCoords =
-                            hydrologicalCommunityCoordinates[
-                              selectedHydrologicalCommunity
-                            ] || {
-                              center: currentCountry.center,
-                              zoom: currentCountry.zoom,
-                            };
-
-                          return (
-                            <div
-                              key={indicator.id}
-                              className="flex flex-col gap-3"
-                            >
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-gray-800 text-lg">
-                                  {indicator.label}{" "}
-                                  <span className="text-gray-500 text-base">
-                                    ({indicator.unit})
-                                  </span>
-                                </h3>
-                              </div>
-
-                              {indicator.description && (
-                                <p className="text-sm text-gray-600 leading-relaxed">
-                                  {indicator.description}
-                                </p>
-                              )}
-
-                              <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
-                                <MapComponent
-                                  key={`${indicator.id}-${selectedHydrologicalCommunity}-${selectedHydrologicalScenario}`}
-                                  center={communityCoords.center}
-                                  zoom={communityCoords.zoom}
-                                  bounds={hydrologicalBounds[indicator.id]}
-                                  wmsLayers={[
-                                    {
-                                      url: workspaceUrl,
-                                      layers: layerName,
-                                      opacity: 1.0,
-                                      transparent: true,
-                                      title: indicator.label,
-                                      unit: indicator.unit,
-                                    },
-                                  ]}
-                                  showMarkers={false}
-                                  showZoomControl={true}
-                                  showTimeline={true}
-                                  showLegend={true}
-                                  showAdminLayer={false}
-                                  adminLayers={adminLayers}
-                                  displayFormat="Month"
-                                  onTimeChange={(time) =>
-                                    handleTimeChange(
-                                      time,
-                                      layerName,
-                                      indicator.label,
-                                    )
-                                  }
-                                />
-
-                                {/* Botón de descarga */}
-                                <button
-                                  onClick={async () => {
-                                    let rasterFile =
-                                      rasterFilesRef.current[layerName];
-                                    if (!rasterFile) {
-                                      // Si no existe, obtener la fecha actual del mapa
-                                      const result = await getCurrentRasterFile(
-                                        layerName,
-                                        indicator.label,
-                                        workspaceUrl,
-                                      );
-                                      if (result) {
-                                        rasterFile = result;
-                                      }
-                                    }
-                                    if (rasterFile) {
-                                      downloadRasterFile(rasterFile);
-                                    }
-                                  }}
-                                  className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                  title="Descargar capa raster"
-                                >
-                                  <FontAwesomeIcon
-                                    icon={faFileArrowDown}
-                                    className="h-4 w-4"
-                                  />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {/* Descripción de la categoría seleccionada */}
+                        {selectedHydrologicalCategory?.description && (
+                          <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
+                            {selectedHydrologicalCategory.description}
+                          </div>
+                        )}
                       </div>
+
+                      {/* Mapas de indicadores hidrológicos */}
+                      {loadingHydrologicalIndicators ? (
+                        <div className="flex justify-center py-10">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-8 mt-4">
+                          {hydrologicalIndicatorsList.map((indicator) => {
+                            // Construir el nombre de la capa
+                            const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.short_name}_${selectedHydrologicalScenario}`;
+                            const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
+
+                            // Obtener coordenadas de la comunidad o usar las del país por defecto
+                            const communityCoords =
+                              hydrologicalCommunityCoordinates[
+                                selectedHydrologicalCommunity
+                              ] || {
+                                center: currentCountry.center,
+                                zoom: currentCountry.zoom,
+                              };
+
+                            return (
+                              <div
+                                key={indicator.id}
+                                className="flex flex-col gap-3"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-gray-800 text-lg">
+                                    {indicator.name}{" "}
+                                    <span className="text-gray-500 text-base">
+                                      ({indicator.unit})
+                                    </span>
+                                  </h3>
+                                </div>
+
+                                {indicator.description && (
+                                  <p className="text-sm text-gray-600 leading-relaxed">
+                                    {indicator.description}
+                                  </p>
+                                )}
+
+                                <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                                  <MapComponent
+                                    key={`${indicator.id}-${selectedHydrologicalCommunity}-${selectedHydrologicalScenario}`}
+                                    center={communityCoords.center}
+                                    zoom={communityCoords.zoom}
+                                    bounds={hydrologicalBounds[indicator.id]}
+                                    wmsLayers={[
+                                      {
+                                        url: workspaceUrl,
+                                        layers: layerName,
+                                        opacity: 1.0,
+                                        transparent: true,
+                                        title: indicator.name,
+                                        unit: indicator.unit,
+                                      },
+                                    ]}
+                                    showMarkers={false}
+                                    showZoomControl={true}
+                                    showTimeline={true}
+                                    showLegend={true}
+                                    showAdminLayer={false}
+                                    adminLayers={adminLayers}
+                                    displayFormat="Month"
+                                    onTimeChange={(time) =>
+                                      handleTimeChange(
+                                        time,
+                                        layerName,
+                                        indicator.name,
+                                      )
+                                    }
+                                  />
+
+                                  {/* Botón de descarga */}
+                                  <button
+                                    onClick={async () => {
+                                      let rasterFile =
+                                        rasterFilesRef.current[layerName];
+                                      if (!rasterFile) {
+                                        // Si no existe, obtener la fecha actual del mapa
+                                        const result =
+                                          await getCurrentRasterFile(
+                                            layerName,
+                                            indicator.name,
+                                            workspaceUrl,
+                                          );
+                                        if (result) {
+                                          rasterFile = result;
+                                        }
+                                      }
+                                      if (rasterFile) {
+                                        downloadRasterFile(rasterFile);
+                                      }
+                                    }}
+                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                                    title="Descargar capa raster"
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={faFileArrowDown}
+                                      className="h-4 w-4"
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
