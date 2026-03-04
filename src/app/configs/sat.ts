@@ -35,6 +35,6 @@ export const amazoniaConfig: BranchConfig = {
   spatial: {
     showClimateIndicator: false,
     showClimateData: true,
-    showHydrologicalIndicator: false,
+    showHydrologicalIndicator: true,
   },
 };
