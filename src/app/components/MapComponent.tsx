@@ -33,9 +33,12 @@ import { faTemperatureArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { faTemperatureArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { faCloudRain } from "@fortawesome/free-solid-svg-icons";
 import { faSun } from "@fortawesome/free-solid-svg-icons";
-import { faChartSimple } from "@fortawesome/free-solid-svg-icons";
+import { faChartPie } from "@fortawesome/free-solid-svg-icons";
 import { faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import { faMapPin } from "@fortawesome/free-solid-svg-icons";
+import { faTint } from "@fortawesome/free-solid-svg-icons";
+import { faWater } from "@fortawesome/free-solid-svg-icons";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 
 // Paleta de colores accesibles con buen contraste
 const ACCESSIBLE_COLORS = [
@@ -451,63 +454,130 @@ const MapComponent = ({
   };
 
   // Función para formatear los datos de la estación para mostrar en el popup
-  const renderStationData = (stationId: string) => {
-    const data = stationData[stationId];
-    if (!data || data.length === 0) {
-      return <p className="text-gray-500 text-sm">No hay datos disponibles</p>;
-    }
+  const renderStationData = (station: Station) => {
+    const data = stationData[station.id.toString()];
+    const hasData = data && data.length > 0;
+
+    // Obtener la fecha formateada si hay datos
+    const dateFormatted = hasData
+      ? new Date(data[0].date).toLocaleDateString()
+      : "N/A";
 
     // Mapeo de medidas a iconos y configuración
     const measureConfig: Record<
       string,
-      { icon: any; label?: string; unit?: string }
+      { label?: string; unit?: string; icon?: any }
     > = {
       Tmax: {
-        icon: faTemperatureArrowUp,
         label: "Temperatura máxima",
         unit: "°C",
+        icon: faTemperatureArrowUp,
       },
       Tmin: {
-        icon: faTemperatureArrowDown,
         label: "Temperatura mínima",
         unit: "°C",
+        icon: faTemperatureArrowDown,
       },
-      Prec: { icon: faCloudRain, label: "Precipitación", unit: "mm" },
-      Rad: { icon: faSun, label: "Radiación", unit: "MJ/m²" },
+      Prec: { label: "Precipitación", unit: "mm", icon: faCloudRain },
+      Rad: { label: "Radiación solar", unit: "MJ/m²", icon: faSun },
+      Cmax: { label: "Caudal máximo diario", unit: "mm³/seg", icon: faWater },
+      Cmin: { label: "Caudal mínimo diario", unit: "mm³/seg", icon: faTint },
+      Cmed: {
+        label: "Caudal medio diario",
+        unit: "mm³/seg",
+        icon: faWaveSquare,
+      },
+    };
+
+    // Helper map to translate english names when short names don't match
+    const englishToSpanish: Record<string, string> = {
+      "maximum temperature": "Temperatura máxima",
+      "minimum temperature": "Temperatura mínima",
+      precipitation: "Precipitación",
+      "solar radiation": "Radiación solar",
+      "caudal mínimo diario": "Caudal mínimo diario",
+      "caudal máximo diario": "Caudal máximo diario",
+      "caudal medio diario": "Caudal medio diario",
+    };
+
+    // Get the icon matching a text description if the short name didn't match via config
+    const getFallbackIcon = (label: string): any => {
+      const lowerLabel = label.toLowerCase();
+      if (lowerLabel.includes("caudal máximo")) return faWater;
+      if (lowerLabel.includes("caudal mínimo")) return faTint;
+      if (lowerLabel.includes("caudal medio")) return faWaveSquare;
+      if (lowerLabel.includes("caudal")) return faWater;
+      if (lowerLabel.includes("temperatur") && lowerLabel.includes("mínim"))
+        return faTemperatureArrowDown;
+      if (lowerLabel.includes("temperatur")) return faTemperatureArrowUp;
+      if (lowerLabel.includes("precipita") || lowerLabel.includes("lluvia"))
+        return faCloudRain;
+      if (lowerLabel.includes("radiac")) return faSun;
+      return null;
     };
 
     return (
-      <div className="">
-        <p className="text-xs text-gray-500 mb-3 font-medium">
-          Datos actuales: {new Date(data[0].date).toLocaleDateString()}
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {/* Renderizar todas las medidas disponibles dinámicamente */}
-          {data.map((item: any, index: number) => {
-            const config = measureConfig[item.measure_short_name];
-            const label =
-              config?.label || item.measure_name || item.measure_short_name;
-            const unit = config?.unit || item.measure_unit || "";
-            const icon = config?.icon;
+      <div className="flex flex-col">
+        <div className="flex justify-between items-center text-sm text-gray-700 mb-2">
+          <span>
+            Última fecha: <span className="font-medium">{dateFormatted}</span>
+          </span>
+        </div>
 
-            return (
-              <div key={index} className="flex items-center">
-                {icon && (
-                  <FontAwesomeIcon
-                    icon={icon}
-                    className="text-xl text-black-500 mr-2"
-                  />
-                )}
-                <div>
-                  <p className="text-xs text-gray-500">{label}</p>
-                  <p className="text-sm font-semibold">
-                    {Number(item.value).toFixed(1)}
-                    {unit}
-                  </p>
+        <h4 className="font-semibold text-sm text-brand-green mb-1 uppercase tracking-wider">
+          Resumen de datos
+        </h4>
+
+        <div className="flex flex-col gap-1">
+          {!hasData ? (
+            <p className="text-gray-500 text-sm italic">
+              No hay datos disponibles
+            </p>
+          ) : (
+            data.map((item: any, index: number) => {
+              const config = measureConfig[item.measure_short_name];
+              let label =
+                config?.label || item.measure_name || item.measure_short_name;
+              let unit = config?.unit || item.measure_unit || "";
+              let icon = config?.icon;
+
+              // Force translation if needed
+              if (englishToSpanish[label.toLowerCase()]) {
+                label = englishToSpanish[label.toLowerCase()];
+              }
+
+              // Try fallback icon if not found by short name
+              if (!icon) {
+                icon = getFallbackIcon(label);
+              }
+
+              // Override unit specifically for caudal to be formatted correctly
+              if (
+                label.toLowerCase().includes("caudal") &&
+                (unit.includes("m^3") || unit.includes("mm^3"))
+              ) {
+                unit = unit.replace("^3", "³");
+              }
+
+              return (
+                <div key={index} className="flex items-center text-sm mt-1">
+                  <div className="w-5 flex-shrink-0 flex justify-center text-brand-green opacity-80 mr-2">
+                    {icon ? (
+                      <FontAwesomeIcon icon={icon} className="text-sm" />
+                    ) : (
+                      <span className="w-3 h-3 rounded-full bg-brand-green opacity-40"></span>
+                    )}
+                  </div>
+                  <div className="flex justify-between w-full">
+                    <span className="text-gray-700">{label}:</span>
+                    <span className="font-medium ml-2 text-right">
+                      {Number(item.value).toFixed(1)} {unit}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     );
@@ -646,38 +716,25 @@ const MapComponent = ({
               >
                 <Popup>
                   <div className="p-4 min-w-[280px]">
-                    <div className="mb-3">
-                      <h3 className="font-bold text-lg text-brand-green">
-                        Estación {station.name}
+                    <div className="border-b border-gray-200">
+                      <h3 className="font-semibold text-lg text-brand-green">
+                        {station.name}
                       </h3>
-                    </div>
-
-                    <div className="space-y-2 text-sm mb-4">
-                      <p className="text-gray-600 flex items-center">
+                      <p className="text-gray-600 flex items-center text-sm !m-0 !p-0">
                         <FontAwesomeIcon
                           icon={faMapMarkerAlt}
-                          className="text-sm mr-2"
+                          className="text-sm mr-1"
                         />
                         {station.admin1_name}, {station.admin2_name}
                       </p>
-                      {station.source_name && (
-                        <p className="text-xs text-gray-500">
-                          Fuente:{" "}
-                          <span className="font-medium">
-                            {station.source_name}
-                          </span>
-                          {station.source_type &&
-                            ` (${station.source_type === "MA" ? "Manual" : station.source_type === "AU" ? "Automática" : station.source_type})`}
-                        </p>
-                      )}
-
-                      {/* Mostrar datos de la última fecha disponible */}
-                      {renderStationData(station.id.toString())}
-
-                      <p className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-200"></p>
                     </div>
 
-                    <div className="flex justify-between gap-2">
+                    <div className="mb-3">
+                      {/* Mostrar datos de la última fecha disponible */}
+                      {renderStationData(station)}
+                    </div>
+
+                    <div className="flex justify-between items-center mt-3 pt-2">
                       <button
                         onClick={(e) =>
                           toggleFavorite(station.id.toString(), e)
@@ -716,22 +773,19 @@ const MapComponent = ({
                           </svg>
                         )}
                         {!authenticated
-                          ? "Inicie sesión"
+                          ? "Iniciar sesión"
                           : favorites.has(station.id.toString())
-                            ? "Quitar favorito"
-                            : "Agregar favorito"}
+                            ? "Guardado"
+                            : "Favorito"}
                       </button>
 
                       <Link
-                        className="flex items-center justify-center text-xs px-3 py-2 border border-gray-300 text-gray-600 bg-white rounded-md hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                        className="flex items-center justify-center text-sm px-4 py-2 bg-[#C27830] !text-white rounded-lg hover:bg-[#A96627] transition-colors font-medium"
                         href={`/m/${station.machine_name}`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <FontAwesomeIcon
-                          icon={faChartSimple}
-                          className="mr-1"
-                        />
-                        Monitoreo
+                        <FontAwesomeIcon icon={faChartPie} className="mr-2" />
+                        Datos
                       </Link>
                     </div>
                   </div>
