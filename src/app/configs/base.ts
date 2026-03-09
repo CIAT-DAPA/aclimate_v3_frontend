@@ -1,6 +1,7 @@
 // Configuración base que comparten todas las ramas
 export interface BranchConfig {
   name: string;
+  idCountry: number;
   displayName: string;
   aboutUs: {
     title: string;
@@ -31,6 +32,7 @@ export interface BranchConfig {
 
 export const getDefaultConfig = (): BranchConfig => ({
   name: "default",
+  idCountry: 1,
   displayName: "AClimate",
   aboutUs: {
     title: "Sobre la herramienta",
