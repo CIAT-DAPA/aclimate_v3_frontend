@@ -2,6 +2,7 @@ import { BranchConfig } from "./base";
 
 export const amazoniaConfig: BranchConfig = {
   name: "amazonia",
+  idCountry: 3,
   displayName: "AClimate Amazonía",
   aboutUs: {
     title: "Sobre la herramienta",
