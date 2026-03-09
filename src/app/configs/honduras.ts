@@ -2,6 +2,7 @@ import { BranchConfig } from "./base";
 
 export const hondurasConfig: BranchConfig = {
   name: "honduras",
+  idCountry: 2,
   displayName: "AClimate Honduras",
   aboutUs: {
     title: "Sobre la herramienta",

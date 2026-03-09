@@ -2,14 +2,10 @@
 
 import {
   Map,
-  MapPinned,
   FileText,
   Waves,
-  Droplets,
-  CloudRain,
   ThermometerSun,
   Leaf,
-  Home,
   Info,
   Sprout,
   Calendar,
@@ -18,12 +14,13 @@ import React, { useRef, useCallback, useState, useEffect } from "react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
-import { GEOSERVER_URL, APP_ID } from "@/app/config";
+import { GEOSERVER_URL } from "@/app/config";
 import { Station } from "@/app/types/Station";
 import {
   getIndicatorFeatures,
   IndicatorFeature,
 } from "@/app/services/indicatorFeatureService";
+import { useBranchConfig } from "../configs";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
   ssr: false,
@@ -192,19 +189,18 @@ export default function ScenarioPage() {
           const matchedScenario = SCENARIO_MAP[String(value)];
           if (matchedScenario) {
             setScenarioName(matchedScenario.label);
-            const countryIdNumber = parseInt(APP_ID);
 
             // Cargar features & recommendations usando el id respectivo
             const [fetchedFeatures, fetchedRecommendations] = await Promise.all(
               [
                 getIndicatorFeatures(
                   matchedScenario.indicatorId,
-                  countryIdNumber,
+                  useBranchConfig().idCountry,
                   "feature",
                 ),
                 getIndicatorFeatures(
                   matchedScenario.indicatorId,
-                  countryIdNumber,
+                  useBranchConfig().idCountry,
                   "recommendation",
                 ),
               ],
