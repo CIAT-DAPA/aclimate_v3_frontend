@@ -1433,7 +1433,7 @@ export default function SpatialDataPage() {
                                     showZoomControl={true}
                                     showTimeline={true}
                                     showLegend={true}
-                                    showAdminLayer={false}
+                                    showAdminLayer={true}
                                     adminLayers={adminLayers}
                                     displayFormat="Month"
                                     onTimeChange={(time) =>
