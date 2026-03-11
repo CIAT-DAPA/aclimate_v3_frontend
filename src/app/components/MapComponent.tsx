@@ -139,6 +139,7 @@ interface MapComponentProps {
   stationData?: Record<string, any[]>;
   selectedStation?: Station | null;
   displayFormat?: string;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 const MapComponent = ({
@@ -158,6 +159,7 @@ const MapComponent = ({
   stationData = {},
   selectedStation = null,
   displayFormat = "YYYY-MM-DD",
+  onMapClick,
 }: MapComponentProps) => {
   const activeStations = stations.filter((station) => station.enable);
   const hasStations = activeStations.length > 0;
@@ -173,6 +175,28 @@ const MapComponent = ({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const { userValidatedInfo, authenticated } = useAuth();
+
+  // Extraer valores primitivos para el useEffect
+  const centerLat = Array.isArray(mapCenter)
+    ? mapCenter[0]
+    : ((mapCenter as { lat: number; lng: number }).lat ?? center[0]);
+  const centerLng = Array.isArray(mapCenter)
+    ? mapCenter[1]
+    : ((mapCenter as { lat: number; lng: number }).lng ?? center[1]);
+
+  // Efecto general para actualizar suavemente el mapa cuando center o zoom cambian
+  useEffect(() => {
+    if (mapRef.current && centerLat !== undefined && centerLng !== undefined) {
+      mapRef.current.setView(
+        [centerLat as number, centerLng as number],
+        mapZoom,
+        {
+          animate: true,
+          duration: 0.5,
+        },
+      );
+    }
+  }, [centerLat, centerLng, mapZoom]);
 
   // Fix for "Map container is being reused by another instance" error during HMR/Strict Mode
   useEffect(() => {
@@ -342,12 +366,18 @@ const MapComponent = ({
 
     useMapEvents({
       click: async (e) => {
+        const { lat, lng } = e.latlng;
+
+        // Si hay una función personalizada para clics, usarla y salir
+        if (onMapClick) {
+          onMapClick(lat, lng);
+          return;
+        }
+
         // Solo procesar clics si hay capas WMS y no estamos en modo de estaciones
         if (wmsLayers.length === 0 || showMarkers) {
           return;
         }
-
-        const { lat, lng } = e.latlng;
 
         // Crear contenido HTML para el popup con estado de carga
         const popupContent = document.createElement("div");
@@ -668,7 +698,9 @@ const MapComponent = ({
         )}
 
         {/* Manejador de clics para datos espaciales */}
-        {wmsLayers.length > 0 && !showMarkers && <MapClickHandler />}
+        {(onMapClick || (wmsLayers.length > 0 && !showMarkers)) && (
+          <MapClickHandler />
+        )}
 
         {showTimeline && wmsLayers.length > 0 && (
           <TimelineController

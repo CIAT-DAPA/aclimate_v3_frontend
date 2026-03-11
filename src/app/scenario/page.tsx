@@ -11,6 +11,8 @@ import {
   Calendar,
 } from "lucide-react";
 import React, { useRef, useCallback, useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
@@ -21,6 +23,8 @@ import {
   IndicatorFeature,
 } from "@/app/services/indicatorFeatureService";
 import { useBranchConfig } from "../configs";
+import { spatialService } from "@/app/services/spatialService";
+import { useCountry } from "@/app/contexts/CountryContext";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
   ssr: false,
@@ -93,10 +97,15 @@ const DEPARTMENTS = {
 
 export default function ScenarioPage() {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { idCountry } = useBranchConfig();
   const [selectedDept, setSelectedDept] = useState<string>("");
   const [selectedCommunity, setSelectedCommunity] = useState<string>("");
+  const [customLocation, setCustomLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [scenarioName, setScenarioName] = useState<string>(
-    "Ninguna comunidad seleccionada",
+    "Ninguna ubicación seleccionada",
   );
   const [scenarioFeatures, setScenarioFeatures] = useState<IndicatorFeature[]>(
     [],
@@ -105,6 +114,73 @@ export default function ScenarioPage() {
     IndicatorFeature[]
   >([]);
   const [loadingContent, setLoadingContent] = useState<boolean>(false);
+
+  // Estados para capas administrativas dinámicas
+  const [adminLayers, setAdminLayers] = useState<
+    Array<{ name: string; workspace: string; store: string; layer: string }>
+  >([]);
+  const [loadingAdminLayers, setLoadingAdminLayers] = useState<boolean>(true);
+  const [layerDate, setLayerDate] = useState<string>("");
+
+  const { countryId } = useCountry();
+
+  // Mapeo de códigos de país a códigos usados en geoserver
+  const countryCodeMap: Record<string, string> = {
+    "1": "co", // Colombia
+    "2": "hn", // Honduras
+    "3": "st", // SAT AMAZONIA
+  };
+  const countryCode = countryCodeMap[countryId || "2"] || "hn";
+
+  // Cargar capas administrativas dinámicamente
+  useEffect(() => {
+    const loadAdminLayers = async () => {
+      setLoadingAdminLayers(true);
+      try {
+        const layers = await spatialService.getAdminLayers(
+          GEOSERVER_URL,
+          countryCode,
+        );
+        setAdminLayers(layers);
+      } catch (error) {
+        console.error("Error cargando capas administrativas:", error);
+        setAdminLayers([]);
+      } finally {
+        setLoadingAdminLayers(false);
+      }
+    };
+
+    loadAdminLayers();
+  }, [countryCode]);
+
+  // Cargar fecha de la capa raster de base
+  useEffect(() => {
+    const fetchDate = async () => {
+      try {
+        const dates = await spatialService.getDatesFromGeoserver(
+          `${GEOSERVER_URL}/climate_forecast_st/wms`,
+          "climate_forecast_st:climate_forecast_st_monthly",
+        );
+        if (dates && dates.length > 0) {
+          const dateStr = dates[dates.length - 1]; // Ej: "2024-10-01"
+          const [year, month, day] = dateStr.split("-");
+          const dateObj = new Date(
+            Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)),
+          );
+          const monthName = dateObj.toLocaleString("es-ES", {
+            month: "long",
+            timeZone: "UTC",
+          });
+          const capitalizedMonth =
+            monthName.charAt(0).toUpperCase() + monthName.slice(1);
+          setLayerDate(`${capitalizedMonth} de ${year}`);
+        }
+      } catch (err) {
+        console.error("Error cargando fecha de la capa:", err);
+      }
+    };
+    fetchDate();
+  }, []);
 
   const getIconForTitle = (title: string) => {
     const t = title.toLowerCase();
@@ -136,6 +212,12 @@ export default function ScenarioPage() {
   const handleDeptChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedDept(e.target.value);
     setSelectedCommunity(""); // reset al cambiar departamento
+    setCustomLocation(null);
+  };
+
+  const handleCommunityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCommunity(e.target.value);
+    setCustomLocation(null);
   };
 
   const selectedDeptData = selectedDept
@@ -145,9 +227,70 @@ export default function ScenarioPage() {
     (c) => c.id === selectedCommunity,
   );
 
+  const activeLocationLatLon = React.useMemo(() => {
+    return (
+      customLocation ||
+      (selectedCommunityData
+        ? { lat: selectedCommunityData.lat, lon: selectedCommunityData.lon }
+        : null)
+    );
+  }, [customLocation, selectedCommunityData]);
+
+  // Función para descargar la capa WMS (como se hace en Spatial)
+  const downloadRasterFile = async () => {
+    try {
+      const layerName = "climate_forecast_st:climate_forecast_st_monthly";
+      const wmsUrl = `${GEOSERVER_URL}/${layerName.split(":")[0]}/wms`;
+      const bbox = "-76.0,-5.5,-66.5,3.0"; // Aproximado para ST Amazonia - Colombia (se debe cambiar por countryBoundingBox si se quiere generalizar)
+
+      const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
+
+      const response = await fetch(capabilitiesUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, "text/xml");
+
+      // Buscar la dimensión de tiempo para esta capa
+      const layers = xmlDoc.getElementsByTagName("Layer");
+      let timeValue = "";
+
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+        const nameElement = layer.getElementsByTagName("Name")[0];
+        if (nameElement && nameElement.textContent === layerName) {
+          const dimension = layer.getElementsByTagName("Dimension")[0];
+          if (dimension && dimension.getAttribute("name") === "time") {
+            const times = dimension.textContent?.trim().split(",") || [];
+            timeValue = times[times.length - 1] || ""; // Usar la última fecha disponible
+          }
+          break;
+        }
+      }
+
+      // Si no tiene fecha, lo bajamos sin TIME (o con un string vacío)
+      const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff${timeValue ? `&time=${timeValue}` : ""}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Pronostico_Climatico_Mensual${timeValue ? `_${timeValue}` : ""}.tiff`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error descargando archivo raster:", error);
+      alert(
+        "Ocurrió un error al descargar la capa. Por favor, intenta de nuevo.",
+      );
+    }
+  };
+
   useEffect(() => {
-    if (!selectedCommunityData) {
-      setScenarioName("Ninguna comunidad seleccionada");
+    if (!activeLocationLatLon) {
+      setScenarioName("Ninguna ubicación seleccionada");
       setScenarioFeatures([]);
       setScenarioRecommendations([]);
       return;
@@ -157,7 +300,7 @@ export default function ScenarioPage() {
       try {
         setScenarioName("Cargando...");
         setLoadingContent(true);
-        const { lat, lon } = selectedCommunityData;
+        const { lat, lon } = activeLocationLatLon;
 
         // Un BBOX pequeñito centrado en el punto
         const offset = 0.01;
@@ -181,9 +324,9 @@ export default function ScenarioPage() {
             string,
             { label: string; indicatorId: number }
           > = {
-            "1": { label: "Verano", indicatorId: 14 },
-            "2": { label: "Normal", indicatorId: 15 },
             "3": { label: "Invierno", indicatorId: 16 },
+            "2": { label: "Normal", indicatorId: 15 },
+            "1": { label: "Verano", indicatorId: 14 },
           };
 
           const matchedScenario = SCENARIO_MAP[String(value)];
@@ -195,12 +338,12 @@ export default function ScenarioPage() {
               [
                 getIndicatorFeatures(
                   matchedScenario.indicatorId,
-                  useBranchConfig().idCountry,
+                  idCountry,
                   "feature",
                 ),
                 getIndicatorFeatures(
                   matchedScenario.indicatorId,
-                  useBranchConfig().idCountry,
+                  idCountry,
                   "recommendation",
                 ),
               ],
@@ -220,11 +363,13 @@ export default function ScenarioPage() {
 
             const filterAndFormat = (
               items: IndicatorFeature[],
-              dept: string,
-              comm: string,
+              dept?: string,
+              comm?: string,
             ) => {
-              const normDept = toCamelCase(dept);
-              const normComm = toCamelCase(comm);
+              const normDept = dept ? toCamelCase(dept) : null;
+              const normComm = comm ? toCamelCase(comm) : null;
+
+              const uniqueTitles = new Set<string>();
 
               return items.reduce((acc, item) => {
                 const parts = item.title.split("_");
@@ -232,10 +377,16 @@ export default function ScenarioPage() {
                 const itemDept = parts[1] ? toCamelCase(parts[1]) : null;
                 const itemComm = parts[2] ? toCamelCase(parts[2]) : null;
 
-                if (itemDept && itemDept !== normDept) return acc;
-                if (itemComm && itemComm !== normComm) return acc;
+                // Si estamos filtrando por un dept/comm específico, verificar coincidencia.
+                if (normDept && itemDept && itemDept !== normDept) return acc;
+                if (normComm && itemComm && itemComm !== normComm) return acc;
 
-                acc.push({ ...item, title: nameTitle });
+                // Para evitar duplicados de la misma recomendación general
+                if (!uniqueTitles.has(nameTitle)) {
+                  uniqueTitles.add(nameTitle);
+                  acc.push({ ...item, title: nameTitle });
+                }
+
                 return acc;
               }, [] as IndicatorFeature[]);
             };
@@ -243,15 +394,15 @@ export default function ScenarioPage() {
             setScenarioFeatures(
               filterAndFormat(
                 fetchedFeatures,
-                selectedDeptData?.name || "",
-                selectedCommunityData.name,
+                selectedDeptData?.name,
+                selectedCommunityData?.name,
               ),
             );
             setScenarioRecommendations(
               filterAndFormat(
                 fetchedRecommendations,
-                selectedDeptData?.name || "",
-                selectedCommunityData.name,
+                selectedDeptData?.name,
+                selectedCommunityData?.name,
               ),
             );
           } else {
@@ -275,7 +426,12 @@ export default function ScenarioPage() {
     };
 
     fetchScenario();
-  }, [selectedCommunityData]);
+  }, [
+    activeLocationLatLon,
+    selectedDeptData,
+    selectedCommunityData,
+    idCountry,
+  ]);
 
   const mapStations = selectedCommunityData
     ? ([
@@ -296,16 +452,38 @@ export default function ScenarioPage() {
           admin2_name: selectedCommunityData.name,
         },
       ] as Station[])
-    : [];
+    : customLocation
+      ? ([
+          {
+            id: 1,
+            name: "Ubicación seleccionada",
+            ext_id: "1",
+            machine_name: "custom",
+            latitude: customLocation.lat,
+            longitude: customLocation.lon,
+            enable: true,
+            country_id: 1,
+            country_name: "CO",
+            country_iso2: "CO",
+            admin1_id: 1,
+            admin1_name: "Ubicación",
+            admin2_id: 1,
+            admin2_name: "seleccionada",
+          },
+        ] as Station[])
+      : [];
 
-  const mapCenter = selectedCommunityData
-    ? ([selectedCommunityData.lat, selectedCommunityData.lon] as [
-        number,
-        number,
-      ])
+  const mapCenter = activeLocationLatLon
+    ? ([activeLocationLatLon.lat, activeLocationLatLon.lon] as [number, number])
     : ([-1.25, -71.25] as [number, number]);
 
-  const mapZoom = selectedCommunityData ? 8 : 6;
+  const mapZoom = activeLocationLatLon ? 8 : 6;
+
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    setCustomLocation({ lat, lon: lng });
+    setSelectedDept("");
+    setSelectedCommunity("");
+  }, []);
 
   const downloadPdf = useCallback(() => {
     if (contentRef.current === null) {
@@ -347,12 +525,22 @@ export default function ScenarioPage() {
           {/* Header Section */}
           <div className="border-l-4 border-[#c86b24] pl-5 sm:pl-8 bg-white p-6 rounded-lg shadow-sm">
             <div>
-              <h1 className="text-3xl font-semibold text-[#283618] mb-2">
-                Escenarios Climáticos
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+                <h1 className="text-3xl font-semibold text-[#283618]">
+                  Escenarios Climáticos
+                </h1>
+                {layerDate && (
+                  <span className="inline-block text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 shadow-sm self-start sm:self-auto">
+                    {layerDate}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 text-lg">
-                Haz click en un lugar de interés para conocer las
-                características y recomendaciones de la zona
+                ¡Bienvenido! Aquí puedes explorar el pronóstico climático de tu
+                región. Busca y haz clic en cualquier lugar del mapa, o utiliza
+                los selectores para elegir un departamento y comunidad.
+                Descubrirás las características y las mejores recomendaciones
+                para el escenario pronosticado.
               </p>
             </div>
 
@@ -382,7 +570,7 @@ export default function ScenarioPage() {
                 </label>
                 <select
                   value={selectedCommunity}
-                  onChange={(e) => setSelectedCommunity(e.target.value)}
+                  onChange={handleCommunityChange}
                   disabled={!selectedDept}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 border disabled:bg-gray-100 disabled:text-gray-500 text-black"
                 >
@@ -401,35 +589,64 @@ export default function ScenarioPage() {
 
             {/* Map Section Mockup */}
             <div className="mt-6 bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <Map className="text-blue-600" size={24} />
-                <h2 className="text-xl font-medium text-gray-800">
-                  {scenarioName}
-                </h2>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Map className="text-blue-600" size={24} />
+                  <h2 className="text-xl font-medium text-gray-800">
+                    {scenarioName}
+                  </h2>
+                </div>
               </div>
 
               <div className="relative w-full h-[400px] bg-sky-50 flex items-center justify-center overflow-hidden">
-                <MapComponent
-                  key={`map-${selectedCommunity || "default"}`}
-                  center={mapCenter}
-                  zoom={mapZoom}
-                  stations={mapStations as Station[]}
-                  wmsLayers={[
-                    {
-                      url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                      layers: "climate_forecast_st:climate_forecast_st_monthly",
-                      opacity: 1.0,
-                      transparent: true,
-                      title: "Pronóstico Climático Mensual",
-                      unit: "",
-                    },
-                  ]}
-                  showMarkers={mapStations.length > 0}
-                  showZoomControl={true}
-                  showTimeline={false}
-                  showLegend={true}
-                  showAdminLayer={true}
-                />
+                {loadingAdminLayers ? (
+                  <div className="flex items-center justify-center h-full w-full bg-gray-50 z-10 absolute inset-0">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                      <span className="mt-3 text-gray-500 font-medium">
+                        Cargando mapa...
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <MapComponent
+                      center={mapCenter}
+                      zoom={mapZoom}
+                      stations={mapStations as Station[]}
+                      wmsLayers={[
+                        {
+                          url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
+                          layers:
+                            "climate_forecast_st:climate_forecast_st_monthly",
+                          opacity: 1.0,
+                          transparent: true,
+                          title: "Pronóstico Climático Mensual",
+                          unit: "",
+                        },
+                      ]}
+                      adminLayers={adminLayers}
+                      showMarkers={mapStations.length > 0}
+                      showZoomControl={true}
+                      showTimeline={false}
+                      showLegend={true}
+                      showAdminLayer={true}
+                      onMapClick={handleMapClick}
+                    />
+
+                    {/* Botón de descarga de raster dentro del mapa - posicionado debajo de zoom */}
+                    <button
+                      onClick={downloadRasterFile}
+                      className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                      title="Descargar capa raster de pronóstico"
+                    >
+                      <FontAwesomeIcon
+                        icon={faFileArrowDown}
+                        className="h-4 w-4"
+                      />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
