@@ -30,7 +30,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     accent: "#fefae0",
   },
   spatial: {
-    showClimateIndicator: true,
+    showClimateIndicator: false,
     showClimateData: true,
     showHydrologicalIndicator: false,
   },
