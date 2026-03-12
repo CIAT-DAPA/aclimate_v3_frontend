@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import MapSearch from "../components/MapSearch";
 import { useStations } from "@/app/contexts/StationsContext";
 import { Station } from "@/app/types/Station";
+import { useBranchConfig } from "@/app/configs";
 
 const MapComponent = dynamic(() => import("../components/MapComponent"), {
   ssr: false,
@@ -20,8 +21,13 @@ const MapComponent = dynamic(() => import("../components/MapComponent"), {
 
 export default function LocationsPage() {
   const { stations, stationData, loading, error } = useStations();
+  const config = useBranchConfig();
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [showLoading, setShowLoading] = useState(false);
+
+  // Obtener center y zoom de la configuración del país, con fallback por seguridad
+  const mapCenter = config.data?.center || [4.6097, -74.0817];
+  const mapZoom = config.data?.zoom || 6;
 
   // Solo mostrar el spinner si la carga dura más de 300ms
   // Esto evita flashes durante Fast Refresh o cargas muy rápidas
@@ -57,8 +63,8 @@ export default function LocationsPage() {
     <div className="relative h-screen w-full">
       {/* Componente del mapa con las estaciones */}
       <MapComponent 
-        center={[4.6097, -74.0817]} 
-        zoom={6} 
+        center={mapCenter} 
+        zoom={mapZoom} 
         stations={stations} 
         stationData={stationData}
         selectedStation={selectedStation}
