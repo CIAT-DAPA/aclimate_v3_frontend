@@ -1,6 +1,7 @@
 import { getDefaultConfig, BranchConfig } from "./base";
 import { hondurasConfig } from "./honduras";
 import { amazoniaConfig } from "./sat";
+import { nicaraguaConfig } from "./nicaragua";
 import { COUNTRY_NAME } from "../config";
 
 // Función para obtener el nombre de la rama actual basado en COUNTRY_NAME
@@ -16,6 +17,8 @@ const getCurrentBranch = (): string => {
     case "sat":
     case "amazonia":
       return "amazonia";
+    case "nicaragua":
+      return "nicaragua";
     default:
       return "default";
   }
@@ -26,6 +29,7 @@ const branchConfigs: Record<string, BranchConfig> = {
   default: getDefaultConfig(),
   honduras: hondurasConfig,
   amazonia: amazoniaConfig,
+  nicaragua: nicaraguaConfig,
 };
 
 // Hook para obtener la configuración actual
@@ -41,5 +45,5 @@ export const getBranchConfig = (branch?: string): BranchConfig => {
 };
 
 // Exportar configuraciones específicas para uso directo
-export { hondurasConfig, amazoniaConfig };
+export { hondurasConfig, amazoniaConfig, nicaraguaConfig };
 export type { BranchConfig };
