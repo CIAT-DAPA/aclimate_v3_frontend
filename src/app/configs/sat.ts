@@ -38,4 +38,8 @@ export const amazoniaConfig: BranchConfig = {
     showClimateData: true,
     showHydrologicalIndicator: true,
   },
+  data: {
+    center: [4.6097, -74.0817],
+    zoom: 6,
+  },
 };
