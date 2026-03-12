@@ -30,9 +30,9 @@ pipeline {
                 script {
                     try {
                         sshCommand remote: remote, command: """
-                            cd /var/www/aclimate/aclimate_v3_frontend_sat/src
-                            git checkout aclimate_sat
-                            git pull origin aclimate_sat
+                            cd /var/www/aclimate/aclimate_v3_frontend_ni/src
+                            git checkout aclimate_nicaragua
+                            git pull origin aclimate_nicaragua
                         """
                     } catch (Exception e) {
                         echo "Git Pull Error: ${e.message}"
@@ -45,13 +45,13 @@ pipeline {
             steps {
                 script {
                     sshCommand remote: remote, command: """
-                        cd /var/www/aclimate/aclimate_v3_frontend_sat/src
+                        cd /var/www/aclimate/aclimate_v3_frontend_ni/src
                         source /home/aclimate_v3/miniforge3/etc/profile.d/conda.sh
                         conda activate /home/aclimate_v3/miniforge3/envs/aclimate_v3
                         npm install
                         npm run build
-                        cd /var/www/aclimate/aclimate_v3_frontend_sat
-                        pm2 stop aclimate_v3_sat || pm2 delete aclimate_v3_sat
+                        cd /var/www/aclimate/aclimate_v3_frontend_ni
+                        pm2 stop aclimate_v3_ni || pm2 delete aclimate_v3_ni
                         pm2 start ecosystem.config.js
                     """
                 }
