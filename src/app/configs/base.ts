@@ -28,6 +28,10 @@ export interface BranchConfig {
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
   };
+  data?:{
+    center: [number, number];
+    zoom: number;
+  }
 }
 
 export const getDefaultConfig = (): BranchConfig => ({

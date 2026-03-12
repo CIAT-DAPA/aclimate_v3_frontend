@@ -79,6 +79,7 @@ const countryCodeMap: Record<string, string> = {
   "1": "co", // Colombia
   "2": "hn", // Honduras
   "3": "st", // SAT AMAZONIA
+  "4": "ni", // Nicaragua
 };
 
 // Opciones de período para indicadores
@@ -217,6 +218,12 @@ export default function SpatialDataPage() {
       zoom: 6,
       bbox: "-76.0,-5.5,-66.5,3.0",
       bboxWMS13: "-5.5,-76.0,3.0,-66.5",
+    },
+    ni: {
+      center: [12.5, -85.0],
+      zoom: 7,
+      bbox: "-87.0,10.5,-82.0,14.5",
+      bboxWMS13: "10.5,-87.0,14.5,-82.0",
     },
   };
 
