@@ -1,6 +1,7 @@
 // Configuración base que comparten todas las ramas
 export interface BranchConfig {
   name: string;
+  idCountry: number;
   displayName: string;
   aboutUs: {
     title: string;
@@ -27,10 +28,15 @@ export interface BranchConfig {
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
   };
+  data?:{
+    center: [number, number];
+    zoom: number;
+  }
 }
 
 export const getDefaultConfig = (): BranchConfig => ({
   name: "default",
+  idCountry: 1,
   displayName: "AClimate",
   aboutUs: {
     title: "Sobre la herramienta",
@@ -47,5 +53,9 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
         alt: "Alliance Bioversity-CIAT logo",
       },
     ],
+  },
+  data: {
+    center: [4.6097, -74.0817],
+    zoom: 6,
   },
 });

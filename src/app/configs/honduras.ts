@@ -2,6 +2,7 @@ import { BranchConfig } from "./base";
 
 export const hondurasConfig: BranchConfig = {
   name: "honduras",
+  idCountry: 2,
   displayName: "AClimate Honduras",
   aboutUs: {
     title: "Sobre la herramienta",
@@ -44,5 +45,9 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     showClimateIndicator: true,
     showClimateData: true,
     showHydrologicalIndicator: false,
+  },
+  data: {
+    center: [15.2, -86.24],
+    zoom: 7,
   },
 };

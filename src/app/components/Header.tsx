@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
 import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
+import { useBranchConfig } from "@/app/configs/index";
 import { useState, useEffect } from "react";
 import {
   faArrowRightFromBracket,
@@ -18,6 +19,7 @@ const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const config = useBranchConfig();
 
   // Efecto para manejar el montaje del componente
   useEffect(() => {
@@ -84,6 +86,14 @@ const Header = () => {
 
         {/* Menú desktop */}
         <div className="hidden md:flex gap-6">
+          {config.showScenario && (
+            <Link
+              href="/scenario"
+              className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
+            >
+              Escenarios
+            </Link>
+          )}
           {SHOW_STATIONS_MODULE && (
             <Link
               href="/locations"
@@ -185,6 +195,15 @@ const Header = () => {
         {showMobileMenu && (
           <div className="absolute top-full left-0 right-0 bg-[#283618] border-t border-[#3a4a26] md:hidden z-[1002]">
             <div className="container mx-auto px-4 py-2 flex flex-col gap-2">
+              {config.showScenario && (
+                <Link
+                  href="/scenario"
+                  className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Escenarios
+                </Link>
+              )}
               {SHOW_STATIONS_MODULE && (
                 <Link
                   href="/locations"

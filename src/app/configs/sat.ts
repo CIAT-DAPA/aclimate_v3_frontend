@@ -2,6 +2,7 @@ import { BranchConfig } from "./base";
 
 export const amazoniaConfig: BranchConfig = {
   name: "amazonia",
+  idCountry: 3,
   displayName: "AClimate Amazonía",
   aboutUs: {
     title: "Sobre la herramienta",
@@ -35,6 +36,10 @@ export const amazoniaConfig: BranchConfig = {
   spatial: {
     showClimateIndicator: false,
     showClimateData: true,
-    showHydrologicalIndicator: false,
+    showHydrologicalIndicator: true,
+  },
+  data: {
+    center: [4.6097, -74.0817],
+    zoom: 6,
   },
 };
