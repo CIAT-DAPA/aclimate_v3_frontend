@@ -13,6 +13,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBranchConfig } from "@/app/configs/index";
 import { faFileArrowDown, faDownload } from "@fortawesome/free-solid-svg-icons";
+import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -79,6 +80,7 @@ const countryCodeMap: Record<string, string> = {
   "1": "co", // Colombia
   "2": "hn", // Honduras
   "3": "st", // SAT AMAZONIA
+  "4": "ni", // Nicaragua
 };
 
 // Opciones de período para indicadores
@@ -91,71 +93,11 @@ const indicatorPeriodOptions = [
   { value: "other", label: "Otro" },
 ];
 
-const departments = [
-  { id: "amazonas", label: "Amazonas" },
-  { id: "caqueta", label: "Caquetá" },
-];
-
-const departmentCommunities: Record<
-  string,
-  Array<{ id: string; label: string }>
-> = {
-  amazonas: [
-    { id: "leticia", label: "Leticia" },
-    { id: "puerto_nariño", label: "Puerto Nariño" },
-  ],
-  caqueta: [{ id: "san_jose_del_fragua", label: "San José del Fragua" }],
-};
-
-const hydrologicalCommunityCoordinates: Record<
-  string,
-  { center: [number, number]; zoom: number }
-> = {
-  leticia: {
-    center: [-3.997, -70.11],
-    zoom: 12,
-  },
-  puerto_nariño: {
-    center: [-3.592, -70.595],
-    zoom: 10,
-  },
-  san_jose_del_fragua: {
-    center: [1.266, -76.2],
-    zoom: 10,
-  },
-};
-
-const hydrologicalScenarios = [{ id: "baseline", label: "Línea Base" }];
-
 export default function SpatialDataPage() {
   const config = useBranchConfig();
   const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
-  const [isHydrologicalOpen, setIsHydrologicalOpen] = useState(true);
-  const [selectedHydrologicalDepartment, setSelectedHydrologicalDepartment] =
-    useState<string>("amazonas");
-  const [selectedHydrologicalCommunity, setSelectedHydrologicalCommunity] =
-    useState<string>("leticia");
-  const [selectedHydrologicalScenario, setSelectedHydrologicalScenario] =
-    useState<string>("baseline");
-  const [selectedHydrologicalCategory, setSelectedHydrologicalCategory] =
-    useState<IndicatorCategory | null>(null);
-  const [hydrologicalCategories, setHydrologicalCategories] = useState<
-    IndicatorCategory[]
-  >([]);
-  const [hydrologicalIndicatorsList, setHydrologicalIndicatorsList] = useState<
-    Indicator[]
-  >([]);
-  const [loadingHydrologicalCategories, setLoadingHydrologicalCategories] =
-    useState(false);
-  const [loadingHydrologicalIndicators, setLoadingHydrologicalIndicators] =
-    useState(false);
-
-  // Estado para guardar los bounds de cada indicador hidrológico
-  const [hydrologicalBounds, setHydrologicalBounds] = useState<
-    Record<string, [[number, number], [number, number]] | undefined>
-  >({});
 
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
@@ -217,6 +159,12 @@ export default function SpatialDataPage() {
       zoom: 6,
       bbox: "-76.0,-5.5,-66.5,3.0",
       bboxWMS13: "-5.5,-76.0,3.0,-66.5",
+    },
+    ni: {
+      center: [12.5, -85.0],
+      zoom: 7,
+      bbox: "-87.0,10.5,-82.0,14.5",
+      bboxWMS13: "10.5,-87.0,14.5,-82.0",
     },
   };
 
@@ -301,88 +249,6 @@ export default function SpatialDataPage() {
 
     loadCategories();
   }, [countryId]);
-
-  // Cargar categorías de indicadores hidrológicos
-  useEffect(() => {
-    const loadHydrologicalCategories = async () => {
-      if (!countryId) return; // Ensure countryId is not null
-
-      setLoadingHydrologicalCategories(true);
-      try {
-        const categories =
-          await spatialService.getIndicatorCategories(countryId);
-        setHydrologicalCategories(categories);
-        // Seleccionar la primera categoría por defecto si hay disponibles
-        if (categories.length > 0) {
-          setSelectedHydrologicalCategory(categories[0]);
-        }
-      } catch (error) {
-        console.error("Error cargando categorías hidrológicas:", error);
-        setHydrologicalCategories([]);
-      } finally {
-        setLoadingHydrologicalCategories(false);
-      }
-    };
-
-    if (countryId) loadHydrologicalCategories();
-  }, [countryId]);
-
-  // Cargar indicadores hidrológicos al cambiar la categoría seleccionada
-  useEffect(() => {
-    const loadHydrologicalIndicators = async () => {
-      if (!selectedHydrologicalCategory) return;
-
-      setLoadingHydrologicalIndicators(true);
-      try {
-        const fetchedIndicators = await spatialService.getIndicatorsByCategory(
-          selectedHydrologicalCategory.id,
-        );
-        setHydrologicalIndicatorsList(fetchedIndicators);
-      } catch (error) {
-        console.error("Error cargando indicadores hidrológicos:", error);
-        setHydrologicalIndicatorsList([]);
-      } finally {
-        setLoadingHydrologicalIndicators(false);
-      }
-    };
-
-    if (selectedHydrologicalCategory) loadHydrologicalIndicators();
-  }, [selectedHydrologicalCategory]);
-
-  // Cargar bounds para indicadores hidrologicos
-  useEffect(() => {
-    const fetchBounds = async () => {
-      const newBounds: Record<
-        string,
-        [[number, number], [number, number]] | undefined
-      > = {};
-      const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
-
-      for (const indicator of hydrologicalIndicatorsList) {
-        const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.short_name}_${selectedHydrologicalScenario}`;
-        try {
-          const bounds = await spatialService.getLayerBounds(
-            workspaceUrl,
-            layerName,
-          );
-          if (bounds) {
-            newBounds[indicator.id] = bounds;
-          }
-        } catch (e) {
-          console.error(`Error fetching bounds for ${layerName}`, e);
-        }
-      }
-      setHydrologicalBounds(newBounds);
-    };
-
-    if (hydrologicalIndicatorsList.length > 0) {
-      fetchBounds();
-    }
-  }, [
-    hydrologicalIndicatorsList,
-    selectedHydrologicalCommunity,
-    selectedHydrologicalScenario,
-  ]);
 
   // Detectar temporalidades disponibles en el geoserver
   useEffect(() => {
@@ -1211,279 +1077,16 @@ export default function SpatialDataPage() {
               </div>
             )}
 
-            {/* Acordeón para Indicadores hidrológicos */}
             {config.spatial?.showHydrologicalIndicator && (
-              <div id="hydrological-accordion">
-                <h2 id="hydrological-accordion-trigger">
-                  <button
-                    type="button"
-                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100 rounded-b-xl"
-                    onClick={() => setIsHydrologicalOpen(!isHydrologicalOpen)}
-                    aria-expanded={isHydrologicalOpen}
-                  >
-                    <span className="text-xl font-semibold text-gray-800">
-                      Indicadores hidrológicos
-                    </span>
-                    <svg
-                      className={`w-6 h-6 shrink-0 ${isHydrologicalOpen ? "rotate-180" : ""}`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      ></path>
-                    </svg>
-                  </button>
-                </h2>
-                <div
-                  id="hydrological-accordion-content"
-                  className={isHydrologicalOpen ? "" : "hidden"}
-                  aria-labelledby="hydrological-accordion-trigger"
-                >
-                  <div className="p-5 border border-t-0 border-gray-200">
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <p className="text-gray-600 mt-2">
-                          Explora indicadores hidrológicos específicos para tu
-                          comunidad. Selecciona tu ubicación para ver los datos
-                          disponibles sobre erosión, inundaciones y más.
-                        </p>
-                      </div>
-
-                      {/* Selectores de departamento y comunidad */}
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="w-full sm:w-64">
-                          <label
-                            htmlFor="hydrologicalDepartment"
-                            className="block font-medium text-gray-700 mb-2"
-                          >
-                            Departamento
-                          </label>
-                          <select
-                            id="hydrologicalDepartment"
-                            value={selectedHydrologicalDepartment}
-                            onChange={(e) => {
-                              const newDept = e.target.value;
-                              setSelectedHydrologicalDepartment(newDept);
-                              const communities =
-                                departmentCommunities[newDept] || [];
-                              if (communities.length > 0) {
-                                setSelectedHydrologicalCommunity(
-                                  communities[0].id,
-                                );
-                              }
-                            }}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
-                          >
-                            {departments.map((dept) => (
-                              <option key={dept.id} value={dept.id}>
-                                {dept.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="w-full sm:w-64">
-                          <label
-                            htmlFor="hydrologicalCommunity"
-                            className="block font-medium text-gray-700 mb-2"
-                          >
-                            Comunidad
-                          </label>
-                          <select
-                            id="hydrologicalCommunity"
-                            value={selectedHydrologicalCommunity}
-                            onChange={(e) =>
-                              setSelectedHydrologicalCommunity(e.target.value)
-                            }
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
-                          >
-                            {(
-                              departmentCommunities[
-                                selectedHydrologicalDepartment
-                              ] || []
-                            ).map((community) => (
-                              <option key={community.id} value={community.id}>
-                                {community.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="w-full sm:w-64">
-                          <label
-                            htmlFor="hydrologicalScenario"
-                            className="block font-medium text-gray-700 mb-2"
-                          >
-                            Escenario
-                          </label>
-                          <select
-                            id="hydrologicalScenario"
-                            value={selectedHydrologicalScenario}
-                            onChange={(e) =>
-                              setSelectedHydrologicalScenario(e.target.value)
-                            }
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full"
-                          >
-                            {hydrologicalScenarios.map((scenario) => (
-                              <option key={scenario.id} value={scenario.id}>
-                                {scenario.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Selector de Categoría (fila separada) */}
-                      <div className="mt-4 w-full">
-                        <label
-                          htmlFor="hydrologicalCategory"
-                          className="block font-medium text-gray-700 mb-2"
-                        >
-                          Categoría
-                        </label>
-                        <select
-                          id="hydrologicalCategory"
-                          value={selectedHydrologicalCategory?.id || ""}
-                          onChange={(e) => {
-                            const category = hydrologicalCategories.find(
-                              (c) => c.id.toString() === e.target.value,
-                            );
-                            setSelectedHydrologicalCategory(category || null);
-                          }}
-                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green w-full sm:w-64"
-                          disabled={loadingHydrologicalCategories}
-                        >
-                          {hydrologicalCategories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
-
-                        {/* Descripción de la categoría seleccionada */}
-                        {selectedHydrologicalCategory?.description && (
-                          <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
-                            {selectedHydrologicalCategory.description}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mapas de indicadores hidrológicos */}
-                      {loadingHydrologicalIndicators ? (
-                        <div className="flex justify-center py-10">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-8 mt-4">
-                          {hydrologicalIndicatorsList.map((indicator) => {
-                            // Construir el nombre de la capa
-                            const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.short_name}_${selectedHydrologicalScenario}`;
-                            const workspaceUrl = `${GEOSERVER_URL}/hydrological_index/wms`;
-
-                            // Obtener coordenadas de la comunidad o usar las del país por defecto
-                            const communityCoords =
-                              hydrologicalCommunityCoordinates[
-                                selectedHydrologicalCommunity
-                              ] || {
-                                center: currentCountry.center,
-                                zoom: currentCountry.zoom,
-                              };
-
-                            return (
-                              <div
-                                key={indicator.id}
-                                className="flex flex-col gap-3"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold text-gray-800 text-lg">
-                                    {indicator.name}{" "}
-                                    <span className="text-gray-500 text-base">
-                                      ({indicator.unit})
-                                    </span>
-                                  </h3>
-                                </div>
-
-                                {indicator.description && (
-                                  <p className="text-sm text-gray-600 leading-relaxed">
-                                    {indicator.description}
-                                  </p>
-                                )}
-
-                                <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
-                                  <MapComponent
-                                    key={`${indicator.id}-${selectedHydrologicalCommunity}-${selectedHydrologicalScenario}`}
-                                    center={communityCoords.center}
-                                    zoom={communityCoords.zoom}
-                                    bounds={hydrologicalBounds[indicator.id]}
-                                    wmsLayers={[
-                                      {
-                                        url: workspaceUrl,
-                                        layers: layerName,
-                                        opacity: 1.0,
-                                        transparent: true,
-                                        title: indicator.name,
-                                        unit: indicator.unit,
-                                      },
-                                    ]}
-                                    showMarkers={false}
-                                    showZoomControl={true}
-                                    showTimeline={true}
-                                    showLegend={true}
-                                    showAdminLayer={true}
-                                    adminLayers={adminLayers}
-                                    displayFormat="Month"
-                                    onTimeChange={(time) =>
-                                      handleTimeChange(
-                                        time,
-                                        layerName,
-                                        indicator.name,
-                                      )
-                                    }
-                                  />
-
-                                  {/* Botón de descarga */}
-                                  <button
-                                    onClick={async () => {
-                                      let rasterFile =
-                                        rasterFilesRef.current[layerName];
-                                      if (!rasterFile) {
-                                        // Si no existe, obtener la fecha actual del mapa
-                                        const result =
-                                          await getCurrentRasterFile(
-                                            layerName,
-                                            indicator.name,
-                                            workspaceUrl,
-                                          );
-                                        if (result) {
-                                          rasterFile = result;
-                                        }
-                                      }
-                                      if (rasterFile) {
-                                        downloadRasterFile(rasterFile);
-                                      }
-                                    }}
-                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                    title="Descargar capa raster"
-                                  >
-                                    <FontAwesomeIcon
-                                      icon={faFileArrowDown}
-                                      className="h-4 w-4"
-                                    />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <HydrologicalIndicatorsSection
+                countryId={countryId}
+                adminLayers={adminLayers}
+                countryCenter={currentCountry.center}
+                countryZoom={currentCountry.zoom}
+                onTimeChange={handleTimeChange}
+                getCurrentRasterFile={getCurrentRasterFile}
+                downloadRasterFile={downloadRasterFile}
+              />
             )}
           </div>
         </div>

@@ -28,6 +28,10 @@ export interface BranchConfig {
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
   };
+  data?:{
+    center: [number, number];
+    zoom: number;
+  }
 }
 
 export const getDefaultConfig = (): BranchConfig => ({
@@ -49,5 +53,9 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
         alt: "Alliance Bioversity-CIAT logo",
       },
     ],
+  },
+  data: {
+    center: [4.6097, -74.0817],
+    zoom: 6,
   },
 });
