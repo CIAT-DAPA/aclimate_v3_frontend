@@ -7,7 +7,9 @@ import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
 import { StationsProvider } from "@/app/contexts/StationsContext";
 import { COUNTRY_NAME } from "./config";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { CookieConsentProvider } from "@/app/contexts/CookieConsentContext";
+import CookieBanner from "./components/CookieBanner";
+import AnalyticsByConsent from "./components/AnalyticsByConsent";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -28,17 +30,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.variable} antialiased`}>
-        <AuthProvider>
-          <CountryProvider>
-            <StationsProvider>
-              <Header />
-              {children}
-              <Footer />
-            </StationsProvider>
-          </CountryProvider>
-        </AuthProvider>
+        <CookieConsentProvider>
+          <AuthProvider>
+            <CountryProvider>
+              <StationsProvider>
+                <Header />
+                {children}
+                <Footer />
+              </StationsProvider>
+            </CountryProvider>
+          </AuthProvider>
+          <CookieBanner />
+          <AnalyticsByConsent gaId="G-5XT0B5ZC2P" />
+        </CookieConsentProvider>
       </body>
-      <GoogleAnalytics gaId="G-5XT0B5ZC2P" />
     </html>
   );
 }
