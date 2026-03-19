@@ -439,7 +439,13 @@ export default function StationDetailPage() {
         }
 
         // Preparar datasets base
-        const datasets = [
+        const datasets: Array<{
+          label: string;
+          color: string;
+          data: any;
+          dates: any;
+          strokeDashArray?: number;
+        }> = [
           {
             label: "Datos estación",
             color: config.color,
@@ -546,6 +552,7 @@ export default function StationDetailPage() {
               datasets.push({
                 label: "Datos satelitales",
                 color: "#FF6B6B",
+                strokeDashArray: 6,
                 data: satelliteValues,
                 dates: satelliteDates,
               });
