@@ -383,12 +383,18 @@ const MapComponent = ({
         const popupContent = document.createElement("div");
         popupContent.className = "p-2";
         popupContent.innerHTML = `
-          <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-          <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
-            <span class="text-sm">📍</span>
-            <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <h3 class="font-semibold text-sm">Valor del píxel</h3>
+            <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                </svg>
+              </span>
+              <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+            </div>
+            <div class="text-sm text-gray-500" style="line-height:1.2;">Cargando...</div>
           </div>
-          <p class="text-sm text-gray-500">Cargando...</p>
         `;
 
         // Mostrar popup inmediatamente
@@ -457,24 +463,36 @@ const MapComponent = ({
 
           // Actualizar el contenido del popup
           popupContent.innerHTML = `
-            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
-              <span class="text-sm">📍</span>
-              <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <h3 class="font-semibold text-sm">Valor del píxel</h3>
+              <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                  </svg>
+                </span>
+                <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+              </div>
+              <div class="text-sm font-medium text-gray-800" style="line-height:1.2;">
+                Valor: ${pixelValue}${unit ? " " + unit : ""}
+              </div>
             </div>
-            <p class="text-sm font-medium text-gray-800">
-              Valor: ${pixelValue}${unit ? " " + unit : ""}
-            </p>
           `;
         } catch (error) {
           console.error("Error al obtener información del píxel:", error);
           popupContent.innerHTML = `
-            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
-              <span class="text-sm">📍</span>
-              <p>${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <h3 class="font-semibold text-sm">Valor del píxel</h3>
+              <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                  </svg>
+                </span>
+                <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+              </div>
+              <div class="text-sm text-red-600" style="line-height:1.2;">Error al cargar datos</div>
             </div>
-            <p class="text-sm text-red-600">Error al cargar datos</p>
           `;
         }
       },

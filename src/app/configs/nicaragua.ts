@@ -20,7 +20,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
         url: "https://alliancebioversityciat.org/",
         logo: "/assets/img/partners/alliance.png",
         alt: "Alliance Bioversity-CIAT logo",
-      }
+      },
     ],
   },
   showScenario: false,
@@ -28,6 +28,9 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     primary: "#bc6c25",
     secondary: "#dda15e",
     accent: "#fefae0",
+  },
+  station: {
+    showClimateIndicator: true,
   },
   spatial: {
     showClimateIndicator: false,

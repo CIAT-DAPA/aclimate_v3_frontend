@@ -23,15 +23,18 @@ export interface BranchConfig {
     secondary: string;
     accent: string;
   };
+  station?: {
+    showClimateIndicator: boolean;
+  };
   spatial?: {
     showClimateIndicator: boolean;
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
   };
-  data?:{
+  data?: {
     center: [number, number];
     zoom: number;
-  }
+  };
 }
 
 export const getDefaultConfig = (): BranchConfig => ({
