@@ -22,6 +22,7 @@ import {
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useCountry } from "@/app/contexts/CountryContext";
+import { useBranchConfig } from "@/app/configs";
 import {
   addUserStation,
   deleteUserStation,
@@ -49,6 +50,7 @@ export default function StationDetailPage() {
   const params = useParams();
   const machine_name = params?.machine_name as string;
   const { countryId } = useCountry();
+  const branchConfig = useBranchConfig();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
   const [timePeriod, setTimePeriod] = useState<string>("daily");
@@ -1411,177 +1413,182 @@ export default function StationDetailPage() {
               </div>
 
               {/* Acordeón para Indicadores climáticos */}
-              <div id="indicators-accordion">
-                <h2 id="indicators-accordion-trigger">
-                  <button
-                    type="button"
-                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
-                    onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
-                    aria-expanded={isIndicatorsOpen}
-                  >
-                    <span className="text-xl font-semibold text-gray-800">
-                      Indicadores climáticos
-                    </span>
-                    <svg
-                      className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
+              {branchConfig.station?.showClimateIndicator && (
+                <div id="indicators-accordion">
+                  <h2 id="indicators-accordion-trigger">
+                    <button
+                      type="button"
+                      className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                      onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
+                      aria-expanded={isIndicatorsOpen}
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      ></path>
-                    </svg>
-                  </button>
-                </h2>
-                <div
-                  id="indicators-accordion-content"
-                  className={isIndicatorsOpen ? "" : "hidden"}
-                  aria-labelledby="indicators-accordion-trigger"
-                >
-                  <div className="p-5 border border-t-0 border-gray-200">
-                    {/* Selector de período de tiempo para indicadores */}
-                    <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
-                      <p className="text-gray-700">
-                        Consulta la evolución de los{" "}
-                        <strong>indicadores climáticos</strong> de esta estación
-                        y descubre patrones relevantes. Filtra fácilmente por{" "}
-                        <strong>categoría</strong> y{" "}
-                        <strong>rango de fechas</strong> para personalizar tu
-                        análisis.
-                      </p>
-                      <div className="flex items-center gap-6">
-                        {/* Selector de período */}
-                        <div>
-                          <label
-                            htmlFor="period-indicators"
-                            className="block text-xs font-medium text-gray-700 mb-1"
-                          >
-                            Período
-                          </label>
-                          <select
-                            id="period-indicators"
-                            value={timePeriodIndicators}
-                            onChange={(e) =>
-                              setTimePeriodIndicators(e.target.value)
-                            }
-                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            disabled={
-                              loadingPeriods ||
-                              availableIndicatorPeriods.length === 0
-                            }
-                          >
-                            {loadingPeriods ? (
-                              <option>Cargando...</option>
-                            ) : availableIndicatorPeriods.length > 0 ? (
-                              availableIndicatorPeriods.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))
-                            ) : (
-                              <option>No hay datos disponibles</option>
-                            )}
-                          </select>
+                      <span className="text-xl font-semibold text-gray-800">
+                        Indicadores climáticos
+                      </span>
+                      <svg
+                        className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        ></path>
+                      </svg>
+                    </button>
+                  </h2>
+                  <div
+                    id="indicators-accordion-content"
+                    className={isIndicatorsOpen ? "" : "hidden"}
+                    aria-labelledby="indicators-accordion-trigger"
+                  >
+                    <div className="p-5 border border-t-0 border-gray-200">
+                      {/* Selector de período de tiempo para indicadores */}
+                      <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
+                        <p className="text-gray-700">
+                          Consulta la evolución de los{" "}
+                          <strong>indicadores climáticos</strong> de esta
+                          estación y descubre patrones relevantes. Filtra
+                          fácilmente por <strong>categoría</strong> y{" "}
+                          <strong>rango de fechas</strong> para personalizar tu
+                          análisis.
+                        </p>
+                        <div className="flex items-center gap-6">
+                          {/* Selector de período */}
+                          <div>
+                            <label
+                              htmlFor="period-indicators"
+                              className="block text-xs font-medium text-gray-700 mb-1"
+                            >
+                              Período
+                            </label>
+                            <select
+                              id="period-indicators"
+                              value={timePeriodIndicators}
+                              onChange={(e) =>
+                                setTimePeriodIndicators(e.target.value)
+                              }
+                              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              disabled={
+                                loadingPeriods ||
+                                availableIndicatorPeriods.length === 0
+                              }
+                            >
+                              {loadingPeriods ? (
+                                <option>Cargando...</option>
+                              ) : availableIndicatorPeriods.length > 0 ? (
+                                availableIndicatorPeriods.map((option) => (
+                                  <option
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))
+                              ) : (
+                                <option>No hay datos disponibles</option>
+                              )}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Selector de fechas alineado a la derecha */}
+                        <div className="flex gap-4">
+                          <div>
+                            <label
+                              htmlFor="start-date-indicators"
+                              className="block text-xs font-medium text-gray-700 mb-1"
+                            >
+                              Fecha inicial
+                            </label>
+                            <input
+                              type="date"
+                              id="start-date-indicators"
+                              value={filterDatesIndicators.start}
+                              min={stationDates?.minDate || ""}
+                              max={stationDates?.maxDate || ""}
+                              onChange={(e) =>
+                                setFilterDatesIndicators((prev) => ({
+                                  ...prev,
+                                  start: e.target.value,
+                                }))
+                              }
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="end-date-indicators"
+                              className="block text-xs font-medium text-gray-700 mb-1"
+                            >
+                              Fecha final
+                            </label>
+                            <input
+                              type="date"
+                              id="end-date-indicators"
+                              value={filterDatesIndicators.end}
+                              min={
+                                filterDatesIndicators.start ||
+                                stationDates?.minDate ||
+                                ""
+                              }
+                              max={stationDates?.maxDate || ""}
+                              onChange={(e) =>
+                                setFilterDatesIndicators((prev) => ({
+                                  ...prev,
+                                  end: e.target.value,
+                                }))
+                              }
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                            />
+                          </div>
                         </div>
                       </div>
 
-                      {/* Selector de fechas alineado a la derecha */}
-                      <div className="flex gap-4">
-                        <div>
-                          <label
-                            htmlFor="start-date-indicators"
-                            className="block text-xs font-medium text-gray-700 mb-1"
-                          >
-                            Fecha inicial
-                          </label>
-                          <input
-                            type="date"
-                            id="start-date-indicators"
-                            value={filterDatesIndicators.start}
-                            min={stationDates?.minDate || ""}
-                            max={stationDates?.maxDate || ""}
-                            onChange={(e) =>
-                              setFilterDatesIndicators((prev) => ({
-                                ...prev,
-                                start: e.target.value,
-                              }))
-                            }
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="end-date-indicators"
-                            className="block text-xs font-medium text-gray-700 mb-1"
-                          >
-                            Fecha final
-                          </label>
-                          <input
-                            type="date"
-                            id="end-date-indicators"
-                            value={filterDatesIndicators.end}
-                            min={
-                              filterDatesIndicators.start ||
-                              stationDates?.minDate ||
-                              ""
-                            }
-                            max={stationDates?.maxDate || ""}
-                            onChange={(e) =>
-                              setFilterDatesIndicators((prev) => ({
-                                ...prev,
-                                end: e.target.value,
-                              }))
-                            }
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                          />
-                        </div>
+                      {/* Gráficas de indicadores climáticos */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {indicatorsData &&
+                        Object.keys(indicatorsData).length > 0 ? (
+                          Object.entries(indicatorsData).map(
+                            ([key, indicator]) => {
+                              const typedIndicator = indicator as {
+                                name: string;
+                                unit: string;
+                                dates: string[];
+                                values: number[];
+                              };
+                              return (
+                                <ClimateChart
+                                  key={key}
+                                  title={typedIndicator.name}
+                                  unit={typedIndicator.unit}
+                                  datasets={[
+                                    {
+                                      label: "Datos estación",
+                                      color: getIndicatorColor(key),
+                                      data: typedIndicator.values,
+                                      dates: typedIndicator.dates,
+                                    },
+                                  ]}
+                                  period={timePeriodIndicators}
+                                />
+                              );
+                            },
+                          )
+                        ) : (
+                          <div className="col-span-2 flex items-center justify-center">
+                            <p className="text-gray-500">
+                              No hay datos disponibles
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-
-                    {/* Gráficas de indicadores climáticos */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {indicatorsData &&
-                      Object.keys(indicatorsData).length > 0 ? (
-                        Object.entries(indicatorsData).map(
-                          ([key, indicator]) => {
-                            const typedIndicator = indicator as {
-                              name: string;
-                              unit: string;
-                              dates: string[];
-                              values: number[];
-                            };
-                            return (
-                              <ClimateChart
-                                key={key}
-                                title={typedIndicator.name}
-                                unit={typedIndicator.unit}
-                                datasets={[
-                                  {
-                                    label: "Datos estación",
-                                    color: getIndicatorColor(key),
-                                    data: typedIndicator.values,
-                                    dates: typedIndicator.dates,
-                                  },
-                                ]}
-                                period={timePeriodIndicators}
-                              />
-                            );
-                          },
-                        )
-                      ) : (
-                        <div className="col-span-2 flex items-center justify-center">
-                          <p className="text-gray-500">
-                            No hay datos disponibles
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
