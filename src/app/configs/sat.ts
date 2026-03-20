@@ -33,6 +33,9 @@ export const amazoniaConfig: BranchConfig = {
     secondary: "#3b82f6",
     accent: "#dbeafe",
   },
+  station: {
+    showClimateIndicator: false,
+  },
   spatial: {
     showClimateIndicator: false,
     showClimateData: true,

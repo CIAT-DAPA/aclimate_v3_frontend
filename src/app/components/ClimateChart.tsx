@@ -2,12 +2,16 @@
 "use client";
 
 import React, { useEffect } from "react";
-import type { ApexOptions } from 'apexcharts';
+import type { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
 
-const Chart = dynamic(() => import("react-apexcharts"), { 
+const Chart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
-  loading: () => <div className="h-full w-full flex items-center justify-center text-gray-600">Cargando gráfica...</div>
+  loading: () => (
+    <div className="h-full w-full flex items-center justify-center text-gray-600">
+      Cargando gráfica...
+    </div>
+  ),
 });
 
 interface DatasetConfig {
@@ -15,6 +19,7 @@ interface DatasetConfig {
   color: string;
   data: number[];
   dates: string[];
+  strokeDashArray?: number;
 }
 
 interface ClimateChartProps {
@@ -23,24 +28,28 @@ interface ClimateChartProps {
   datasets: DatasetConfig[];
   period: string;
   chartType?: "line" | "bar" | "area";
-  description?: string; 
+  description?: string;
 }
 
 // Información de tooltip para cada variable climática
 const variableInfo = {
-  "Temperatura máxima": "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
-  "Precipitación": "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
-  "Temperatura mínima": "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
-  "Radiación solar": "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²)."
+  "Temperatura máxima":
+    "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
+  Precipitación:
+    "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
+  "Temperatura mínima":
+    "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
+  "Radiación solar":
+    "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²).",
 };
 
-const ClimateChart: React.FC<ClimateChartProps> = ({ 
-  title, 
-  unit, 
-  datasets, 
+const ClimateChart: React.FC<ClimateChartProps> = ({
+  title,
+  unit,
+  datasets,
   period,
   chartType = "line",
-  description
+  description,
 }) => {
   const isClimatology = period === "climatology";
   const isMonthly = period === "monthly";
@@ -50,36 +59,39 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   useEffect(() => {
     // Cargar e inicializar Flowbite solo en el cliente
     const initFlowbite = async () => {
-      const { initTooltips } = await import('flowbite');
+      const { initTooltips } = await import("flowbite");
       initTooltips();
     };
-    
+
     initFlowbite();
   }, []);
 
-    // Obtener descripción para el tooltip
+  // Obtener descripción para el tooltip
   const getTooltipContent = () => {
     if (description) return description;
-    return variableInfo[title as keyof typeof variableInfo] || `Información sobre ${title.toLowerCase()}`;
+    return (
+      variableInfo[title as keyof typeof variableInfo] ||
+      `Información sobre ${title.toLowerCase()}`
+    );
   };
 
-  const tooltipId = `tooltip-${title.replace(/\s+/g, '-').toLowerCase()}`;
+  const tooltipId = `tooltip-${title.replace(/\s+/g, "-").toLowerCase()}`;
 
   // Helpers de formato en UTC para mantener consistencia con los filtros
   const formatUTC = (d: Date) => {
     const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
     return { yyyy, mm, dd };
   };
 
   const parseToDateUTC = (dateValue: number | string): Date | null => {
-    if (typeof dateValue === 'number' && !Number.isNaN(dateValue)) {
+    if (typeof dateValue === "number" && !Number.isNaN(dateValue)) {
       return new Date(dateValue);
     }
-    if (typeof dateValue === 'string') {
+    if (typeof dateValue === "string") {
       if (/^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
-        return new Date(dateValue + 'T00:00:00Z');
+        return new Date(dateValue + "T00:00:00Z");
       }
       const tmp = new Date(dateValue);
       return isNaN(tmp.getTime()) ? null : tmp;
@@ -104,14 +116,14 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     if (isDaily) return `${dd}/${mm}/${yyyy}`; // completo en tooltip
     return `${dd}/${mm}/${yyyy}`;
   };
-  
+
   // Configuración de ApexCharts
   const chartOptions: ApexOptions = {
     chart: {
       height: "100%",
       type: chartType,
       zoom: {
-        enabled: !isClimatology
+        enabled: !isClimatology,
       },
       toolbar: {
         show: true,
@@ -122,61 +134,64 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           zoomin: true,
           zoomout: true,
           pan: true,
-          reset: true
-        }
-      }
+          reset: true,
+        },
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     stroke: {
-      curve: 'smooth' as const,
-      width: 3
+      curve: "smooth" as const,
+      width: 3,
+      dashArray: datasets.map((dataset) => dataset.strokeDashArray ?? 0),
     },
     title: {
       text: title,
-      align: 'left',
+      align: "left",
       style: {
-        fontSize: '16px',
-        fontWeight: 'bold'
-      }
+        fontSize: "16px",
+        fontWeight: "bold",
+      },
     },
     grid: {
       row: {
-        colors: ['#f3f3f3', 'transparent'],
-        opacity: 0.5
+        colors: ["#f3f3f3", "transparent"],
+        opacity: 0.5,
       },
     },
     xaxis: {
       title: {
-        text: isClimatology ? 'Meses' : 'Fecha'
+        text: isClimatology ? "Meses" : "Fecha",
       },
-      ...(isClimatology ? {
-        type: 'category' as const,
-        categories: datasets[0]?.dates || []
-      } : {
-        type: 'datetime' as const,
-        labels: {
-          formatter: function(value: string) {
-            const n = Number(value);
-            return formatAxisForPeriod(!Number.isNaN(n) ? n : value);
+      ...(isClimatology
+        ? {
+            type: "category" as const,
+            categories: datasets[0]?.dates || [],
           }
-        }
-      })
+        : {
+            type: "datetime" as const,
+            labels: {
+              formatter: function (value: string) {
+                const n = Number(value);
+                return formatAxisForPeriod(!Number.isNaN(n) ? n : value);
+              },
+            },
+          }),
     },
     yaxis: {
       title: {
-        text: unit
-      }
+        text: unit,
+      },
     },
     legend: {
-      show: false
+      show: false,
     },
     tooltip: {
-      theme: 'light',
+      theme: "light",
       style: {
-        fontSize: '12px',
-        fontFamily: undefined
+        fontSize: "12px",
+        fontFamily: undefined,
       },
       fillSeriesColor: false,
       custom: undefined,
@@ -188,17 +203,23 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
         show: true,
       },
       items: {
-        display: 'flex',
+        display: "flex",
       },
       fixed: {
         enabled: false,
-        position: 'topRight',
+        position: "topRight",
         offsetX: 0,
         offsetY: 0,
       },
       x: {
         show: true,
-        formatter: function(value: number, context: { dataPointIndex: number; w: { globals: { categoryLabels: string[] } } }) {
+        formatter: function (
+          value: number,
+          context: {
+            dataPointIndex: number;
+            w: { globals: { categoryLabels: string[] } };
+          },
+        ) {
           if (isClimatology) {
             // Para climatología, mostrar directamente el nombre del mes
             return context.w.globals.categoryLabels[context.dataPointIndex];
@@ -206,31 +227,31 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
             // Para daily/monthly: tooltip en formato completo (dd/MM/YYYY o MM/YYYY)
             return formatTooltipForPeriod(value);
           }
-        }
+        },
       },
       y: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           return val.toFixed(2) + " " + unit;
         },
         title: {
-          formatter: (seriesName: string) => seriesName
-        }
-      }
-    }
+          formatter: (seriesName: string) => seriesName,
+        },
+      },
+    },
   };
 
-  const series = datasets.map(dataset => ({
+  const series = datasets.map((dataset) => ({
     name: dataset.label,
-    data: isClimatology 
-      ? dataset.data 
+    data: isClimatology
+      ? dataset.data
       : dataset.dates.map((date: string, index: number) => ({
           x: date,
-          y: dataset.data[index]
+          y: dataset.data[index],
         })),
-    color: dataset.color
+    color: dataset.color,
   }));
 
-  const hasData = datasets.some(dataset => dataset.data.length > 0);
+  const hasData = datasets.some((dataset) => dataset.data.length > 0);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col">
@@ -239,21 +260,32 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           {title} <span className="text-gray-500 text-sm">({unit})</span>
         </h3>
         {/* Botón con tooltip */}
-        <button 
+        <button
           data-tooltip-target={tooltipId}
           data-tooltip-placement="right"
-          type="button" 
+          type="button"
           className="text-gray-400 hover:text-gray-600 transition-colors focus:ring-0 focus:outline-none"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </button>
-        
+
         {/* Tooltip */}
-        <div 
-          id={tooltipId} 
-          role="tooltip" 
+        <div
+          id={tooltipId}
+          role="tooltip"
           className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
         >
           {getTooltipContent()}
@@ -267,7 +299,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           {description}
         </div>
       )}
-      
+
       {!hasData ? (
         <div className="h-64 flex items-center justify-center">
           <p className="text-gray-500">No hay datos disponibles</p>
@@ -277,20 +309,27 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           <div className="flex flex-wrap gap-4 mb-4">
             {datasets.map((dataset, index) => (
               <div key={index} className="flex items-center">
-                <div 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: dataset.color }}
+                <div
+                  className="w-8 mr-2"
+                  style={{
+                    borderTopColor: dataset.color,
+                    borderTopWidth: "3px",
+                    borderTopStyle:
+                      dataset.strokeDashArray && dataset.strokeDashArray > 0
+                        ? "dashed"
+                        : "solid",
+                  }}
                 ></div>
                 <span className="text-sm text-gray-700">{dataset.label}</span>
               </div>
             ))}
           </div>
-          
+
           <div className="flex-grow min-h-[300px]">
-            <Chart 
-              options={chartOptions} 
-              series={series} 
-              type={chartType} 
+            <Chart
+              options={chartOptions}
+              series={series}
+              type={chartType}
               height="100%"
               width="100%"
             />

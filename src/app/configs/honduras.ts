@@ -41,6 +41,9 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     secondary: "#dda15e",
     accent: "#fefae0",
   },
+  station: {
+    showClimateIndicator: true,
+  },
   spatial: {
     showClimateIndicator: true,
     showClimateData: true,
