@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBranchConfig } from "@/app/configs/index";
 import { faFileArrowDown, faDownload } from "@fortawesome/free-solid-svg-icons";
 import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
+import type { CustomCommunityMarker } from "@/app/components/MapComponent";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -94,8 +95,111 @@ const indicatorPeriodOptions = [
   { value: "other", label: "Otro" },
 ];
 
+const AMAZONIA_COMMUNITY_MARKERS: CustomCommunityMarker[] = [
+  {
+    id: "amazonas_el_progreso",
+    name: "El progreso",
+    department: "Amazonas",
+    lat: -4.01487,
+    lon: -70.11267,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_loma_linda",
+    name: "Loma Linda",
+    department: "Amazonas",
+    lat: -3.79104,
+    lon: -70.42497,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_maloka_yaguas",
+    name: "Maloka Yaguas",
+    department: "Amazonas",
+    lat: -4.01807,
+    lon: -70.10704,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_nuevo_jardin",
+    name: "Nuevo Jardin",
+    department: "Amazonas",
+    lat: -4.00604,
+    lon: -70.13428,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_nuevo_paraiso",
+    name: "Nuevo Paraiso",
+    department: "Amazonas",
+    lat: -3.75821,
+    lon: -70.40201,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_san_francisco",
+    name: "San Francisco",
+    department: "Amazonas",
+    lat: -3.76334,
+    lon: -70.39101,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_santa_sofia",
+    name: "Santa Sofia",
+    department: "Amazonas",
+    lat: -4.00521,
+    lon: -70.13175,
+    color: "#0f766e",
+  },
+  {
+    id: "amazonas_santa_teresita",
+    name: "Santa Teresita",
+    department: "Amazonas",
+    lat: -3.74929,
+    lon: -70.42415,
+    color: "#0f766e",
+  },
+  {
+    id: "caqueta_alto_zabaleta",
+    name: "Alto Zabaleta",
+    department: "Caquetá",
+    lat: 1.24683,
+    lon: -76.20804,
+    color: "#c27830",
+  },
+  {
+    id: "caqueta_la_alberto",
+    name: "La Alberto",
+    department: "Caquetá",
+    lat: 1.13469,
+    lon: -76.19996,
+    color: "#c27830",
+  },
+  {
+    id: "caqueta_la_primavera",
+    name: "La Primavera",
+    department: "Caquetá",
+    lat: 1.16317,
+    lon: -76.19873,
+    color: "#c27830",
+  },
+  {
+    id: "caqueta_resguardo_san_miguel",
+    name: "Resguardo San Miguel",
+    department: "Caquetá",
+    lat: 1.14353,
+    lon: -76.25037,
+    color: "#c27830",
+  },
+];
+
 export default function SpatialDataPage() {
   const config = useBranchConfig();
+  const shouldShowAmazoniaCommunities = config.name === "amazonia";
+  const branchCommunityMarkers = shouldShowAmazoniaCommunities
+    ? AMAZONIA_COMMUNITY_MARKERS
+    : [];
   const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
@@ -172,7 +276,7 @@ export default function SpatialDataPage() {
       zoom: 8,
       bbox: "-90.0,13.0,-87.5,15.0",
       bboxWMS13: "13.0,-90.0,15.0,-87.5",
-    }
+    },
   };
 
   const currentCountry =
@@ -774,6 +878,7 @@ export default function SpatialDataPage() {
                                     showLegend={true}
                                     showAdminLayer={true}
                                     adminLayers={adminLayers}
+                                    customMarkers={branchCommunityMarkers}
                                     onTimeChange={(time) =>
                                       handleTimeChange(
                                         time,
@@ -1035,6 +1140,7 @@ export default function SpatialDataPage() {
                                     showLegend={true}
                                     showAdminLayer={true}
                                     adminLayers={adminLayers}
+                                    customMarkers={branchCommunityMarkers}
                                     onTimeChange={(time) =>
                                       handleTimeChange(
                                         time,
@@ -1090,6 +1196,7 @@ export default function SpatialDataPage() {
                 adminLayers={adminLayers}
                 countryCenter={currentCountry.center}
                 countryZoom={currentCountry.zoom}
+                communityMarkers={branchCommunityMarkers}
                 onTimeChange={handleTimeChange}
                 getCurrentRasterFile={getCurrentRasterFile}
                 downloadRasterFile={downloadRasterFile}
