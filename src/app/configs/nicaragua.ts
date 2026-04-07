@@ -30,7 +30,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     accent: "#fefae0",
   },
   station: {
-    showClimateIndicator: true,
+    showClimateIndicator: false,
   },
   spatial: {
     showClimateIndicator: false,
@@ -41,4 +41,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     center: [12.8654, -85.2072],
     zoom: 7,
   },
+  analytics: { 
+    gaId: "G-FB2GND26MH",
+  }
 };

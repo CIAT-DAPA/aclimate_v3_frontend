@@ -8,6 +8,7 @@ import {
   Indicator,
 } from "@/app/services/spatialService";
 import HydrologicalIndicatorCard from "./HydrologicalIndicatorCard";
+import type { CustomCommunityMarker } from "@/app/components/MapComponent";
 
 interface RasterFileInfo {
   url: string;
@@ -28,6 +29,7 @@ interface HydrologicalIndicatorsSectionProps {
   adminLayers: AdminLayer[];
   countryCenter: [number, number];
   countryZoom: number;
+  communityMarkers?: CustomCommunityMarker[];
   onTimeChange: (time: string, layerName: string, layerTitle: string) => void;
   getCurrentRasterFile: (
     layerName: string,
@@ -78,6 +80,7 @@ export default function HydrologicalIndicatorsSection({
   adminLayers,
   countryCenter,
   countryZoom,
+  communityMarkers = [],
   onTimeChange,
   getCurrentRasterFile,
   downloadRasterFile,
@@ -385,6 +388,7 @@ export default function HydrologicalIndicatorsSection({
                       communityZoom={communityCoords.zoom}
                       workspaceUrl={`${GEOSERVER_URL}/hydrological_index/wms`}
                       adminLayers={adminLayers}
+                      communityMarkers={communityMarkers}
                       bounds={hydrologicalBounds[indicator.id]}
                       onTimeChange={onTimeChange}
                       onDownload={handleDownloadIndicator}
