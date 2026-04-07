@@ -81,6 +81,7 @@ const countryCodeMap: Record<string, string> = {
   "2": "hn", // Honduras
   "3": "st", // SAT AMAZONIA
   "4": "ni", // Nicaragua
+  "5": "sv", // El Salvador
 };
 
 // Opciones de período para indicadores
@@ -166,6 +167,12 @@ export default function SpatialDataPage() {
       bbox: "-87.0,10.5,-82.0,14.5",
       bboxWMS13: "10.5,-87.0,14.5,-82.0",
     },
+    sv: {
+      center: [13.69, -89.19],
+      zoom: 8,
+      bbox: "-90.0,13.0,-87.5,15.0",
+      bboxWMS13: "13.0,-90.0,15.0,-87.5",
+    }
   };
 
   const currentCountry =

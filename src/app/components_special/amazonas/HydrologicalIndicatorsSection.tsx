@@ -240,9 +240,9 @@ export default function HydrologicalIndicatorsSection({
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-gray-600 mt-2">
-                Explora indicadores hidrológicos específicos para tu comunidad.
-                Selecciona tu ubicación para ver los datos disponibles sobre
-                erosión, inundaciones y más.
+                Explora indicadores hidrológicos específicos a nivel de
+                microcuenca para tu comunidad. Selecciona tu ubicación para ver
+                los datos disponibles sobre erosión, inundaciones y más.
               </p>
             </div>
 

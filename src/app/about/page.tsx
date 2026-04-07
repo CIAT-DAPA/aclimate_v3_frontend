@@ -48,7 +48,7 @@ export default function AboutPage() {
                 )}
               </div>
               <div className="relative mt-8 md:mt-0">
-                <div className="bg-gradient-to-br from-[#bc6c25]/10 to-[#dda15e]/10 rounded-2xl p-6 md:p-8 h-64 md:h-80 flex items-center justify-center">
+                <div className="bg-gradient-to-br from-[#bc6c25]/10 to-[#dda15e]/10 rounded-2xl p-6 md:p-8 min-h-64 md:min-h-80 flex items-center justify-center">
                   <div className="text-center">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-[#bc6c25] rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
                       <svg
