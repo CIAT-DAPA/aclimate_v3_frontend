@@ -9,6 +9,7 @@ import {
   ZoomControl,
   WMSTileLayer,
   LayersControl,
+  LayerGroup,
   useMapEvents,
   useMap,
 } from "react-leaflet";
@@ -79,6 +80,30 @@ const createColoredIcon = (color: string): DivIcon => {
   });
 };
 
+const createCommunityLabelIcon = (
+  name: string,
+  department?: string,
+  color?: string,
+): DivIcon => {
+  const labelColor = color || "#C27830";
+
+  return L.divIcon({
+    className: "custom-community-label-icon",
+    html: `
+      <div style="display:inline-flex; flex-direction:column; align-items:center; transform:translate(-50%, -100%);">
+        <div style="display:inline-flex; flex-direction:column; align-items:flex-start; gap:2px; background:rgba(255,255,255,0.94); border:1px solid ${labelColor}; border-radius:8px; padding:6px 8px; box-shadow:0 1px 4px rgba(0,0,0,0.18); white-space:nowrap;">
+          <span style="font-size:12px; line-height:1.2; font-weight:700; color:#1f2937;">${name}</span>
+          ${department ? `<span style="font-size:11px; line-height:1.1; color:#4b5563;">${department}</span>` : ""}
+        </div>
+        <span style="display:block; width:1px; height:14px; background:${labelColor}; opacity:0.9;"></span>
+        <span style="display:block; width:4px; height:4px; border-radius:9999px; background:${labelColor};"></span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+};
+
 const rasterLayers = [
   {
     name: "OpenStreetMap",
@@ -122,6 +147,15 @@ interface AdminLayer {
   layer: string;
 }
 
+export interface CustomCommunityMarker {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  department?: string;
+  color?: string;
+}
+
 interface MapComponentProps {
   center?: [number, number];
   zoom?: number;
@@ -140,6 +174,7 @@ interface MapComponentProps {
   selectedStation?: Station | null;
   displayFormat?: string;
   onMapClick?: (lat: number, lng: number) => void;
+  customMarkers?: CustomCommunityMarker[];
 }
 
 const MapComponent = ({
@@ -160,6 +195,7 @@ const MapComponent = ({
   selectedStation = null,
   displayFormat = "YYYY-MM-DD",
   onMapClick,
+  customMarkers = [],
 }: MapComponentProps) => {
   const activeStations = stations.filter((station) => station.enable);
   const hasStations = activeStations.length > 0;
@@ -359,6 +395,20 @@ const MapComponent = ({
     setCurrentTime(time);
     onTimeChange(time);
   };
+
+  const renderCommunityLabels = () =>
+    customMarkers.map((marker) => (
+      <Marker
+        key={`custom-community-${marker.id}`}
+        position={[marker.lat, marker.lon] as LatLngExpression}
+        icon={createCommunityLabelIcon(
+          marker.name,
+          marker.department,
+          marker.color,
+        )}
+        keyboard={false}
+      />
+    ));
 
   // Componente para manejar clics en el mapa (solo para datos espaciales)
   const MapClickHandler = () => {
@@ -691,29 +741,37 @@ const MapComponent = ({
           ))}
 
         {/* Control de capas con las capas administrativas dinámicas */}
-        {wmsLayers.length > 0 && showAdminLayer && adminLayers.length > 0 && (
-          <LayersControl position="topright">
-            {adminLayers.map((adminLayer, index) => (
-              <LayersControl.Overlay
-                key={`admin-${index}`}
-                name={adminLayer.name}
-                checked={true}
-              >
-                <WMSTileLayer
-                  url={`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`}
-                  layers={adminLayer.layer}
-                  format="image/png"
-                  transparent={true}
-                  version="1.1.1"
-                  opacity={1}
-                  styles="line"
-                  attribution=""
-                  zIndex={1000 + index}
-                />
-              </LayersControl.Overlay>
-            ))}
-          </LayersControl>
-        )}
+        {wmsLayers.length > 0 &&
+          showAdminLayer &&
+          (adminLayers.length > 0 || customMarkers.length > 0) && (
+            <LayersControl position="topright">
+              {adminLayers.map((adminLayer, index) => (
+                <LayersControl.Overlay
+                  key={`admin-${index}`}
+                  name={adminLayer.name}
+                  checked={true}
+                >
+                  <WMSTileLayer
+                    url={`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`}
+                    layers={adminLayer.layer}
+                    format="image/png"
+                    transparent={true}
+                    version="1.1.1"
+                    opacity={1}
+                    styles="line"
+                    attribution=""
+                    zIndex={1000 + index}
+                  />
+                </LayersControl.Overlay>
+              ))}
+
+              {customMarkers.length > 0 && (
+                <LayersControl.Overlay name="Comunidades" checked={true}>
+                  <LayerGroup>{renderCommunityLabels()}</LayerGroup>
+                </LayersControl.Overlay>
+              )}
+            </LayersControl>
+          )}
 
         {/* Manejador de clics para datos espaciales */}
         {(onMapClick || (wmsLayers.length > 0 && !showMarkers)) && (
@@ -866,6 +924,8 @@ const MapComponent = ({
               />
             );
           })}
+
+        {(!showAdminLayer || wmsLayers.length === 0) && renderCommunityLabels()}
 
         {/* Leyenda de fuentes - solo mostrar cuando hay estaciones con marcadores */}
         {showMarkers &&

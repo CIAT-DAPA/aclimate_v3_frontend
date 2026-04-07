@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { Indicator } from "@/app/services/spatialService";
+import type { CustomCommunityMarker } from "@/app/components/MapComponent";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -29,6 +30,7 @@ interface HydrologicalIndicatorCardProps {
   communityZoom: number;
   workspaceUrl: string;
   adminLayers: AdminLayer[];
+  communityMarkers?: CustomCommunityMarker[];
   bounds?: [[number, number], [number, number]];
   onTimeChange: (time: string, layerName: string, layerTitle: string) => void;
   onDownload: (
@@ -46,6 +48,7 @@ export default function HydrologicalIndicatorCard({
   communityZoom,
   workspaceUrl,
   adminLayers,
+  communityMarkers = [],
   bounds,
   onTimeChange,
   onDownload,
@@ -91,6 +94,7 @@ export default function HydrologicalIndicatorCard({
           showLegend={true}
           showAdminLayer={true}
           adminLayers={adminLayers}
+          customMarkers={communityMarkers}
           displayFormat="Month"
           onTimeChange={(time) => onTimeChange(time, layerName, indicator.name)}
         />
