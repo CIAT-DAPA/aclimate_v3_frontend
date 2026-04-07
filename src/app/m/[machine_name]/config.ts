@@ -44,6 +44,7 @@ export const countryCodeMap: Record<string, string> = {
   "2": "hn",  // Honduras
   "3": "st",  // SAT AMAZONIA
   "4": "ni",  // Nicaragua
+  "5": "sv",  // El Salvador
 };
 
 // Lista de meses para selección en climatología

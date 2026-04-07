@@ -33,6 +33,9 @@ export const amazoniaConfig: BranchConfig = {
     secondary: "#3b82f6",
     accent: "#dbeafe",
   },
+  station: {
+    showClimateIndicator: false,
+  },
   spatial: {
     showClimateIndicator: false,
     showClimateData: true,
@@ -42,4 +45,7 @@ export const amazoniaConfig: BranchConfig = {
     center: [4.6097, -74.0817],
     zoom: 6,
   },
+  analytics: { 
+    gaId: "G-CV9S8KMCVP",
+  }
 };
