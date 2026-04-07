@@ -169,7 +169,7 @@ export default function SpatialDataPage() {
     },
     sv: {
       center: [13.69, -89.19],
-      zoom: 7,
+      zoom: 8,
       bbox: "-90.0,13.0,-87.5,15.0",
       bboxWMS13: "13.0,-90.0,15.0,-87.5",
     }
