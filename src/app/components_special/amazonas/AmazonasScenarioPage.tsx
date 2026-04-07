@@ -120,6 +120,7 @@ export default function AmazonasScenarioPage() {
   >([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState<boolean>(true);
   const [layerDate, setLayerDate] = useState<string>("");
+  const [latestForecastTime, setLatestForecastTime] = useState<string>("");
 
   const { countryId } = useCountry();
 
@@ -159,6 +160,7 @@ export default function AmazonasScenarioPage() {
         );
         if (dates && dates.length > 0) {
           const dateStr = dates[dates.length - 1];
+          setLatestForecastTime(dateStr);
           const [year, month, day] = dateStr.split("-");
           const dateObj = new Date(
             Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)),
@@ -238,30 +240,14 @@ export default function AmazonasScenarioPage() {
       const wmsUrl = `${GEOSERVER_URL}/${layerName.split(":")[0]}/wms`;
       const bbox = "-76.0,-5.5,-66.5,3.0";
 
-      const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
-
-      const response = await fetch(capabilitiesUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const text = await response.text();
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(text, "text/xml");
-
-      const layers = xmlDoc.getElementsByTagName("Layer");
-      let timeValue = "";
-
-      for (let i = 0; i < layers.length; i++) {
-        const layer = layers[i];
-        const nameElement = layer.getElementsByTagName("Name")[0];
-        if (nameElement && nameElement.textContent === layerName) {
-          const dimension = layer.getElementsByTagName("Dimension")[0];
-          if (dimension && dimension.getAttribute("name") === "time") {
-            const times = dimension.textContent?.trim().split(",") || [];
-            timeValue = times[times.length - 1] || "";
-          }
-          break;
+      let timeValue = latestForecastTime;
+      if (!timeValue) {
+        const dates = await spatialService.getDatesFromGeoserver(
+          wmsUrl,
+          layerName,
+        );
+        if (dates.length > 0) {
+          timeValue = dates[dates.length - 1];
         }
       }
 
@@ -299,7 +285,7 @@ export default function AmazonasScenarioPage() {
         const bbox = `${lon - offset},${lat - offset},${lon + offset},${lat + offset}`;
         const layer = "climate_forecast_st:climate_forecast_st_monthly";
 
-        const url = `${GEOSERVER_URL}/${layer.split(":")[0]}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image%2Fpng&TRANSPARENT=true&QUERY_LAYERS=${layer}&LAYERS=${layer}&INFO_FORMAT=application%2Fjson&X=50&Y=50&WIDTH=101&HEIGHT=101&SRS=EPSG%3A4326&BBOX=${bbox}`;
+        const url = `${GEOSERVER_URL}/${layer.split(":")[0]}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image%2Fpng&TRANSPARENT=true&QUERY_LAYERS=${layer}&LAYERS=${layer}&INFO_FORMAT=application%2Fjson&X=50&Y=50&WIDTH=101&HEIGHT=101&SRS=EPSG%3A4326&BBOX=${bbox}${latestForecastTime ? `&TIME=${encodeURIComponent(latestForecastTime)}` : ""}`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -419,6 +405,7 @@ export default function AmazonasScenarioPage() {
     selectedDeptData,
     selectedCommunityData,
     idCountry,
+    latestForecastTime,
   ]);
 
   const mapStations = selectedCommunityData
@@ -599,6 +586,7 @@ export default function AmazonasScenarioPage() {
                           url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
                           layers:
                             "climate_forecast_st:climate_forecast_st_monthly",
+                          time: latestForecastTime || undefined,
                           opacity: 1.0,
                           transparent: true,
                           title: "Pronóstico Climático Mensual",
