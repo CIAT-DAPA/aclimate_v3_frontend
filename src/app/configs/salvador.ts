@@ -42,6 +42,6 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
   },
   data: {
     center: [13.69, -89.19],
-    zoom: 7,
+    zoom: 8,
   },
 };
