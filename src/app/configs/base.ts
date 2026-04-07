@@ -35,9 +35,6 @@ export interface BranchConfig {
     center: [number, number];
     zoom: number;
   };
-  analytics?: {
-    gaId: string;
-  };
 }
 
 export const getDefaultConfig = (): BranchConfig => ({
@@ -63,8 +60,5 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
   data: {
     center: [4.6097, -74.0817],
     zoom: 6,
-  },
-  analytics: {
-    gaId: "G-5XT0B5ZC2P",
   },
 });

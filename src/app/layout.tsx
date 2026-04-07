@@ -7,7 +7,6 @@ import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
 import { StationsProvider } from "@/app/contexts/StationsContext";
 import { COUNTRY_NAME } from "./config";
-import { getBranchConfig } from "./configs";
 import { CookieConsentProvider } from "@/app/contexts/CookieConsentContext";
 import CookieBanner from "./components/CookieBanner";
 import AnalyticsByConsent from "./components/AnalyticsByConsent";
@@ -42,7 +41,7 @@ export default function RootLayout({
             </CountryProvider>
           </AuthProvider>
           <CookieBanner />
-          <AnalyticsByConsent gaId={getBranchConfig().analytics?.gaId ?? ""} />
+          <AnalyticsByConsent gaId="G-5XT0B5ZC2P" />
         </CookieConsentProvider>
       </body>
     </html>
