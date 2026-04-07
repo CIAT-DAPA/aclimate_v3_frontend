@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@import 'leaflet/dist/leaflet.css';
-@import 'leaflet-timedimension/dist/leaflet.timedimension.control.css';
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
 :root {
   --background: #ffffff;
@@ -21,7 +21,8 @@
   }
 }
 
-html, body {
+html,
+body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-montserrat), system-ui, sans-serif;
@@ -34,6 +35,13 @@ html, body {
 /* Prevenir overflow en contenedores de Leaflet */
 .leaflet-container {
   overflow: hidden !important;
+}
+
+.leaflet-div-icon.custom-community-label-icon {
+  background: transparent;
+  border: none;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Forzar colores oscuros en tooltips de ApexCharts */
@@ -63,7 +71,11 @@ html, body {
   color: #373d3f !important;
 }
 
-img, svg, video, canvas, iframe {
+img,
+svg,
+video,
+canvas,
+iframe {
   max-width: 100%;
   height: auto;
 }
