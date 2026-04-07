@@ -95,6 +95,20 @@ const indicatorPeriodOptions = [
   { value: "other", label: "Otro" },
 ];
 
+const formatLayerMonthLabel = (dateStr: string): string => {
+  const [year, month, day] = dateStr.split("-");
+  const dateObj = new Date(
+    Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)),
+  );
+  const monthName = dateObj.toLocaleString("es-ES", {
+    month: "long",
+    timeZone: "UTC",
+  });
+  const capitalizedMonth =
+    monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  return `${capitalizedMonth} de ${year}`;
+};
+
 const AMAZONIA_COMMUNITY_MARKERS: CustomCommunityMarker[] = [
   {
     id: "amazonas_el_progreso",
@@ -202,7 +216,10 @@ export default function SpatialDataPage() {
     : [];
   const { countryId } = useCountry();
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
+  const [isForecastChangeOpen, setIsForecastChangeOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
+  const [latestForecastPctTime, setLatestForecastPctTime] = useState("");
+  const [forecastPctDateLabel, setForecastPctDateLabel] = useState("");
 
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
@@ -281,6 +298,29 @@ export default function SpatialDataPage() {
 
   const currentCountry =
     countryCoordinates[countryCode] || countryCoordinates["hn"];
+
+  useEffect(() => {
+    const loadForecastPctDate = async () => {
+      if (!config.spatial?.showForecastPctChange) return;
+
+      try {
+        const dates = await spatialService.getDatesFromGeoserver(
+          `${GEOSERVER_URL}/climate_forecast_st/wms`,
+          "climate_forecast_st:climate_forecast_st_monthly_pct_change",
+        );
+
+        if (dates.length > 0) {
+          const latest = dates[dates.length - 1];
+          setLatestForecastPctTime(latest);
+          setForecastPctDateLabel(formatLayerMonthLabel(latest));
+        }
+      } catch (error) {
+        console.error("Error cargando fecha para cambio porcentual:", error);
+      }
+    };
+
+    loadForecastPctDate();
+  }, [config.spatial?.showForecastPctChange]);
 
   // Cargar capas administrativas dinámicamente
   useEffect(() => {
@@ -947,6 +987,84 @@ export default function SpatialDataPage() {
                           );
                         })
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {config.spatial?.showForecastPctChange && (
+              <div id="forecast-pct-accordion">
+                <h2 id="forecast-pct-accordion-trigger">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                    onClick={() =>
+                      setIsForecastChangeOpen(!isForecastChangeOpen)
+                    }
+                    aria-expanded={isForecastChangeOpen}
+                  >
+                    <span className="text-xl font-semibold text-gray-800">
+                      Cambio porcentual del pronóstico mensual
+                    </span>
+                    <svg
+                      className={`w-6 h-6 shrink-0 ${isForecastChangeOpen ? "rotate-180" : ""}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                  </button>
+                </h2>
+                <div
+                  id="forecast-pct-accordion-content"
+                  className={isForecastChangeOpen ? "" : "hidden"}
+                  aria-labelledby="forecast-pct-accordion-trigger"
+                >
+                  <div className="p-5 border border-t-0 border-gray-200">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-gray-600">
+                          Este mapa muestra el cambio porcentual del pronóstico
+                          climático mensual para Amazonía.
+                        </p>
+                        {forecastPctDateLabel && (
+                          <span className="inline-block text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 self-start sm:self-auto">
+                            {forecastPctDateLabel}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                        <MapComponent
+                          center={currentCountry.center}
+                          zoom={currentCountry.zoom}
+                          wmsLayers={[
+                            {
+                              url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
+                              layers:
+                                "climate_forecast_st:climate_forecast_st_monthly_pct_change",
+                              time: latestForecastPctTime || undefined,
+                              opacity: 1.0,
+                              transparent: true,
+                              title: "Cambio porcentual del pronóstico mensual",
+                              unit: "%",
+                            },
+                          ]}
+                          showMarkers={false}
+                          showZoomControl={true}
+                          showTimeline={false}
+                          showLegend={true}
+                          showAdminLayer={true}
+                          adminLayers={adminLayers}
+                          customMarkers={branchCommunityMarkers}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

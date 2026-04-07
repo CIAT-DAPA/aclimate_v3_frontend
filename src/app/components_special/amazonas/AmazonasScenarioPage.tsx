@@ -16,6 +16,7 @@ import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { GEOSERVER_URL } from "@/app/config";
 import { Station } from "@/app/types/Station";
 import {
@@ -614,6 +615,15 @@ export default function AmazonasScenarioPage() {
                     </button>
                   </>
                 )}
+              </div>
+
+              <div className="px-4 pb-4 pt-3 border-t border-gray-100 bg-white">
+                <Link
+                  href={`/spatial/${countryId || "3"}#forecast-pct-accordion`}
+                  className="text-sm text-blue-700 hover:text-blue-900 underline font-medium"
+                >
+                  Desea ver más información?
+                </Link>
               </div>
             </div>
           </div>
