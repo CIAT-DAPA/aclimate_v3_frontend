@@ -45,4 +45,7 @@ export const amazoniaConfig: BranchConfig = {
     center: [4.6097, -74.0817],
     zoom: 6,
   },
+  analytics: { 
+    gaId: "G-CV9S8KMCVP",
+  }
 };
