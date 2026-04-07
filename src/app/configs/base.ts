@@ -30,6 +30,7 @@ export interface BranchConfig {
     showClimateIndicator: boolean;
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
+    showForecastPctChange: boolean;
   };
   data?: {
     center: [number, number];

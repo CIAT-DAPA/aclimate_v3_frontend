@@ -34,7 +34,7 @@ Siguiendo el enfoque de la Organización Meteorológica Mundial (OMM), la plataf
         url: "https://www.undp.org/es",
         logo: "/assets/img/partners/pnud.jpg",
         alt: "PNUD logo",
-      }
+      },
     ],
   },
   showScenario: false,
@@ -47,6 +47,7 @@ Siguiendo el enfoque de la Organización Meteorológica Mundial (OMM), la plataf
     showClimateIndicator: true,
     showClimateData: true,
     showHydrologicalIndicator: false,
+    showForecastPctChange: false,
   },
   data: {
     center: [13.69, -89.19],

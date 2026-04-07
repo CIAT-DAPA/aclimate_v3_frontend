@@ -36,6 +36,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     showClimateIndicator: false,
     showClimateData: true,
     showHydrologicalIndicator: false,
+    showForecastPctChange: false,
   },
   data: {
     center: [12.8654, -85.2072],
