@@ -389,6 +389,7 @@ export const spatialService = {
         co: "colombia",
         st: "sat_amazonia",
         ni: "nicaragua",
+        sv: "salvador",
       };
 
       const countryName = countryNames[countryCode] || countryCode;
