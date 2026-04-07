@@ -53,4 +53,7 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     center: [15.2, -86.24],
     zoom: 7,
   },
+  analytics: { 
+    gaId: "G-5XT0B5ZC2P",
+  }
 };
