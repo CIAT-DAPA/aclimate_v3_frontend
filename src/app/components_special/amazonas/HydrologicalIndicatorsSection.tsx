@@ -75,6 +75,17 @@ const hydrologicalCommunityCoordinates: Record<
 
 const hydrologicalScenarios = [{ id: "baseline", label: "Línea Base" }];
 
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const isScenarioCategory = (category: IndicatorCategory) => {
+  const categoryName = normalizeText(category.name || "");
+  return categoryName.includes("escenario");
+};
+
 export default function HydrologicalIndicatorsSection({
   countryId,
   adminLayers,
@@ -117,13 +128,20 @@ export default function HydrologicalIndicatorsSection({
       try {
         const categories =
           await spatialService.getIndicatorCategories(countryId);
-        setHydrologicalCategories(categories);
-        if (categories.length > 0) {
-          setSelectedHydrologicalCategory(categories[0]);
+        const filteredCategories = categories.filter(
+          (category) => !isScenarioCategory(category),
+        );
+
+        setHydrologicalCategories(filteredCategories);
+        if (filteredCategories.length > 0) {
+          setSelectedHydrologicalCategory(filteredCategories[0]);
+        } else {
+          setSelectedHydrologicalCategory(null);
         }
       } catch (error) {
         console.error("Error cargando categorías hidrológicas:", error);
         setHydrologicalCategories([]);
+        setSelectedHydrologicalCategory(null);
       } finally {
         setLoadingHydrologicalCategories(false);
       }
