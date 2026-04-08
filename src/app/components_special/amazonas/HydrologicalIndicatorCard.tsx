@@ -15,6 +15,12 @@ const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ),
 });
 
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 interface AdminLayer {
   name: string;
   workspace: string;
@@ -54,6 +60,24 @@ export default function HydrologicalIndicatorCard({
   onDownload,
 }: HydrologicalIndicatorCardProps) {
   const layerName = `hydrological_index:hydrological_index_multiyear_monthly_st_${selectedHydrologicalCommunity}_${indicator.short_name}_${selectedHydrologicalScenario}`;
+  const isHighSusceptibilityIndicator = normalizeText(indicator.name).includes(
+    "susceptibilidad alta",
+  );
+  const hasMicrobasinLayer = adminLayers.some(
+    (layer) => layer.layer === "administrative:areas_drenaje",
+  );
+  const adminLayersForMap =
+    isHighSusceptibilityIndicator && !hasMicrobasinLayer
+      ? [
+          ...adminLayers,
+          {
+            name: "Microcuencas",
+            workspace: "administrative",
+            store: "",
+            layer: "administrative:areas_drenaje",
+          },
+        ]
+      : adminLayers;
 
   return (
     <div className="flex flex-col gap-3">
@@ -93,7 +117,7 @@ export default function HydrologicalIndicatorCard({
           showTimeline={true}
           showLegend={true}
           showAdminLayer={true}
-          adminLayers={adminLayers}
+          adminLayers={adminLayersForMap}
           customMarkers={communityMarkers}
           displayFormat="Month"
           onTimeChange={(time) => onTimeChange(time, layerName, indicator.name)}
