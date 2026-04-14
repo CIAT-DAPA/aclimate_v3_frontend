@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_URL } from "@/app/config";
+import { getClientToken } from "@/app/services/clientTokenService";
 
 // Cache para almacenar las promises de GetCapabilities y evitar peticiones duplicadas
 const capabilitiesCache: Record<string, Promise<Document>> = {};
@@ -310,7 +311,9 @@ export const spatialService = {
   ): Promise<IndicatorCategory[]> => {
     try {
       const url = `${API_URL}/indicator-category-mng/by-country?country_id=${countryId}`;
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${await getClientToken()}` },
+      });
       return response.data.filter(
         (category: IndicatorCategory) => category.enable,
       );
@@ -334,7 +337,9 @@ export const spatialService = {
   ): Promise<Indicator[]> => {
     try {
       const url = `${API_URL}/indicator-mng/by-country?country_id=${countryId}&temporality=${temporality}&category_id=${categoryId}&type=CLIMATE`;
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${await getClientToken()}` },
+      });
       return response.data.filter((indicator: Indicator) => indicator.enable);
     } catch (error) {
       console.error("Error fetching indicators:", error);
@@ -350,7 +355,9 @@ export const spatialService = {
   getIndicatorsByCategory: async (categoryId: number): Promise<Indicator[]> => {
     try {
       const url = `${API_URL}/indicator-mng/by-category-id?category_id=${categoryId}`;
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${await getClientToken()}` },
+      });
       return response.data.filter((indicator: Indicator) => indicator.enable);
     } catch (error) {
       console.error("Error fetching indicators by category:", error);
@@ -438,6 +445,7 @@ export const spatialService = {
       const response = await axios.post(
         `${API_URL}/geoserver/point-data`,
         request,
+        { headers: { Authorization: `Bearer ${await getClientToken()}` } },
       );
       return response.data;
     } catch (error) {
