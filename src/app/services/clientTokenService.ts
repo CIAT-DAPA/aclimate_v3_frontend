@@ -1,5 +1,3 @@
-import { API_URL } from "@/app/config";
-
 interface ClientTokenResponse {
   access_token: string;
   expires_in: number;
@@ -14,18 +12,19 @@ let inflightRequest: Promise<string> | null = null;
 
 async function fetchClientToken(): Promise<string> {
   const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID;
-  const clientSecret = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_KEYCLOAK_CLIENT_ID or NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET env variables",
-    );
+  if (!clientId) {
+    throw new Error("Missing NEXT_PUBLIC_KEYCLOAK_CLIENT_ID env variable");
   }
 
-  const response = await fetch(`${API_URL}/auth/get-client-token`, {
+  const params = new URLSearchParams();
+  params.set("grant_type", "client_credentials");
+  params.set("client_id", clientId);
+
+  const response = await fetch("/api/auth/token", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
   });
 
   if (!response.ok) {
