@@ -1,5 +1,6 @@
 // app/services/monitoryService.ts
 import { API_URL } from "@/app/config";
+import { getClientToken } from "@/app/services/clientTokenService";
 
 // Tipos para respuestas de API
 interface DailyDataItem {
@@ -38,7 +39,8 @@ export const monitoryService = {
     }
 
     const response = await fetch(
-        `${API_URL}/${urlBase}?location_id=${stationId}`
+        `${API_URL}/${urlBase}?location_id=${stationId}`,
+        { headers: { Authorization: `Bearer ${await getClientToken()}` } }
     );
     if (!response.ok) throw new Error("Error fetching dates");
 
@@ -127,7 +129,9 @@ async getClimateHistorical(stationId: string, period: string, startDate: string,
     throw new Error("Invalid period specified");
   }
   
-  const response = await fetch(`${API_URL}/${urlBase}?${params}`);
+  const response = await fetch(`${API_URL}/${urlBase}?${params}`,
+    { headers: { Authorization: `Bearer ${await getClientToken()}` } }
+  );
   if (!response.ok) 
     throw new Error("Error fetching climate historical data");
   
@@ -152,7 +156,8 @@ async getLatestDailyData(stationId: string): Promise<DailyDataItem[]> {
 
     // Obtener los datos para la última fecha
     const response = await fetch(
-      `${API_URL}/historical-daily/by-date-range-all-measures?location_ids=${stationId}&start_date=${maxDate}&end_date=${maxDate}`
+      `${API_URL}/historical-daily/by-date-range-all-measures?location_ids=${stationId}&start_date=${maxDate}&end_date=${maxDate}`,
+      { headers: { Authorization: `Bearer ${await getClientToken()}` } }
     );
 
     if (!response.ok) {
@@ -233,7 +238,8 @@ processClimateData(data: DailyDataItem[], period: string): Record<string, { date
     });
 
     const response = await fetch(
-      `${API_URL}/indicator/by-location-date-period?${params}`
+      `${API_URL}/indicator/by-location-date-period?${params}`,
+      { headers: { Authorization: `Bearer ${await getClientToken()}` } }
     );
     
     if (!response.ok) throw new Error("Error fetching indicators data");
@@ -303,7 +309,9 @@ processClimateData(data: DailyDataItem[], period: string): Record<string, { date
    */
   async getAvailablePeriods(stationId: string): Promise<PeriodAvailability[]> {
     try {
-      const response = await fetch(`${API_URL}/periods/available?location_id=${stationId}`);
+      const response = await fetch(`${API_URL}/periods/available?location_id=${stationId}`,
+        { headers: { Authorization: `Bearer ${await getClientToken()}` } }
+      );
       if (!response.ok) throw new Error("Error fetching available periods");
       return await response.json();
     } catch (error) {
