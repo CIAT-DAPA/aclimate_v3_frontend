@@ -1,4 +1,5 @@
 import { API_URL } from "@/app/config";
+import { getClientToken } from "@/app/services/clientTokenService";
 
 export interface IndicatorFeature {
   id: number;
@@ -28,6 +29,7 @@ export const getIndicatorFeatures = async (
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${await getClientToken()}`,
       },
     });
 

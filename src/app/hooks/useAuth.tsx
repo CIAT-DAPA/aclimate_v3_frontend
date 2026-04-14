@@ -48,7 +48,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const keycloak = useRef<Keycloak | null>(null);
   const [validatedPayload, setValidatedPayload] = useState<any | null>(null);
   useEffect(() => {
-    // Solo ejecutar en el cliente
     if (typeof window === 'undefined') return;
 
     if (isRun.current) return;
@@ -56,6 +55,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeKeycloak = async () => {
       try {
+        // Interceptar XMLHttpRequest para redirigir el token endpoint de Keycloak
+        // a nuestro proxy BFF (/api/auth/token) que inyecta el client_secret del lado del servidor.
+        // keycloak-js v26 usa XHR (no fetch) para TODOS los intercambios de token y refreshes.
+        const keycloakTokenUrl = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`;
+        if (!(XMLHttpRequest.prototype.open as any).__kcBffPatched) {
+          const _origOpen = XMLHttpRequest.prototype.open;
+          (XMLHttpRequest.prototype as any).open = function(
+            method: string,
+            url: string | URL,
+            async?: boolean,
+            username?: string | null,
+            password?: string | null
+          ) {
+            const finalUrl = url.toString() === keycloakTokenUrl ? '/api/auth/token' : url;
+            return _origOpen.call(this, method, finalUrl, async ?? true, username, password);
+          };
+          (XMLHttpRequest.prototype.open as any).__kcBffPatched = true;
+        }
+
         keycloak.current = new Keycloak({
           url: KEYCLOAK_URL,
           realm: KEYCLOAK_REALM,
