@@ -97,8 +97,8 @@ const indicatorPeriodOptions = [
 
 const agroDepartmentOptions = [
   { value: "amazonas", label: "Amazonas" },
-  // { value: "caqueta", label: "Caquetá" },
-  // { value: "putumayo", label: "Putumayo" },
+  { value: "caqueta", label: "Caquetá" },
+  { value: "putumayo", label: "Putumayo" },
 ];
 
 const normalizeText = (text: string) =>
