@@ -45,6 +45,7 @@ Siguiendo el enfoque de la Organización Meteorológica Mundial (OMM), la plataf
   },
   spatial: {
     showClimateIndicator: true,
+    showAgroclimaticIndicator: false,
     showClimateData: true,
     showHydrologicalIndicator: false,
     showForecastPctChange: false,
@@ -53,7 +54,7 @@ Siguiendo el enfoque de la Organización Meteorológica Mundial (OMM), la plataf
     center: [13.69, -89.19],
     zoom: 8,
   },
-    analytics: { 
+  analytics: {
     gaId: "G-JXD6Z5RXSZ",
-  }
+  },
 };
