@@ -95,6 +95,43 @@ const indicatorPeriodOptions = [
   { value: "other", label: "Otro" },
 ];
 
+const agroDepartmentOptions = [
+  { value: "amazonas", label: "Amazonas" },
+  // { value: "caqueta", label: "Caquetá" },
+  // { value: "putumayo", label: "Putumayo" },
+];
+
+const normalizeText = (text: string) =>
+  text
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\s+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const isScenarioCategory = (category: IndicatorCategory) => {
+  const normalizedName = normalizeText(category.name || "");
+  return normalizedName.includes("escenario");
+};
+
+const isAgroclimaticCategory = (category: IndicatorCategory) => {
+  const normalizedName = normalizeText(category.name || "");
+  const normalizedDescription = normalizeText(category.description || "");
+
+  // En SAT, esta categoría debe mostrarse en el acordeón agroclimático
+  const isMeteorologicalAgriculturalDrought = normalizedName.includes(
+    "sequia meteorologica y agricola",
+  );
+
+  return (
+    isMeteorologicalAgriculturalDrought ||
+    normalizedName.includes("agro") ||
+    normalizedDescription.includes("agro") ||
+    normalizedName.includes("agricol") ||
+    normalizedDescription.includes("agricol")
+  );
+};
+
 const formatLayerMonthLabel = (dateStr: string): string => {
   const [year, month, day] = dateStr.split("-");
   const dateObj = new Date(
@@ -218,6 +255,7 @@ export default function SpatialDataPage() {
   const [isClimaticOpen, setIsClimaticOpen] = useState(true);
   const [isForecastChangeOpen, setIsForecastChangeOpen] = useState(true);
   const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
+  const [isAgroIndicatorsOpen, setIsAgroIndicatorsOpen] = useState(true);
   const [latestForecastPctTime, setLatestForecastPctTime] = useState("");
   const [forecastPctDateLabel, setForecastPctDateLabel] = useState("");
 
@@ -245,6 +283,18 @@ export default function SpatialDataPage() {
   const [availableTemporalities, setAvailableTemporalities] = useState<
     string[]
   >([]);
+
+  // Estados para indicadores agroclimáticos
+  const [agroIndicatorCategories, setAgroIndicatorCategories] = useState<
+    IndicatorCategory[]
+  >([]);
+  const [selectedAgroCategory, setSelectedAgroCategory] =
+    useState<IndicatorCategory | null>(null);
+  const [selectedAgroDepartment, setSelectedAgroDepartment] =
+    useState<string>("amazonas");
+  const [agroIndicators, setAgroIndicators] = useState<Indicator[]>([]);
+  const [loadingAgroCategories, setLoadingAgroCategories] = useState(false);
+  const [loadingAgroIndicators, setLoadingAgroIndicators] = useState(false);
 
   // Estados para capas administrativas dinámicas
   const [adminLayers, setAdminLayers] = useState<
@@ -385,21 +435,70 @@ export default function SpatialDataPage() {
       try {
         const categories =
           await spatialService.getIndicatorCategories(countryId);
-        setIndicatorCategories(categories);
+
+        const filteredCategories = categories.filter((category) => {
+          if (isScenarioCategory(category)) {
+            return false;
+          }
+
+          if (config.spatial?.showAgroclimaticIndicator) {
+            return !isAgroclimaticCategory(category);
+          }
+
+          return true;
+        });
+
+        setIndicatorCategories(filteredCategories);
         // Seleccionar la primera categoría por defecto
-        if (categories.length > 0) {
-          setSelectedCategory(categories[0]);
+        if (filteredCategories.length > 0) {
+          setSelectedCategory(filteredCategories[0]);
+        } else {
+          setSelectedCategory(null);
         }
       } catch (error) {
         console.error("Error cargando categorías:", error);
         setIndicatorCategories([]);
+        setSelectedCategory(null);
       } finally {
         setLoadingCategories(false);
       }
     };
 
     loadCategories();
-  }, [countryId]);
+  }, [countryId, config.spatial?.showAgroclimaticIndicator]);
+
+  // Cargar categorías de indicadores agroclimáticos
+  useEffect(() => {
+    const loadAgroCategories = async () => {
+      if (!countryId || !config.spatial?.showAgroclimaticIndicator) {
+        setAgroIndicatorCategories([]);
+        setSelectedAgroCategory(null);
+        return;
+      }
+
+      setLoadingAgroCategories(true);
+      try {
+        const categories =
+          await spatialService.getIndicatorCategories(countryId);
+        const filteredCategories = categories.filter(isAgroclimaticCategory);
+        setAgroIndicatorCategories(filteredCategories);
+
+        if (filteredCategories.length > 0) {
+          setSelectedAgroCategory(filteredCategories[0]);
+        } else {
+          setSelectedAgroCategory(null);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías agroclimáticas:", error);
+        setAgroIndicatorCategories([]);
+        setSelectedAgroCategory(null);
+      } finally {
+        setLoadingAgroCategories(false);
+      }
+    };
+
+    loadAgroCategories();
+  }, [countryId, config.spatial?.showAgroclimaticIndicator]);
 
   // Detectar temporalidades disponibles en el geoserver
   useEffect(() => {
@@ -461,12 +560,36 @@ export default function SpatialDataPage() {
     loadIndicators();
   }, [countryId, indicatorPeriod, selectedCategory]);
 
+  // Cargar indicadores agroclimáticos por categoría (sin filtrar por temporalidad)
+  useEffect(() => {
+    const loadAgroIndicators = async () => {
+      if (!countryId || !selectedAgroCategory) return;
+
+      setLoadingAgroIndicators(true);
+      try {
+        const indicatorsList = await spatialService.getIndicatorsByCategory(
+          selectedAgroCategory.id,
+        );
+
+        setAgroIndicators(indicatorsList);
+      } catch (error) {
+        console.error("Error cargando indicadores agroclimáticos:", error);
+        setAgroIndicators([]);
+      } finally {
+        setLoadingAgroIndicators(false);
+      }
+    };
+
+    loadAgroIndicators();
+  }, [countryId, selectedAgroCategory]);
+
   // Habilitar botón de descarga solo cuando hay capas disponibles
   useEffect(() => {
     const hasAvailableLayers = availableLayers.some((layer) => layer.available);
     const hasIndicators = indicators.length > 0;
-    setDownloadReady(hasAvailableLayers || hasIndicators);
-  }, [availableLayers, indicators]);
+    const hasAgroIndicators = agroIndicators.length > 0;
+    setDownloadReady(hasAvailableLayers || hasIndicators || hasAgroIndicators);
+  }, [availableLayers, indicators, agroIndicators]);
 
   const handleTimeChange = useCallback(
     (time: string, layerName: string, layerTitle: string) => {
@@ -580,6 +703,21 @@ export default function SpatialDataPage() {
       indicators.forEach((indicator) => {
         const layerName = `climate_index:climate_index_${indicatorPeriod}_${countryCode}_${indicator.short_name}`;
         const indicatorWmsUrl = `${GEOSERVER_URL}/climate_index/wms`;
+        allLayers.push({
+          name: layerName,
+          title: indicator.name,
+          wmsUrl: indicatorWmsUrl,
+        });
+      });
+
+      // Agregar indicadores agroclimáticos disponibles
+      agroIndicators.forEach((indicator) => {
+        const indicatorTemporality = indicator.temporality || "monthly";
+        const departmentSegment = shouldShowAmazoniaCommunities
+          ? `_${selectedAgroDepartment}`
+          : "";
+        const layerName = `agroclimatic_index:agroclimatic_index_${indicatorTemporality}_${countryCode}${departmentSegment}_${indicator.short_name}`;
+        const indicatorWmsUrl = `${GEOSERVER_URL}/agroclimatic_index/wms`;
         allLayers.push({
           name: layerName,
           title: indicator.name,
@@ -707,7 +845,8 @@ export default function SpatialDataPage() {
   // Verificar si hay datos suficientes para mostrar el botón PDF
   const hasDataForPDF =
     (availableLayers && availableLayers.some((layer) => layer.available)) ||
-    (indicators && indicators.length > 0);
+    (indicators && indicators.length > 0) ||
+    (agroIndicators && agroIndicators.length > 0);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-4 px-2 sm:px-4 overflow-x-hidden">
@@ -1274,6 +1413,238 @@ export default function SpatialDataPage() {
                                         rasterFilesRef.current[layerName];
                                       if (!rasterFile) {
                                         // Si no existe, obtener la fecha actual del mapa
+                                        const result =
+                                          await getCurrentRasterFile(
+                                            layerName,
+                                            indicator.name,
+                                            indicatorWmsUrl,
+                                          );
+                                        if (result) {
+                                          rasterFile = result;
+                                        }
+                                      }
+                                      if (rasterFile) {
+                                        downloadRasterFile(rasterFile);
+                                      }
+                                    }}
+                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                                    title="Descargar capa raster"
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={faFileArrowDown}
+                                      className="h-4 w-4"
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Acordeón para Indicadores agroclimáticos */}
+            {config.spatial?.showAgroclimaticIndicator && (
+              <div id="agro-indicators-accordion">
+                <h2 id="agro-indicators-accordion-trigger">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                    onClick={() =>
+                      setIsAgroIndicatorsOpen(!isAgroIndicatorsOpen)
+                    }
+                    aria-expanded={isAgroIndicatorsOpen}
+                  >
+                    <span className="text-xl font-semibold text-gray-800">
+                      Indicadores agroclimáticos
+                    </span>
+                    <svg
+                      className={`w-6 h-6 shrink-0 ${isAgroIndicatorsOpen ? "rotate-180" : ""}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                  </button>
+                </h2>
+                <div
+                  id="agro-indicators-accordion-content"
+                  className={isAgroIndicatorsOpen ? "" : "hidden"}
+                  aria-labelledby="agro-indicators-accordion-trigger"
+                >
+                  <div className="p-5 border border-t-0 border-gray-200">
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <p className="text-gray-600 mt-2">
+                          Explora los indicadores agroclimáticos disponibles
+                          para identificar condiciones relevantes para el manejo
+                          de cultivos y la planificación en territorio.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-4 items-end">
+                        {shouldShowAmazoniaCommunities && (
+                          <div>
+                            <label
+                              htmlFor="agroIndicatorDepartment"
+                              className="block font-medium text-gray-700 mb-2"
+                            >
+                              Departamento
+                            </label>
+                            <select
+                              id="agroIndicatorDepartment"
+                              value={selectedAgroDepartment}
+                              onChange={(e) =>
+                                setSelectedAgroDepartment(e.target.value)
+                              }
+                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                            >
+                              {agroDepartmentOptions.map((department) => (
+                                <option
+                                  key={department.value}
+                                  value={department.value}
+                                >
+                                  {department.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div>
+                          <label
+                            htmlFor="agroIndicatorCategory"
+                            className="block font-medium text-gray-700 mb-2"
+                          >
+                            Categoría
+                          </label>
+                          {loadingAgroCategories ? (
+                            <div className="text-gray-500">
+                              Cargando categorías...
+                            </div>
+                          ) : agroIndicatorCategories.length === 0 ? (
+                            <div className="text-gray-500">
+                              No hay categorías agroclimáticas disponibles
+                            </div>
+                          ) : (
+                            <select
+                              id="agroIndicatorCategory"
+                              value={selectedAgroCategory?.id || ""}
+                              onChange={(e) => {
+                                const category = agroIndicatorCategories.find(
+                                  (cat) => cat.id === parseInt(e.target.value),
+                                );
+                                setSelectedAgroCategory(category || null);
+                              }}
+                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                            >
+                              {agroIndicatorCategories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedAgroCategory && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            Los indicadores agroclimáticos de{" "}
+                            <span className="font-semibold">
+                              {selectedAgroCategory.name}
+                            </span>{" "}
+                            {selectedAgroCategory.description
+                              .charAt(0)
+                              .toLowerCase() +
+                              selectedAgroCategory.description.slice(1)}
+                          </p>
+                        </div>
+                      )}
+
+                      {loadingAgroIndicators ? (
+                        <div className="flex items-center justify-center py-12">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                          <span className="ml-3 text-gray-600">
+                            Cargando indicadores agroclimáticos...
+                          </span>
+                        </div>
+                      ) : agroIndicators.length === 0 ? (
+                        <div className="text-center py-12 text-gray-600">
+                          No hay datos disponibles para esta categoría
+                          agroclimática
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-8">
+                          {agroIndicators.map((indicator) => {
+                            const indicatorTemporality =
+                              indicator.temporality || "monthly";
+                            const departmentSegment =
+                              shouldShowAmazoniaCommunities
+                                ? `_${selectedAgroDepartment}`
+                                : "";
+                            const layerName = `agroclimatic_index:agroclimatic_index_${indicatorTemporality}_${countryCode}${departmentSegment}_${indicator.short_name}`;
+                            const indicatorWmsUrl = `${GEOSERVER_URL}/agroclimatic_index/wms`;
+
+                            return (
+                              <div
+                                key={indicator.id}
+                                className="flex flex-col gap-3"
+                              >
+                                <div>
+                                  <h3 className="font-semibold text-gray-700 text-lg mb-2">
+                                    {indicator.name}
+                                  </h3>
+                                  {indicator.description && (
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                      {indicator.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                                  <MapComponent
+                                    center={currentCountry.center}
+                                    zoom={currentCountry.zoom}
+                                    wmsLayers={[
+                                      {
+                                        url: indicatorWmsUrl,
+                                        layers: layerName,
+                                        opacity: 1.0,
+                                        transparent: true,
+                                        title: indicator.name,
+                                        unit: indicator.unit,
+                                      },
+                                    ]}
+                                    showMarkers={false}
+                                    showZoomControl={true}
+                                    showTimeline={true}
+                                    showLegend={true}
+                                    showAdminLayer={true}
+                                    adminLayers={adminLayers}
+                                    customMarkers={branchCommunityMarkers}
+                                    onTimeChange={(time) =>
+                                      handleTimeChange(
+                                        time,
+                                        layerName,
+                                        indicator.name,
+                                      )
+                                    }
+                                  />
+                                  <button
+                                    onClick={async () => {
+                                      let rasterFile =
+                                        rasterFilesRef.current[layerName];
+                                      if (!rasterFile) {
                                         const result =
                                           await getCurrentRasterFile(
                                             layerName,
