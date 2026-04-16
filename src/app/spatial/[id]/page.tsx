@@ -258,6 +258,8 @@ export default function SpatialDataPage() {
   const [isAgroIndicatorsOpen, setIsAgroIndicatorsOpen] = useState(true);
   const [latestForecastPctTime, setLatestForecastPctTime] = useState("");
   const [forecastPctDateLabel, setForecastPctDateLabel] = useState("");
+  const [latestScenarioTime, setLatestScenarioTime] = useState("");
+  const [scenarioDateLabel, setScenarioDateLabel] = useState("");
 
   const rasterFilesRef = useRef<Record<string, RasterFileInfo>>({});
   const [downloadReady, setDownloadReady] = useState(false);
@@ -371,6 +373,29 @@ export default function SpatialDataPage() {
 
     loadForecastPctDate();
   }, [config.spatial?.showForecastPctChange]);
+
+  useEffect(() => {
+    const loadScenarioDate = async () => {
+      if (!config.showScenario) return;
+
+      try {
+        const dates = await spatialService.getDatesFromGeoserver(
+          `${GEOSERVER_URL}/climate_forecast_st/wms`,
+          "climate_forecast_st:climate_forecast_st_monthly",
+        );
+
+        if (dates.length > 0) {
+          const latest = dates[dates.length - 1];
+          setLatestScenarioTime(latest);
+          setScenarioDateLabel(formatLayerMonthLabel(latest));
+        }
+      } catch (error) {
+        console.error("Error cargando fecha para escenario mensual:", error);
+      }
+    };
+
+    loadScenarioDate();
+  }, [config.showScenario]);
 
   // Cargar capas administrativas dinámicamente
   useEffect(() => {
@@ -1132,7 +1157,7 @@ export default function SpatialDataPage() {
               </div>
             )}
 
-            {config.spatial?.showForecastPctChange && (
+            {(config.spatial?.showForecastPctChange || config.showScenario) && (
               <div id="forecast-pct-accordion">
                 <h2 id="forecast-pct-accordion-trigger">
                   <button
@@ -1144,7 +1169,7 @@ export default function SpatialDataPage() {
                     aria-expanded={isForecastChangeOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Cambio porcentual del pronóstico mensual
+                      Escenarios
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isForecastChangeOpen ? "rotate-180" : ""}`}
@@ -1166,44 +1191,107 @@ export default function SpatialDataPage() {
                   aria-labelledby="forecast-pct-accordion-trigger"
                 >
                   <div className="p-5 border border-t-0 border-gray-200">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-gray-600">
-                          Este mapa muestra el cambio porcentual del pronóstico
-                          climático mensual para Amazonía.
-                        </p>
-                        {forecastPctDateLabel && (
-                          <span className="inline-block text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 self-start sm:self-auto">
-                            {forecastPctDateLabel}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex flex-col gap-8">
+                      {config.spatial?.showForecastPctChange && (
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-700 text-lg mb-1">
+                                Cambio porcentual del pronóstico mensual
+                              </h3>
+                              <p className="text-gray-600">
+                                Este mapa muestra el cambio porcentual del
+                                pronóstico climático mensual en el territorio.
+                                Usa la línea de tiempo para explorar cómo varían
+                                los cambios entre meses.
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
-                        <MapComponent
-                          center={currentCountry.center}
-                          zoom={currentCountry.zoom}
-                          wmsLayers={[
-                            {
-                              url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                              layers:
-                                "climate_forecast_st:climate_forecast_st_monthly_pct_change",
-                              time: latestForecastPctTime || undefined,
-                              opacity: 1.0,
-                              transparent: true,
-                              title: "Cambio porcentual del pronóstico mensual",
-                              unit: "%",
-                            },
-                          ]}
-                          showMarkers={false}
-                          showZoomControl={true}
-                          showTimeline={false}
-                          showLegend={true}
-                          showAdminLayer={true}
-                          adminLayers={adminLayers}
-                          customMarkers={branchCommunityMarkers}
-                        />
-                      </div>
+                          <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                            <MapComponent
+                              center={currentCountry.center}
+                              zoom={currentCountry.zoom}
+                              wmsLayers={[
+                                {
+                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
+                                  layers:
+                                    "climate_forecast_st:climate_forecast_st_monthly_pct_change",
+                                  time: latestForecastPctTime || undefined,
+                                  opacity: 1.0,
+                                  transparent: true,
+                                  title:
+                                    "Cambio porcentual del pronóstico mensual",
+                                  unit: "%",
+                                },
+                              ]}
+                              showMarkers={false}
+                              showZoomControl={true}
+                              showTimeline={true}
+                              showLegend={true}
+                              showAdminLayer={true}
+                              adminLayers={adminLayers}
+                              customMarkers={branchCommunityMarkers}
+                              onTimeChange={(time) => {
+                                setLatestForecastPctTime(time);
+                                setForecastPctDateLabel(
+                                  formatLayerMonthLabel(time),
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {config.showScenario && (
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-700 text-lg mb-1">
+                                Pronóstico climático mensual
+                              </h3>
+                              <p className="text-gray-600">
+                                Este mapa muestra los escenarios climático
+                                mensual para identificar condiciones esperadas
+                                en cada zona. Navega por los meses con la línea
+                                de tiempo para comparar su evolución.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                            <MapComponent
+                              center={currentCountry.center}
+                              zoom={currentCountry.zoom}
+                              wmsLayers={[
+                                {
+                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
+                                  layers:
+                                    "climate_forecast_st:climate_forecast_st_monthly",
+                                  time: latestScenarioTime || undefined,
+                                  opacity: 1.0,
+                                  transparent: true,
+                                  title: "Pronóstico climático mensual",
+                                  unit: "",
+                                },
+                              ]}
+                              showMarkers={false}
+                              showZoomControl={true}
+                              showTimeline={true}
+                              showLegend={true}
+                              showAdminLayer={true}
+                              adminLayers={adminLayers}
+                              customMarkers={branchCommunityMarkers}
+                              onTimeChange={(time) => {
+                                setLatestScenarioTime(time);
+                                setScenarioDateLabel(
+                                  formatLayerMonthLabel(time),
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
