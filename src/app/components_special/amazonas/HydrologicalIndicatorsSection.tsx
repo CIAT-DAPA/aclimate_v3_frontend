@@ -73,7 +73,12 @@ const hydrologicalCommunityCoordinates: Record<
   },
 };
 
-const hydrologicalScenarios = [{ id: "baseline", label: "Línea Base" }];
+const hydrologicalScenarios = [
+  { id: "baseline", label: "Línea Base" },
+  { id: "invierno", label: "Invierno" },
+  { id: "normal", label: "Normal" },
+  { id: "verano", label: "Verano" },
+];
 
 const normalizeText = (text: string) =>
   text
@@ -84,6 +89,18 @@ const normalizeText = (text: string) =>
 const isScenarioCategory = (category: IndicatorCategory) => {
   const categoryName = normalizeText(category.name || "");
   return categoryName.includes("escenario");
+};
+
+const isMeteorologicalAgriculturalDroughtCategory = (
+  category: IndicatorCategory,
+) => {
+  const categoryName = normalizeText(category.name || "");
+  const categoryDescription = normalizeText(category.description || "");
+
+  return (
+    categoryName.includes("sequia meteorologica y agricola") ||
+    categoryDescription.includes("sequia meteorologica y agricola")
+  );
 };
 
 export default function HydrologicalIndicatorsSection({
@@ -129,7 +146,9 @@ export default function HydrologicalIndicatorsSection({
         const categories =
           await spatialService.getIndicatorCategories(countryId);
         const filteredCategories = categories.filter(
-          (category) => !isScenarioCategory(category),
+          (category) =>
+            !isScenarioCategory(category) &&
+            !isMeteorologicalAgriculturalDroughtCategory(category),
         );
 
         setHydrologicalCategories(filteredCategories);
