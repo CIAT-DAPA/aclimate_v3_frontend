@@ -28,6 +28,7 @@ export interface BranchConfig {
   };
   spatial?: {
     showClimateIndicator: boolean;
+    showAgroclimaticIndicator: boolean;
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
     showForecastPctChange: boolean;
