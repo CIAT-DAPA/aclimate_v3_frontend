@@ -54,6 +54,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isRun.current) return;
     isRun.current = true;
 
+    // Redirect Keycloak token requests through the server-side proxy so
+    // client_secret is never exposed to the browser.
+    const _keycloakTokenUrl = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`;
+    const _originalXhrOpen = XMLHttpRequest.prototype.open;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (XMLHttpRequest.prototype as any).open = function (...args: any[]) {
+      if (args[1] === _keycloakTokenUrl) {
+        args[1] = "/api/auth/token";
+      }
+      return _originalXhrOpen.apply(this, args);
+    };
+
     const initializeKeycloak = async () => {
       try {
         keycloak.current = new Keycloak({
@@ -118,6 +130,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeKeycloak();
+
+    return () => {
+      XMLHttpRequest.prototype.open = _originalXhrOpen;
+    };
   }, []);
 
   useEffect(() => {
