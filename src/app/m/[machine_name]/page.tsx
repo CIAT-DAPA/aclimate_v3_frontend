@@ -186,14 +186,16 @@ export default function StationDetailPage() {
 
           if (!Array.isArray(dates) || !Array.isArray(values)) return;
 
-          // Para climatología, las fechas vienen en formato "2000-MM-01"
+          // Para climatología, las fechas son nombres de mes abreviados (ej: "Ene", "Feb", ...)
+          const climMonthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
           const filteredIndices = dates
             .map((date: string, index: number) => {
-              // Extraer el mes de la fecha formato "2000-MM-01"
-              const monthIndex = parseInt(date.split("-")[1]);
+              // Obtener número de mes (1-12) a partir del nombre abreviado
+              const monthIndex = climMonthNames.indexOf(date) + 1;
               return { date, index, monthIndex };
             })
             .filter(({ monthIndex }: { monthIndex: number }) => {
+              if (monthIndex === 0) return false; // nombre de mes no reconocido
               // Manejar casos donde el rango puede cruzar el año (ej: Oct-Feb)
               if (startMonth <= endMonth) {
                 return monthIndex >= startMonth && monthIndex <= endMonth;
