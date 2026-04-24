@@ -52,7 +52,7 @@ Siguiendo el enfoque de la Organización Meteorológica Mundial (OMM), la plataf
   },
   data: {
     center: [13.69, -89.19],
-    zoom: 8,
+    zoom: 10,
   },
   analytics: {
     gaId: "G-JXD6Z5RXSZ",
