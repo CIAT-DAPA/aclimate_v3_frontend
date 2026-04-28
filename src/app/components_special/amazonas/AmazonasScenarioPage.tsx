@@ -491,30 +491,33 @@ export default function AmazonasScenarioPage() {
 
   return (
     <div className="min-h-[calc(100vh-theme(spacing.16))] bg-zinc-50 dark:bg-zinc-50">
-      <div className="container mx-auto px-4 sm:px-6 py-8 pb-20">
-        <div ref={contentRef} className="mx-auto flex flex-col gap-12 p-4">
-          <div className="border-l-4 border-[#c86b24] pl-5 sm:pl-8 bg-white p-6 rounded-lg shadow-sm">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-20">
+        <div
+          ref={contentRef}
+          className="mx-auto flex flex-col gap-8 sm:gap-10 lg:gap-12 p-3 sm:p-4"
+        >
+          <div className="border-l-4 border-[#c86b24] pl-4 sm:pl-6 lg:pl-8 bg-white p-4 sm:p-6 lg:p-7 rounded-lg shadow-sm">
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
-                <h1 className="text-3xl font-semibold text-[#283618]">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#283618]">
                   Escenarios Climáticos
                 </h1>
                 {layerDate && (
-                  <span className="inline-block text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 shadow-sm self-start sm:self-auto">
+                  <span className="inline-block text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 shadow-sm self-start sm:self-auto">
                     {layerDate}
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 text-lg">
-                ¡Bienvenido! Aquí puedes explorar el pronóstico climático de tu
+              <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
+                ¡Bienvenido! Aquí puedes explorar el escenario climático de tu
                 región. Busca y haz clic en cualquier lugar del mapa, o utiliza
                 los selectores para elegir un departamento y comunidad.
                 Descubrirás las características y las mejores recomendaciones
-                para el escenario pronosticado.
+                para el escenario propuesto.
               </p>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-5 sm:mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Departamento
@@ -522,7 +525,7 @@ export default function AmazonasScenarioPage() {
                 <select
                   value={selectedDept}
                   onChange={handleDeptChange}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 border text-black"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 sm:p-2.5 text-sm sm:text-base border text-black"
                 >
                   <option value="">Seleccione un departamento...</option>
                   {Object.entries(DEPARTMENTS).map(([key, dept]) => (
@@ -541,7 +544,7 @@ export default function AmazonasScenarioPage() {
                   value={selectedCommunity}
                   onChange={handleCommunityChange}
                   disabled={!selectedDept}
-                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 border disabled:bg-gray-100 disabled:text-gray-500 text-black"
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 sm:p-2.5 text-sm sm:text-base border disabled:bg-gray-100 disabled:text-gray-500 text-black"
                 >
                   <option value="">Seleccione una comunidad...</option>
                   {selectedDept &&
@@ -557,21 +560,21 @@ export default function AmazonasScenarioPage() {
             </div>
 
             <div className="mt-6 bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Map className="text-blue-600" size={24} />
-                  <h2 className="text-xl font-medium text-gray-800">
+                  <Map className="text-blue-600" size={20} />
+                  <h2 className="text-lg sm:text-xl font-medium text-gray-800">
                     {scenarioName}
                   </h2>
                 </div>
               </div>
 
-              <div className="relative w-full h-[400px] bg-sky-50 flex items-center justify-center overflow-hidden">
+              <div className="relative w-full h-[280px] sm:h-[360px] lg:h-[420px] bg-sky-50 flex items-center justify-center overflow-hidden">
                 {loadingAdminLayers ? (
                   <div className="flex items-center justify-center h-full w-full bg-gray-50 z-10 absolute inset-0">
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
-                      <span className="mt-3 text-gray-500 font-medium">
+                      <span className="mt-3 text-sm sm:text-base text-gray-500 font-medium">
                         Cargando mapa...
                       </span>
                     </div>
@@ -605,7 +608,7 @@ export default function AmazonasScenarioPage() {
 
                     <button
                       onClick={downloadRasterFile}
-                      className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                      className="absolute top-4 right-4 sm:top-10 sm:right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                       title="Descargar capa raster de pronóstico"
                     >
                       <FontAwesomeIcon
@@ -620,7 +623,7 @@ export default function AmazonasScenarioPage() {
               <div className="px-4 pb-4 pt-3 border-t border-gray-100 bg-white">
                 <Link
                   href={`/spatial/${countryId || "3"}#forecast-pct-accordion`}
-                  className="text-sm text-blue-700 hover:text-blue-900 underline font-medium"
+                  className="text-sm sm:text-base text-blue-700 hover:text-blue-900 underline font-medium"
                 >
                   Desea ver más información?
                 </Link>
@@ -628,34 +631,72 @@ export default function AmazonasScenarioPage() {
             </div>
           </div>
 
-          <div className="border-l-4 border-[#283618] pl-5 sm:pl-8 bg-white p-6 rounded-lg shadow-sm">
+          <div className="border-l-4 border-[#283618] pl-4 sm:pl-6 lg:pl-8 bg-white p-4 sm:p-6 lg:p-7 rounded-lg shadow-sm">
             <div>
-              <h2 className="text-2xl font-semibold text-[#283618] mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#283618] mb-3 sm:mb-4">
                 Características de la zona: {scenarioName}
               </h2>
               <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+                <div className="sm:hidden divide-y divide-gray-100">
+                  {loadingContent ? (
+                    <div className="px-4 py-4 text-center text-sm text-gray-600">
+                      Cargando características...
+                    </div>
+                  ) : scenarioFeatures.length > 0 ? (
+                    scenarioFeatures.map((feature, idx) => (
+                      <div key={feature.id ?? idx} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div
+                            style={getScenarioStyle()}
+                            className="p-2 rounded-lg mt-0.5"
+                          >
+                            {getIconForTitle(feature.title)}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800">
+                              {feature.title}
+                            </p>
+                            <p className="mt-2 text-sm text-gray-600">
+                              {feature.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-4 text-center text-sm text-gray-600">
+                      {!selectedCommunityData
+                        ? "Selecciona una comunidad para ver sus características."
+                        : "No hay características disponibles para esta zona."}
+                    </div>
+                  )}
+                </div>
+
+                <table className="hidden sm:table w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-6 py-4 font-semibold text-gray-700 w-1/4">
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-1/4">
                         Categoría
                       </th>
-                      <th className="px-6 py-4 font-semibold text-gray-700 w-3/4">
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-3/4">
                         Descripción
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-gray-600">
+                  <tbody className="divide-y divide-gray-100 text-sm lg:text-base text-gray-600">
                     {loadingContent ? (
                       <tr>
-                        <td colSpan={2} className="px-6 py-4 text-center">
+                        <td
+                          colSpan={2}
+                          className="px-4 lg:px-6 py-3 lg:py-4 text-center"
+                        >
                           Cargando características...
                         </td>
                       </tr>
                     ) : scenarioFeatures.length > 0 ? (
                       scenarioFeatures.map((feature, idx) => (
                         <tr key={feature.id ?? idx}>
-                          <td className="px-6 py-4 flex items-center gap-3 font-medium text-gray-800">
+                          <td className="px-4 lg:px-6 py-3 lg:py-4 flex items-center gap-3 font-medium text-gray-800">
                             <div
                               style={getScenarioStyle()}
                               className="p-2 rounded-lg"
@@ -664,12 +705,17 @@ export default function AmazonasScenarioPage() {
                             </div>
                             {feature.title}
                           </td>
-                          <td className="px-6 py-4">{feature.description}</td>
+                          <td className="px-4 lg:px-6 py-3 lg:py-4">
+                            {feature.description}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={2} className="px-6 py-4 text-center">
+                        <td
+                          colSpan={2}
+                          className="px-4 lg:px-6 py-3 lg:py-4 text-center"
+                        >
                           {!selectedCommunityData
                             ? "Selecciona una comunidad para ver sus características."
                             : "No hay características disponibles para esta zona."}
@@ -682,38 +728,76 @@ export default function AmazonasScenarioPage() {
             </div>
           </div>
 
-          <div className="border-l-4 border-[#c86b24] pl-5 sm:pl-8 relative bg-white p-6 rounded-lg shadow-sm">
+          <div className="border-l-4 border-[#c86b24] pl-4 sm:pl-6 lg:pl-8 relative bg-white p-4 sm:p-6 lg:p-7 rounded-lg shadow-sm">
             <div>
-              <h2 className="text-2xl font-semibold text-[#283618] mb-1">
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#283618] mb-1">
                 Recomendaciones: {scenarioName}
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">
                 Basadas en escenarios climáticos y probabilidades de
                 precipitación
               </p>
               <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+                <div className="sm:hidden divide-y divide-gray-100">
+                  {loadingContent ? (
+                    <div className="px-4 py-4 text-center text-sm text-gray-600">
+                      Cargando recomendaciones...
+                    </div>
+                  ) : scenarioRecommendations.length > 0 ? (
+                    scenarioRecommendations.map((rec, idx) => (
+                      <div key={rec.id ?? idx} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div
+                            style={getScenarioStyle()}
+                            className="p-2 rounded-lg mt-0.5"
+                          >
+                            {getIconForTitle(rec.title)}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800">
+                              {rec.title}
+                            </p>
+                            <p className="mt-2 text-sm text-gray-600">
+                              {rec.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-4 text-center text-sm text-gray-600">
+                      {!selectedCommunityData
+                        ? "Selecciona una comunidad para ver recomendaciones."
+                        : "No hay recomendaciones disponibles para esta zona."}
+                    </div>
+                  )}
+                </div>
+
+                <table className="hidden sm:table w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-6 py-4 font-semibold text-gray-700 w-1/3">
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-1/3">
                         Recomendación
                       </th>
-                      <th className="px-6 py-4 font-semibold text-gray-700 w-2/3">
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-2/3">
                         Descripción
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-gray-600">
+                  <tbody className="divide-y divide-gray-100 text-sm lg:text-base text-gray-600">
                     {loadingContent ? (
                       <tr>
-                        <td colSpan={2} className="px-6 py-4 text-center">
+                        <td
+                          colSpan={2}
+                          className="px-4 lg:px-6 py-3 lg:py-4 text-center"
+                        >
                           Cargando recomendaciones...
                         </td>
                       </tr>
                     ) : scenarioRecommendations.length > 0 ? (
                       scenarioRecommendations.map((rec, idx) => (
                         <tr key={rec.id ?? idx}>
-                          <td className="px-6 py-4 flex items-center gap-3 font-medium text-gray-800">
+                          <td className="px-4 lg:px-6 py-3 lg:py-4 flex items-center gap-3 font-medium text-gray-800">
                             <div
                               style={getScenarioStyle()}
                               className="p-2 rounded-lg"
@@ -722,12 +806,17 @@ export default function AmazonasScenarioPage() {
                             </div>
                             {rec.title}
                           </td>
-                          <td className="px-6 py-4">{rec.description}</td>
+                          <td className="px-4 lg:px-6 py-3 lg:py-4">
+                            {rec.description}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={2} className="px-6 py-4 text-center">
+                        <td
+                          colSpan={2}
+                          className="px-4 lg:px-6 py-3 lg:py-4 text-center"
+                        >
                           {!selectedCommunityData
                             ? "Selecciona una comunidad para ver recomendaciones."
                             : "No hay recomendaciones disponibles para esta zona."}
