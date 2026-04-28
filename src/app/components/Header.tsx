@@ -108,7 +108,7 @@ const Header = () => {
           >
             Datos espaciales
           </Link>
-          
+
           {/* Botón de login/usuario */}
           {SHOW_USERS_MODULE && (
             <div className="flex items-center min-w-[40px] min-h-[40px]">
@@ -158,7 +158,7 @@ const Header = () => {
                             </p>
                           </div>
                           <Link
-                            href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
+                            href="/user-profile"
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             onClick={() => setShowUserMenu(false)}
                           >
@@ -243,7 +243,7 @@ const Header = () => {
                   {!loading && authenticated && (
                     <div className="flex items-center justify-between">
                       <Link
-                        href={`/user-profile/${userValidatedInfo?.user?.id || userValidatedInfo?.id}`}
+                        href="/user-profile"
                         className="text-amber-50 hover:text-amber-100 transition-colors flex items-center gap-2"
                         onClick={() => setShowMobileMenu(false)}
                       >

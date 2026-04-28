@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
   getUserStations,
@@ -159,7 +159,6 @@ const EditModal: React.FC<EditModalProps> = ({
 };
 
 export default function UserProfilePage() {
-  const params = useParams();
   const router = useRouter();
   const {
     userValidatedInfo,
@@ -183,7 +182,8 @@ export default function UserProfilePage() {
   >("FARMER");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const userId = params.id as string;
+  const resolvedUserId = userValidatedInfo?.user?.id || userValidatedInfo?.id;
+  const userId = resolvedUserId ? resolvedUserId.toString() : "";
 
   useEffect(() => {
     if (authLoading) return;
@@ -193,11 +193,8 @@ export default function UserProfilePage() {
       return;
     }
 
-    // Verificar que el usuario esté accediendo a su propio perfil
-    const userIdFromValidated =
-      userValidatedInfo.user?.id || userValidatedInfo.id;
-    if (userIdFromValidated?.toString() !== userId) {
-      router.push("/");
+    if (!userId) {
+      setLoading(false);
       return;
     }
 
@@ -209,9 +206,11 @@ export default function UserProfilePage() {
     }
 
     loadUserStations();
-  }, [authenticated, userValidatedInfo, authLoading, userId]);
+  }, [authenticated, userValidatedInfo, authLoading, userId, router]);
 
   const loadUserStations = async () => {
+    if (!userId) return;
+
     try {
       setLoading(true);
       const stations = await getUserStations(parseInt(userId));
@@ -255,6 +254,8 @@ export default function UserProfilePage() {
     wsExtId: string,
     notification: { email: boolean; push: boolean },
   ) => {
+    if (!userId) return;
+
     try {
       await updateUserStation(parseInt(userId), wsExtId, { notification });
       await loadUserStations();
@@ -265,6 +266,8 @@ export default function UserProfilePage() {
   };
 
   const handleDeleteStation = async (wsExtId: string, stationName: string) => {
+    if (!userId) return;
+
     if (!confirm(`¿Está seguro que desea desuscribirse de "${stationName}"?`)) {
       return;
     }
@@ -284,14 +287,19 @@ export default function UserProfilePage() {
       return;
     }
 
+    if (!userId) {
+      alert("No se encontró el usuario autenticado");
+      return;
+    }
+
     setSavingProfile(true);
     try {
       await updateUserProfile(parseInt(userId), selectedProfile, token);
 
       // Actualizar el estado local del usuario
-      if (userValidatedInfo.user) {
+      if (userValidatedInfo?.user) {
         userValidatedInfo.user.profile = selectedProfile;
-      } else {
+      } else if (userValidatedInfo) {
         userValidatedInfo.profile = selectedProfile;
       }
 
