@@ -1579,9 +1579,9 @@ export default function SpatialDataPage() {
                         </p>
                       </div>
 
-                      <div className="flex gap-4 items-end">
+                      <div className="flex flex-col sm:flex-row gap-4 items-end">
                         {shouldShowAmazoniaCommunities && (
-                          <div>
+                          <div className="w-full sm:w-64">
                             <label
                               htmlFor="agroIndicatorDepartment"
                               className="block font-medium text-gray-700 mb-2"
@@ -1594,7 +1594,7 @@ export default function SpatialDataPage() {
                               onChange={(e) =>
                                 setSelectedAgroDepartment(e.target.value)
                               }
-                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
                             >
                               {agroDepartmentOptions.map((department) => (
                                 <option
@@ -1608,7 +1608,7 @@ export default function SpatialDataPage() {
                           </div>
                         )}
 
-                        <div>
+                        <div className="w-full sm:w-64">
                           <label
                             htmlFor="agroIndicatorCategory"
                             className="block font-medium text-gray-700 mb-2"
@@ -1633,7 +1633,7 @@ export default function SpatialDataPage() {
                                 );
                                 setSelectedAgroCategory(category || null);
                               }}
-                              className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
                             >
                               {agroIndicatorCategories.map((category) => (
                                 <option key={category.id} value={category.id}>

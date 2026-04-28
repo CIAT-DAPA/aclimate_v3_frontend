@@ -12,6 +12,7 @@ interface MapLegendProps {
   title?: string;
   children?: React.ReactNode;
   maxHeight?: string;
+  avoidTimeline?: boolean;
 }
 
 const MapLegend: React.FC<MapLegendProps> = ({
@@ -21,7 +22,8 @@ const MapLegend: React.FC<MapLegendProps> = ({
   time,
   title = "Leyenda",
   children,
-  maxHeight = "230px"
+  maxHeight = "230px",
+  avoidTimeline = false,
 }) => {
   const map = useMap();
   const [legendUrl, setLegendUrl] = useState<string>("");
@@ -40,7 +42,8 @@ const MapLegend: React.FC<MapLegendProps> = ({
       WIDTH: "20",
       HEIGHT: "20",
       TRANSPARENT: "true",
-      LEGEND_OPTIONS: "fontName:Helvetica;fontSize:12;fontColor:0x000000;bgColor:0xFFFFFF;dpi:90"
+      LEGEND_OPTIONS:
+        "fontName:Helvetica;fontSize:12;fontColor:0x000000;bgColor:0xFFFFFF;dpi:90",
     });
 
     if (time) {
@@ -56,68 +59,72 @@ const MapLegend: React.FC<MapLegendProps> = ({
 
   // Mapear posición a clases de Tailwind
   const positionClasses = {
-    topright: 'top-24 right-2',
-    topleft: 'top-2 left-2',
-    bottomright: 'bottom-2 right-2',
-    bottomleft: 'bottom-2 left-2',
+    topright: "top-24 right-2",
+    topleft: "top-2 left-2",
+    bottomright: avoidTimeline
+      ? "bottom-28 sm:bottom-2 right-2"
+      : "bottom-2 right-2",
+    bottomleft: avoidTimeline
+      ? "bottom-28 sm:bottom-2 left-2"
+      : "bottom-2 left-2",
   };
 
   return (
     <div className={`absolute ${positionClasses[position]} z-[1000]`}>
       <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
         <div className="flex justify-between items-center mb-2">
-            <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              {isOpen ? "−" : "+"}
-            </button>
+          <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            {isOpen ? "−" : "+"}
+          </button>
+        </div>
+        {isOpen && (
+          <div
+            className="legend-content"
+            style={{ maxHeight, overflowY: "auto", cursor: "grab" }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+
+              // Deshabilita el drag del mapa
+              if (map && map.dragging) map.dragging.disable();
+
+              const el = e.currentTarget;
+              let startY = e.pageY;
+              let startScroll = el.scrollTop;
+              const onMouseMove = (moveEvent: MouseEvent) => {
+                el.scrollTop = startScroll - (moveEvent.pageY - startY);
+              };
+              const onMouseUp = () => {
+                window.removeEventListener("mousemove", onMouseMove);
+                window.removeEventListener("mouseup", onMouseUp);
+                el.style.cursor = "grab";
+                // Habilita el drag del mapa nuevamente
+                if (map && map.dragging) map.dragging.enable();
+              };
+              window.addEventListener("mousemove", onMouseMove);
+              window.addEventListener("mouseup", onMouseUp);
+              el.style.cursor = "grabbing";
+            }}
+          >
+            {children ? (
+              children
+            ) : legendUrl ? (
+              <img
+                src={legendUrl}
+                alt="Leyenda"
+                className="max-w-full h-auto"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                }}
+              />
+            ) : null}
           </div>
-          {isOpen && (
-            <div
-              className="legend-content"
-              style={{ maxHeight, overflowY: "auto", cursor: "grab" }}
-              onMouseDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-
-                // Deshabilita el drag del mapa
-                if (map && map.dragging) map.dragging.disable();
-
-                const el = e.currentTarget;
-                let startY = e.pageY;
-                let startScroll = el.scrollTop;
-                const onMouseMove = (moveEvent: MouseEvent) => {
-                  el.scrollTop = startScroll - (moveEvent.pageY - startY);
-                };
-                const onMouseUp = () => {
-                  window.removeEventListener("mousemove", onMouseMove);
-                  window.removeEventListener("mouseup", onMouseUp);
-                  el.style.cursor = "grab";
-                  // Habilita el drag del mapa nuevamente
-                  if (map && map.dragging) map.dragging.enable();
-                };
-                window.addEventListener("mousemove", onMouseMove);
-                window.addEventListener("mouseup", onMouseUp);
-                el.style.cursor = "grabbing";
-              }}
-            >
-              {children ? (
-                children
-              ) : legendUrl ? (
-                <img
-                  src={legendUrl}
-                  alt="Leyenda"
-                  className="max-w-full h-auto"
-                  onError={e => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                  }}
-                />
-              ) : null}
-            </div>
-          )}
+        )}
       </div>
     </div>
   );

@@ -796,6 +796,7 @@ const MapComponent = ({
             wmsUrl={wmsLayers[0].url}
             layerName={wmsLayers[0].layers}
             position="bottomleft"
+            avoidTimeline={showTimeline}
           />
         )}
 
