@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } =
     useAuth();
-  const { countryId, countryName } = useCountry();
+  const { countryName } = useCountry();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -103,7 +103,7 @@ const Header = () => {
             </Link>
           )}
           <Link
-            href={`/spatial/${countryId || "1"}`}
+            href="/spatial"
             className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
           >
             Datos espaciales
@@ -214,7 +214,7 @@ const Header = () => {
                 </Link>
               )}
               <Link
-                href={`/spatial/${countryId || "1"}`}
+                href="/spatial"
                 className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                 onClick={() => setShowMobileMenu(false)}
               >

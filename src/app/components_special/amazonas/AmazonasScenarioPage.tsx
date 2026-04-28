@@ -622,7 +622,7 @@ export default function AmazonasScenarioPage() {
 
               <div className="px-4 pb-4 pt-3 border-t border-gray-100 bg-white">
                 <Link
-                  href={`/spatial/${countryId || "3"}#forecast-pct-accordion`}
+                  href="/spatial#forecast-pct-accordion"
                   className="text-sm sm:text-base text-blue-700 hover:text-blue-900 underline font-medium"
                 >
                   Desea ver más información?

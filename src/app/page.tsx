@@ -3,10 +3,8 @@ import Image from "next/image";
 import WeatherCard from "./components/WeatherCard";
 import Link from "next/link";
 import { COUNTRY_NAME } from "./config";
-import { useCountry } from "@/app/contexts/CountryContext";
 
 export default function Home() {
-  const { countryId } = useCountry();
   return (
     <div className="overflow-x-hidden">
       <section className="relative min-h-screen flex items-center justify-center">
@@ -34,7 +32,7 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col md:flex-row gap-4 text-center">
                   <Link
-                    href={`/spatial/${countryId || "1"}`}
+                    href="/spatial"
                     className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-6 sm:px-8 rounded-full hover:bg-amber-700 transition-colors text-base sm:text-lg"
                   >
                     Explorar

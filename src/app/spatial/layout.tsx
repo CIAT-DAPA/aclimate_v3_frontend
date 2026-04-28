@@ -6,14 +6,6 @@ const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
 const SITE_TITLE = `AClimate ${COUNTRY_LABEL}`;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 
-const COUNTRY_LABEL_BY_ID: Record<string, string> = {
-  "1": "Colombia",
-  "2": "Honduras",
-  "3": "Amazonía",
-  "4": "Nicaragua",
-  "5": "El Salvador",
-};
-
 const joinList = (items: string[]) => {
   if (items.length === 0) return "";
   if (items.length === 1) return items[0];
@@ -21,13 +13,8 @@ const joinList = (items: string[]) => {
   return `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
 };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   const config = getBranchConfig();
-  const countryLabel = COUNTRY_LABEL_BY_ID[params.id] || COUNTRY_LABEL;
   const sections: string[] = [];
 
   if (config.spatial?.showClimateData) sections.push("datos climáticos");
@@ -45,8 +32,8 @@ export async function generateMetadata({
     : "Mapas e indicadores climáticos.";
 
   const title = "Información espacial";
-  const description = `Información espacial de ${countryLabel}. ${sectionsText} Explora mapas, leyendas y series temporales.`;
-  const canonical = SITE_URL ? `/spatial/${params.id}` : undefined;
+  const description = `Información espacial de ${COUNTRY_LABEL}. ${sectionsText} Explora mapas, leyendas y series temporales.`;
+  const canonical = SITE_URL ? "/spatial" : undefined;
 
   return {
     title,
@@ -56,7 +43,7 @@ export async function generateMetadata({
       "indicadores",
       "clima",
       "agroclimático",
-      countryLabel,
+      COUNTRY_LABEL,
       SITE_TITLE,
     ],
     robots: {
