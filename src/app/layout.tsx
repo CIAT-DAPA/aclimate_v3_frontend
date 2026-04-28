@@ -17,10 +17,53 @@ const montserrat = Montserrat({
   subsets: ["latin"],
 });
 
+const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
+const SITE_TITLE = `AClimate ${COUNTRY_LABEL}`;
+const SITE_DESCRIPTION =
+  "Explora, monitorea y compara datos climáticos y agroclimáticos con estaciones y satélites. Consulta mapas, indicadores y escenarios para tu región.";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+
 export const metadata: Metadata = {
-  title: `AClimate ${COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía")}`,
-  description:
-    "Explora, monitorea y compara los datos de las estaciones climátologicas con bases de datos satelitales. Informate sobre como ha sido el clima en las regiones.",
+  metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
+  title: {
+    default: SITE_TITLE,
+    template: `%s | ${SITE_TITLE}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_TITLE,
+  keywords: [
+    "clima",
+    "agroclimático",
+    "datos climáticos",
+    "estaciones",
+    "mapas",
+    "indicadores",
+    "escenarios",
+    COUNTRY_LABEL,
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    type: "website",
+    siteName: SITE_TITLE,
+    locale: "es",
+    images: ["/assets/img/bg.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/assets/img/bg.jpg"],
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -29,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={`${montserrat.variable} antialiased`}>
         <CookieConsentProvider>
           <AuthProvider>
