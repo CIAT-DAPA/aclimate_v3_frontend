@@ -8,6 +8,7 @@ import { useBranchConfig } from "@/app/configs/index";
 import { useState, useEffect } from "react";
 import {
   faArrowRightFromBracket,
+  faStar,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -168,6 +169,17 @@ const Header = () => {
                             />
                             Mi perfil
                           </Link>
+                          <Link
+                            href="/favorites"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <FontAwesomeIcon
+                              icon={faStar}
+                              className="h-4 w-4 mr-2"
+                            />
+                            Favoritos
+                          </Link>
                           <button
                             onClick={() => {
                               logout();
@@ -241,12 +253,8 @@ const Header = () => {
                     </button>
                   )}
                   {!loading && authenticated && (
-                    <div className="flex items-center justify-between">
-                      <Link
-                        href="/user-profile"
-                        className="text-amber-50 hover:text-amber-100 transition-colors flex items-center gap-2"
-                        onClick={() => setShowMobileMenu(false)}
-                      >
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-amber-50">
                         <div className="w-8 h-8 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full flex items-center justify-center text-sm">
                           {getInitials(
                             userInfo?.given_name || "",
@@ -256,13 +264,27 @@ const Header = () => {
                         <span className="text-sm">
                           {userInfo?.name || userInfo?.preferred_username}
                         </span>
+                      </div>
+                      <Link
+                        href="/user-profile"
+                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Mi perfil
+                      </Link>
+                      <Link
+                        href="/favorites"
+                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        Favoritos
                       </Link>
                       <button
                         onClick={() => {
                           logout();
                           setShowMobileMenu(false);
                         }}
-                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm text-left"
                       >
                         Logout
                       </button>
