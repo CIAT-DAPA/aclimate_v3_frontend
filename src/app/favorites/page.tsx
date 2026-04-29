@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { deleteUserStation, getUserStations } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton, UIButtonLink } from "@/app/components/ui/button";
+import { uiIcons } from "@/app/components/ui/icons";
 
 interface UserStation {
   id: number;
@@ -155,27 +155,27 @@ export default function FavoritesPage() {
                       </div>
                       <div className="flex flex-row flex-wrap gap-2 w-full sm:w-auto">
                         {details?.machine_name && (
-                          <Link
+                          <UIButtonLink
                             href={`/m/${details.machine_name}`}
-                            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-amber-50 bg-[#bc6c25] rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center"
+                            className="w-full sm:w-auto"
                           >
                             {t("favorites.view")}
-                          </Link>
+                          </UIButtonLink>
                         )}
-                        <button
+                        <UIButton
                           onClick={() =>
                             handleRemoveFavorite(station.ws_ext_id, stationName)
                           }
-                          className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-[#f44336] rounded-lg hover:bg-[#d32f2f] transition-colors flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto bg-[#f44336] border-[#f44336] text-white hover:bg-[#d32f2f] hover:border-[#d32f2f]"
                         >
                           <FontAwesomeIcon
-                            icon={faTrash}
+                            icon={uiIcons.delete}
                             className="h-3 w-3 sm:h-4 sm:w-4"
                           />
                           <span className="whitespace-nowrap">
                             {t("favorites.remove")}
                           </span>
-                        </button>
+                        </UIButton>
                       </div>
                     </div>
                   </div>

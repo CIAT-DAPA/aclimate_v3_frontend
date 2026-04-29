@@ -7,12 +7,8 @@ import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
 import { useBranchConfig } from "@/app/configs/index";
 import { useState, useEffect } from "react";
 import { useI18n } from "@/app/contexts/I18nContext";
-import {
-  faArrowRightFromBracket,
-  faStar,
-  faUser,
-} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { uiIcons } from "@/app/components/ui/icons";
 
 const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } =
@@ -185,7 +181,7 @@ const Header = () => {
                             onClick={() => setShowUserMenu(false)}
                           >
                             <FontAwesomeIcon
-                              icon={faUser}
+                              icon={uiIcons.profile}
                               className="h-4 w-4 mr-2"
                             />
                             {t("nav.profile")}
@@ -196,7 +192,7 @@ const Header = () => {
                             onClick={() => setShowUserMenu(false)}
                           >
                             <FontAwesomeIcon
-                              icon={faStar}
+                              icon={uiIcons.favorites}
                               className="h-4 w-4 mr-2"
                             />
                             {t("nav.favorites")}
@@ -209,7 +205,7 @@ const Header = () => {
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
                           >
                             <FontAwesomeIcon
-                              icon={faArrowRightFromBracket}
+                              icon={uiIcons.logout}
                               className="h-4 w-4 mr-2"
                             />
                             {t("nav.logout")}

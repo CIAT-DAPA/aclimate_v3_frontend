@@ -1,9 +1,9 @@
 "use client";
 import Image from "next/image";
 import WeatherCard from "./components/WeatherCard";
-import Link from "next/link";
 import { COUNTRY_NAME } from "./config";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButtonLink } from "@/app/components/ui/button";
 
 export default function Home() {
   const { t } = useI18n();
@@ -33,12 +33,9 @@ export default function Home() {
                   {t("home.hero.subtitle")}
                 </p>
                 <div className="flex flex-col md:flex-row gap-4 text-center">
-                  <Link
-                    href="/spatial"
-                    className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-6 sm:px-8 rounded-full hover:bg-amber-700 transition-colors text-base sm:text-lg"
-                  >
+                  <UIButtonLink href="/spatial" size="lg">
                     {t("home.hero.cta")}
-                  </Link>
+                  </UIButtonLink>
                 </div>
               </div>
               <WeatherCard />
