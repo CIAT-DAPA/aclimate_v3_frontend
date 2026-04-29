@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { GEOSERVER_URL } from "@/app/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
+import { useI18n } from "@/app/contexts/I18nContext";
 import {
   spatialService,
   IndicatorCategory,
@@ -115,6 +116,7 @@ export default function HydrologicalIndicatorsSection({
   getCurrentRasterFile,
   downloadRasterFile,
 }: HydrologicalIndicatorsSectionProps) {
+  const { t } = useI18n();
   const [isHydrologicalOpen, setIsHydrologicalOpen] = useState(true);
   const [selectedHydrologicalDepartment, setSelectedHydrologicalDepartment] =
     useState<string>("amazonas");
@@ -257,7 +259,7 @@ export default function HydrologicalIndicatorsSection({
           aria-expanded={isHydrologicalOpen}
         >
           <span className="text-xl font-semibold text-gray-800">
-            Indicadores hidrológicos
+            {t("spatial.hydrological.title")}
           </span>
           <svg
             className={`w-6 h-6 shrink-0 ${isHydrologicalOpen ? "rotate-180" : ""}`}
@@ -282,13 +284,13 @@ export default function HydrologicalIndicatorsSection({
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-gray-600 mt-2">
-                Explora indicadores hidrológicos específicos a nivel de
-                microcuenca para tu comunidad. Selecciona tu ubicación para ver
-                los datos disponibles sobre erosión, inundaciones y más.
+                {t("spatial.hydrological.description")}
               </p>
               <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
                 <FontAwesomeIcon icon={faDatabase} className="text-sm" />
-                Fuente: ERA5 y CHIRPS
+                {t("common.dataSource", {
+                  sources: t("common.sourcesEraChirps"),
+                })}
               </p>
             </div>
 
@@ -298,7 +300,7 @@ export default function HydrologicalIndicatorsSection({
                   htmlFor="hydrologicalDepartment"
                   className="block font-medium text-gray-700 mb-2"
                 >
-                  Departamento
+                  {t("spatial.hydrological.labels.department")}
                 </label>
                 <select
                   id="hydrologicalDepartment"
@@ -326,7 +328,7 @@ export default function HydrologicalIndicatorsSection({
                   htmlFor="hydrologicalCommunity"
                   className="block font-medium text-gray-700 mb-2"
                 >
-                  Comunidad
+                  {t("spatial.hydrological.labels.community")}
                 </label>
                 <select
                   id="hydrologicalCommunity"
@@ -351,7 +353,7 @@ export default function HydrologicalIndicatorsSection({
                   htmlFor="hydrologicalScenario"
                   className="block font-medium text-gray-700 mb-2"
                 >
-                  Escenario
+                  {t("spatial.hydrological.labels.scenario")}
                 </label>
                 <select
                   id="hydrologicalScenario"
@@ -375,7 +377,7 @@ export default function HydrologicalIndicatorsSection({
                 htmlFor="hydrologicalCategory"
                 className="block font-medium text-gray-700 mb-2"
               >
-                Categoría
+                {t("spatial.hydrological.labels.category")}
               </label>
               <select
                 id="hydrologicalCategory"

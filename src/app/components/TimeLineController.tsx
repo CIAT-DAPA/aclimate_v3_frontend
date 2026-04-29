@@ -6,6 +6,7 @@ import L from "leaflet";
 import "leaflet-timedimension";
 //import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 import { spatialService } from "@/app/services/spatialService";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 interface TimelineControllerProps {
   dimensionName: string;
@@ -14,6 +15,8 @@ interface TimelineControllerProps {
   wmsUrl: string;
   opacity?: number;
   displayFormat?: string;
+  locale?: string;
+  invalidDateLabel?: string;
 }
 
 // Personalizamos el formato de fecha
@@ -23,26 +26,15 @@ interface TimelineControllerProps {
   _getDisplayDateFormat: function (date: Date) {
     if (!date || isNaN(date.getTime())) {
       console.error("Invalid date:", date);
-      return "Invalid date";
+      return this.options.invalidDateLabel || "Invalid date";
     }
 
     const format = this.options.displayFormat || "YYYY-MM-DD";
-
-    // Obtener nombre del mes en español
-    const monthNames = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
-    ];
+    const localeTag = this.options.locale || "es-ES";
+    const monthFormatter = new Intl.DateTimeFormat(localeTag, {
+      month: "long",
+      timeZone: "UTC",
+    });
 
     const year = date.getUTCFullYear();
     const month = ("0" + (date.getUTCMonth() + 1)).slice(-2);
@@ -51,10 +43,12 @@ interface TimelineControllerProps {
     if (format === "Month") {
       // Para indicadores hidrológicos, el año representa el mes (1=Enero, 2=Febrero, etc.)
       const monthIndex = Math.max(0, year - 1) % 12;
-      return monthNames[monthIndex];
+      return monthFormatter.format(new Date(Date.UTC(2000, monthIndex, 1)));
     }
 
-    const monthName = monthNames[date.getUTCMonth()];
+    const monthName = monthFormatter.format(
+      new Date(Date.UTC(year, date.getUTCMonth(), 1)),
+    );
 
     if (format === "YYYY") return year.toString();
     if (format === "MM") return month;
@@ -72,11 +66,16 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
   wmsUrl,
   opacity = 1.0,
   displayFormat = "YYYY-MM-DD",
+  locale,
+  invalidDateLabel,
 }) => {
   const map = useMap();
   const tdControlRef = useRef<any>(null);
   const tdLayerRef = useRef<any>(null);
   const tdInstanceRef = useRef<any>(null);
+  const { locale: i18nLocale, t } = useI18n();
+  const localeTag = locale || (i18nLocale === "es" ? "es-ES" : "en-US");
+  const invalidLabel = invalidDateLabel || t("timeline.invalidDate");
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +118,8 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
         autoPlay: false,
         speedSlider: false,
         displayFormat: displayFormat, // Pass format to control
+        locale: localeTag,
+        invalidDateLabel: invalidLabel,
         playerOptions: {
           buffer: 1,
           minBufferReady: -1,
@@ -156,7 +157,17 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
         console.error("Error cleaning up timeline:", e);
       }
     };
-  }, [map, dimensionName, layer, wmsUrl, onTimeChange]);
+  }, [
+    map,
+    dimensionName,
+    layer,
+    wmsUrl,
+    onTimeChange,
+    displayFormat,
+    opacity,
+    localeTag,
+    invalidLabel,
+  ]);
 
   return null;
 };

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { updateUserProfile, UserProfile } from "@/app/services/userService";
 import { COUNTRY_NAME } from "@/app/config";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 export default function UserProfilePage() {
   const router = useRouter();
+  const { t } = useI18n();
   const {
     userValidatedInfo,
     authenticated,
@@ -41,12 +43,12 @@ export default function UserProfilePage() {
 
   const handleUpdateProfile = async () => {
     if (!token) {
-      alert("No se encontró el token de autenticación");
+      alert(t("profile.tokenMissing"));
       return;
     }
 
     if (!userId) {
-      alert("No se encontró el usuario autenticado");
+      alert(t("profile.userMissing"));
       return;
     }
 
@@ -61,16 +63,17 @@ export default function UserProfilePage() {
       }
 
       setShowProfileModal(false);
-      alert("Perfil actualizado correctamente");
+      alert(t("profile.profileUpdated"));
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Error al actualizar el perfil");
+      alert(t("profile.profileUpdateError"));
     } finally {
       setSavingProfile(false);
     }
   };
 
-  const userName = userInfo?.name || userInfo?.preferred_username || "Usuario";
+  const userName =
+    userInfo?.name || userInfo?.preferred_username || t("nav.userFallback");
   const userEmail = userInfo?.email || "";
   const countryLabel = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
   const currentUserProfile =
@@ -93,24 +96,24 @@ export default function UserProfilePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  Mi perfil
+                  {t("profile.title")}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Administra tu información y preferencias de cuenta.
+                  {t("profile.subtitle")}
                 </p>
               </div>
               <button
                 onClick={() => setShowProfileModal(true)}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-amber-50 bg-[#bc6c25] rounded-lg hover:bg-amber-700 transition-colors w-full sm:w-auto whitespace-nowrap"
               >
-                Cambiar perfil
+                {t("profile.changeProfile")}
               </button>
             </div>
 
             <div className="mt-6 grid gap-4 sm:gap-6">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Nombre
+                  {t("profile.name")}
                 </p>
                 <p className="text-base sm:text-lg text-gray-900 font-semibold mt-1">
                   {userName}
@@ -119,16 +122,16 @@ export default function UserProfilePage() {
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Correo
+                  {t("profile.email")}
                 </p>
                 <p className="text-base sm:text-lg text-gray-900 font-semibold mt-1">
-                  {userEmail || "No disponible"}
+                  {userEmail || t("profile.emailEmpty")}
                 </p>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">
-                  País
+                  {t("profile.country")}
                 </p>
                 <p className="text-base sm:text-lg text-gray-900 font-semibold mt-1">
                   {countryLabel}
@@ -137,10 +140,12 @@ export default function UserProfilePage() {
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Perfil
+                  {t("profile.role")}
                 </p>
                 <p className="text-base sm:text-lg text-gray-900 font-semibold mt-1">
-                  {currentUserProfile === "FARMER" ? "Agricultor" : "Técnico"}
+                  {currentUserProfile === "FARMER"
+                    ? t("profile.roleFarmer")
+                    : t("profile.roleTechnician")}
                 </p>
               </div>
             </div>
@@ -152,12 +157,11 @@ export default function UserProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold mb-4 text-gray-900">
-              Cambiar perfil de usuario
+              {t("profile.modalTitle")}
             </h3>
 
             <p className="text-sm text-gray-600 mb-6">
-              Selecciona el tipo de perfil que mejor describe tu rol en la
-              plataforma.
+              {t("profile.modalSubtitle")}
             </p>
 
             <div className="space-y-3 mb-6">
@@ -174,12 +178,10 @@ export default function UserProfilePage() {
                 />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900">
-                    Agricultor
+                    {t("profile.roleFarmerTitle")}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Persona dedicada a la producción agrícola que utiliza la
-                    información climática para la toma de decisiones en sus
-                    cultivos.
+                    {t("profile.roleFarmerDescription")}
                   </p>
                 </div>
               </label>
@@ -196,10 +198,11 @@ export default function UserProfilePage() {
                   className="mt-1 w-4 h-4 text-[#bc6c25] bg-gray-100 border-gray-300 focus:ring-[#bc6c25]"
                 />
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Técnico</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {t("profile.roleTechnicianTitle")}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Profesional o técnico especializado en asesoría agrícola,
-                    extensión rural o análisis de información climática.
+                    {t("profile.roleTechnicianDescription")}
                   </p>
                 </div>
               </label>
@@ -221,7 +224,7 @@ export default function UserProfilePage() {
                 disabled={savingProfile}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
-                Cancelar
+                {t("profile.cancel")}
               </button>
               <button
                 onClick={handleUpdateProfile}
@@ -231,10 +234,10 @@ export default function UserProfilePage() {
                 {savingProfile ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    Guardando...
+                    {t("profile.saving")}
                   </>
                 ) : (
-                  "Guardar cambios"
+                  t("profile.save")
                 )}
               </button>
             </div>

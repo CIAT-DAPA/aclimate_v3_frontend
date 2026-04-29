@@ -9,6 +9,7 @@ import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 interface UserStation {
   id: number;
@@ -21,6 +22,7 @@ interface UserStation {
 
 export default function FavoritesPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { authenticated, userValidatedInfo, loading: authLoading } = useAuth();
   const [userStations, setUserStations] = useState<UserStation[]>([]);
   const [stationDetails, setStationDetails] = useState<Record<string, Station>>(
@@ -79,7 +81,7 @@ export default function FavoritesPage() {
   const handleRemoveFavorite = async (wsExtId: string, stationName: string) => {
     if (!userId) return;
 
-    if (!confirm(`¿Quitar "${stationName}" de favoritos?`)) {
+    if (!confirm(t("favorites.removeConfirm", { name: stationName }))) {
       return;
     }
 
@@ -95,7 +97,7 @@ export default function FavoritesPage() {
       });
     } catch (error) {
       console.error("Error removing favorite:", error);
-      alert("Error al eliminar de favoritos");
+      alert(t("favorites.removeError"));
     }
   };
 
@@ -114,17 +116,17 @@ export default function FavoritesPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Favoritos
+                {t("favorites.title")}
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Estaciones guardadas como favoritas.
+                {t("favorites.subtitle")}
               </p>
             </div>
           </div>
 
           {userStations.length === 0 ? (
             <p className="text-gray-500 text-sm italic">
-              No tienes estaciones favoritas.
+              {t("favorites.empty")}
             </p>
           ) : (
             <div className="space-y-4">
@@ -132,10 +134,10 @@ export default function FavoritesPage() {
                 const details = stationDetails[station.ws_ext_id];
                 const stationName = details
                   ? details.name
-                  : `Estación #${station.ws_ext_id}`;
+                  : t("favorites.stationLabel", { id: station.ws_ext_id });
                 const locationLabel = details
                   ? `${details.admin2_name}, ${details.country_name}`
-                  : "Cargando...";
+                  : t("favorites.loading");
 
                 return (
                   <div
@@ -157,7 +159,7 @@ export default function FavoritesPage() {
                             href={`/m/${details.machine_name}`}
                             className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-amber-50 bg-[#bc6c25] rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center"
                           >
-                            Ver
+                            {t("favorites.view")}
                           </Link>
                         )}
                         <button
@@ -171,7 +173,7 @@ export default function FavoritesPage() {
                             className="h-3 w-3 sm:h-4 sm:w-4"
                           />
                           <span className="whitespace-nowrap">
-                            Quitar de favoritos
+                            {t("favorites.remove")}
                           </span>
                         </button>
                       </div>

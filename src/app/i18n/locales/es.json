@@ -1,0 +1,393 @@
+{
+  "nav": {
+    "scenarios": "Escenarios",
+    "stations": "Estaciones",
+    "spatialData": "Datos espaciales",
+    "about": "Acerca de",
+    "login": "Login",
+    "profile": "Mi perfil",
+    "favorites": "Favoritos",
+    "logout": "Logout",
+    "language": "Idioma",
+    "userFallback": "Usuario"
+  },
+  "footer": {
+    "developedBy": "Desarrollado por",
+    "privacyPolicy": "Política de privacidad",
+    "about": "Acerca de"
+  },
+  "common": {
+    "source": "Fuente",
+    "sourceWith": "Fuente: {{source}}",
+    "dataSource": "Fuente: {{sources}}",
+    "logoAlt": "Logo de AClimate",
+    "sourcesEraChirps": "ERA5 y CHIRPS"
+  },
+  "home": {
+    "hero": {
+      "title": "Bienvenido a AClimate {{country}}",
+      "subtitle": "Explora, monitorea y compara datos satelitales, informate sobre como ha sido el clima en las regiones.",
+      "cta": "Explorar",
+      "backgroundAlt": "Paisaje climático"
+    }
+  },
+  "about": {
+    "projectLink": "Conoce más del proyecto",
+    "ctaTitle": "¿Listo para explorar los datos climáticos?",
+    "ctaSubtitle": "Accede a información climática detallada y herramientas de análisis avanzadas",
+    "ctaButton": "Comenzar ahora"
+  },
+  "locations": {
+    "loadingMap": "Cargando mapa...",
+    "errorLabel": "Error: {{error}}",
+    "retry": "Reintentar",
+    "loadingStations": "Cargando estaciones..."
+  },
+  "favorites": {
+    "title": "Favoritos",
+    "subtitle": "Estaciones guardadas como favoritas.",
+    "empty": "No tienes estaciones favoritas.",
+    "stationLabel": "Estación #{{id}}",
+    "loading": "Cargando...",
+    "view": "Ver",
+    "remove": "Quitar de favoritos",
+    "removeConfirm": "¿Quitar \"{{name}}\" de favoritos?",
+    "removeError": "Error al eliminar de favoritos"
+  },
+  "profile": {
+    "title": "Mi perfil",
+    "subtitle": "Administra tu información y preferencias de cuenta.",
+    "changeProfile": "Cambiar perfil",
+    "name": "Nombre",
+    "email": "Correo",
+    "emailEmpty": "No disponible",
+    "country": "País",
+    "role": "Perfil",
+    "roleFarmer": "Agricultor",
+    "roleTechnician": "Técnico",
+    "modalTitle": "Cambiar perfil de usuario",
+    "modalSubtitle": "Selecciona el tipo de perfil que mejor describe tu rol en la plataforma.",
+    "roleFarmerTitle": "Agricultor",
+    "roleFarmerDescription": "Persona dedicada a la producción agrícola que utiliza la información climática para la toma de decisiones en sus cultivos.",
+    "roleTechnicianTitle": "Técnico",
+    "roleTechnicianDescription": "Profesional o técnico especializado en asesoría agrícola, extensión rural o análisis de información climática.",
+    "cancel": "Cancelar",
+    "save": "Guardar cambios",
+    "saving": "Guardando...",
+    "tokenMissing": "No se encontró el token de autenticación",
+    "userMissing": "No se encontró el usuario autenticado",
+    "profileUpdated": "Perfil actualizado correctamente",
+    "profileUpdateError": "Error al actualizar el perfil"
+  },
+  "cookies": {
+    "message": "Usamos cookies para medir el uso del sitio con Google Analytics. Si aceptas, activaremos Analytics. Si rechazas, no se cargara Google Analytics.",
+    "reject": "Rechazar",
+    "accept": "Aceptar"
+  },
+  "weather": {
+    "noData": "Sin datos",
+    "signInPrompt": "Inicia sesión para ver tus estaciones favoritas",
+    "loadingFavorites": "Cargando estaciones favoritas...",
+    "noFavorites": "No tienes estaciones favoritas",
+    "exploreMap": "Explora el mapa para agregar favoritos",
+    "minMax": "T. Min/Max",
+    "precipShort": "Precip.",
+    "radShort": "Rad.",
+    "noRecentData": "Sin datos recientes"
+  },
+  "mapSearch": {
+    "placeholder": "Buscar ubicación o estación...",
+    "firstResults": "Mostrando primeros 5 resultados",
+    "noResultsTitle": "No hay estaciones que coincidan",
+    "noResultsHint": "Intenta con otro término de búsqueda"
+  },
+  "mapLegend": {
+    "title": "Leyenda"
+  },
+  "charts": {
+    "loading": "Cargando gráfica...",
+    "months": "Meses",
+    "date": "Fecha",
+    "infoFallback": "Información sobre {{title}}"
+  },
+  "timeline": {
+    "invalidDate": "Fecha inválida"
+  },
+  "map": {
+    "pixel": {
+      "title": "Valor del píxel",
+      "loading": "Cargando...",
+      "value": "Valor",
+      "error": "Error al cargar datos",
+      "noData": "Sin datos"
+    },
+    "alerts": {
+      "loginRequired": "Debe iniciar sesión para gestionar favoritos",
+      "userMissing": "Error: No se pudo identificar al usuario",
+      "alreadyFavorite": "Esta estación ya está en favoritos",
+      "favoriteError": "Error al actualizar favoritos. Por favor, intente de nuevo."
+    },
+    "station": {
+      "lastDate": "Última fecha",
+      "summary": "Resumen de datos",
+      "noData": "No hay datos disponibles"
+    },
+    "favorites": {
+      "login": "Iniciar sesión",
+      "saved": "Guardado",
+      "favorite": "Favorito"
+    },
+    "dataButton": "Datos",
+    "legendSources": "Fuentes de datos",
+    "communities": "Comunidades",
+    "measureLabels": {
+      "tmax": "Temperatura máxima",
+      "tmin": "Temperatura mínima",
+      "prec": "Precipitación",
+      "rad": "Radiación solar",
+      "cmax": "Caudal máximo diario",
+      "cmin": "Caudal mínimo diario",
+      "cmed": "Caudal medio diario"
+    }
+  },
+  "spatial": {
+    "title": "Datos espaciales",
+    "header": {
+      "description": "Explora datos e indicadores climáticos de {{country}} y analiza cómo ha sido el cambio a través del tiempo. Usa esta vista para identificar patrones, zonas vulnerables y descargar la información que necesites para tus análisis.",
+      "usesTitle": "Puedes usarla para:",
+      "uses": {
+        "item1": "Ver cómo varían estos indicadores en diferentes regiones",
+        "item2": "Identificar zonas agrícolas con mayor riesgo climático",
+        "item3": "Descargar datos raster para análisis especializados"
+      }
+    },
+    "accordion": {
+      "climateData": { "title": "Datos climáticos" },
+      "scenarios": { "title": "Escenarios" },
+      "indicators": { "title": "Indicadores climáticos" },
+      "agro": { "title": "Indicadores agroclimáticos" }
+    },
+    "climateData": {
+      "description": "Esta sección reúne las principales variables climáticas del país en formato de mapas interactivos. Explora cada variable para entender cómo cambian las condiciones en el territorio y usa la fecha para comparar distintos momentos en el tiempo."
+    },
+    "labels": {
+      "timePeriod": "Período de tiempo",
+      "temporality": "Temporalidad",
+      "category": "Categoría",
+      "department": "Departamento"
+    },
+    "period": {
+      "daily": "Diario",
+      "monthly": "Mensual",
+      "climatology": "Climatología",
+      "annual": "Anual",
+      "seasonal": "Estacional",
+      "decadal": "Decadal",
+      "other": "Otro"
+    },
+    "loading": {
+      "layers": "Cargando capas disponibles...",
+      "options": "Cargando opciones...",
+      "categories": "Cargando categorías...",
+      "indicators": "Cargando indicadores...",
+      "agroIndicators": "Cargando indicadores agroclimáticos..."
+    },
+    "empty": {
+      "layers": "No hay capas disponibles para el período seleccionado.",
+      "variable": "No hay datos disponibles para esta variable",
+      "variablePeriod": "en el período {{period}}",
+      "categories": "No hay categorías disponibles",
+      "indicators": "No hay datos disponibles para esta combinación de temporalidad y categoría",
+      "agroCategories": "No hay categorías agroclimáticas disponibles",
+      "agroIndicators": "No hay datos disponibles para esta categoría agroclimática"
+    },
+    "badge": {
+      "noData": "Datos no disponibles"
+    },
+    "scenarios": {
+      "pctChange": {
+        "title": "Cambio porcentual del pronóstico mensual",
+        "description": "Este mapa muestra el cambio porcentual del pronóstico climático mensual en el territorio. Usa la línea de tiempo para explorar cómo varían los cambios entre meses."
+      },
+      "monthly": {
+        "title": "Pronóstico climático mensual",
+        "description": "Este mapa muestra los escenarios climático mensual para identificar condiciones esperadas en cada zona. Navega por los meses con la línea de tiempo para comparar su evolución."
+      }
+    },
+    "indicators": {
+      "description": "Explora patrones y extremos climáticos del país a lo largo del año. Selecciona la temporalidad y la categoría para visualizar los indicadores que mejor se ajusten a tu análisis.",
+      "categoryDescription": "Los indicadores climáticos de {{category}} {{description}}"
+    },
+    "agro": {
+      "description": "Explora los indicadores agroclimáticos disponibles para identificar condiciones relevantes para el manejo de cultivos y la planificación en territorio.",
+      "categoryDescription": "Los indicadores agroclimáticos de {{category}} {{description}}"
+    },
+    "hydrological": {
+      "title": "Indicadores hidrológicos",
+      "description": "Explora indicadores hidrológicos específicos a nivel de microcuenca para tu comunidad. Selecciona tu ubicación para ver los datos disponibles sobre erosión, inundaciones y más.",
+      "labels": {
+        "department": "Departamento",
+        "community": "Comunidad",
+        "scenario": "Escenario",
+        "category": "Categoría"
+      }
+    },
+    "actions": {
+      "downloadRaster": "Descargar capa raster",
+      "waitingLayers": "Esperando que las capas se carguen...",
+      "downloading": "Descargando... {{progress}}%",
+      "downloadAll": "Descargar todos los datos raster",
+      "downloadPdf": "Descargar como PDF"
+    },
+    "errors": {
+      "noLayers": "No hay capas disponibles para descargar.",
+      "noFiles": "No se pudieron obtener los archivos para descargar.",
+      "downloadAll": "Ocurrió un error al descargar los archivos. Por favor, intenta nuevamente.",
+      "downloadOne": "Ocurrió un error al descargar el archivo. Por favor, intenta nuevamente."
+    },
+    "variableInfo": {
+      "tmax": "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
+      "prec": "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
+      "tmin": "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
+      "rad": "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²).",
+      "et0": "La evapotranspiración es la pérdida de agua del suelo por evaporación y transpiración de las plantas, medida en milímetros (mm)."
+    },
+    "variableDescriptions": {
+      "prec": "Este mapa muestra la distribución de la lluvia en el territorio para la fecha seleccionada. Navega por las zonas coloreadas para conocer los niveles de precipitación y usa la línea de tiempo para explorar otros días.",
+      "tmax": "Consulta cómo se comporta la temperatura máxima en distintas regiones del país. Desplázate por el mapa para ver los valores en cada zona y ajusta la fecha para comparar cambios a lo largo del tiempo.",
+      "tmin": "Consulta cómo desciende la temperatura en distintas zonas del país durante la fecha seleccionada. Usa el mapa para identificar áreas con noches más frías y compara cambios moviéndote a otras fechas.",
+      "rad": "Este mapa muestra la cantidad de energía solar que recibe cada región. Explora los colores para reconocer zonas con mayor o menor radiación y ajusta la fecha para ver cómo varía a lo largo del tiempo.",
+      "et0": "Observa cuánto vapor de agua se pierde del suelo y la vegetación en cada área. Recorre el mapa para identificar zonas con mayor demanda hídrica y usa la línea de tiempo para analizar patrones diarios."
+    }
+  },
+  "scenarioPage": {
+    "title": "Escenarios Climáticos",
+    "description": "¡Bienvenido! Aquí puedes explorar el escenario climático de tu región. Busca y haz clic en cualquier lugar del mapa, o utiliza los selectores para elegir un departamento y comunidad. Descubrirás las características y las mejores recomendaciones para el escenario propuesto.",
+    "filters": {
+      "department": "Departamento",
+      "community": "Comunidad",
+      "selectDepartment": "Seleccione un departamento...",
+      "selectCommunity": "Seleccione una comunidad..."
+    },
+    "map": {
+      "monthlyForecastTitle": "Pronóstico Climático Mensual"
+    },
+    "states": {
+      "noLocationSelected": "Ninguna ubicación seleccionada",
+      "selectedLocation": "Ubicación seleccionada",
+      "location": "Ubicación",
+      "loading": "Cargando...",
+      "winter": "Invierno",
+      "normal": "Normal",
+      "summer": "Verano",
+      "scenarioValue": "Escenario (Valor: {{value}})",
+      "noDataForZone": "Sin datos para esta zona",
+      "errorLoadingData": "Error al obtener datos"
+    },
+    "sections": {
+      "featuresTitle": "Características de la zona: {{scenarioName}}",
+      "recommendationsTitle": "Recomendaciones: {{scenarioName}}",
+      "recommendationsDescription": "Basadas en escenarios climáticos y probabilidades de precipitación"
+    },
+    "table": {
+      "category": "Categoría",
+      "description": "Descripción",
+      "recommendation": "Recomendación"
+    },
+    "loading": {
+      "map": "Cargando mapa...",
+      "features": "Cargando características...",
+      "recommendations": "Cargando recomendaciones..."
+    },
+    "empty": {
+      "featuresSelectCommunity": "Selecciona una comunidad para ver sus características.",
+      "featuresNoData": "No hay características disponibles para esta zona.",
+      "recommendationsSelectCommunity": "Selecciona una comunidad para ver recomendaciones.",
+      "recommendationsNoData": "No hay recomendaciones disponibles para esta zona."
+    },
+    "actions": {
+      "downloadRaster": "Descargar capa raster de pronóstico",
+      "moreInfo": "Desea ver más información?",
+      "downloadPdf": "Descargar reporte en PDF"
+    },
+    "errors": {
+      "downloadRaster": "Ocurrió un error al descargar la capa. Por favor, intenta de nuevo."
+    }
+  },
+  "stationPage": {
+    "common": {
+      "na": "N/A",
+      "unknown": "Desconocida"
+    },
+    "states": {
+      "loading": "Cargando...",
+      "loadingStation": "Cargando estación...",
+      "errorPrefix": "Error",
+      "notFound": "Estación no encontrada"
+    },
+    "actions": {
+      "retry": "Reintentar",
+      "backHome": "Volver al inicio",
+      "search": "Buscar",
+      "downloadPdf": "Descargar como PDF"
+    },
+    "header": {
+      "monitoring": "Monitoreo",
+      "stationTitle": "Estación {{name}}",
+      "descriptionPrefix": "La estación meteorológica",
+      "descriptionLocated": "situada en",
+      "descriptionRangeFrom": "cuenta con registros históricos desde el",
+      "descriptionRangeTo": "hasta el",
+      "descriptionSuffix": "proporcionando información clave para el monitoreo agroclimático."
+    },
+    "sections": {
+      "climateData": "Datos climáticos",
+      "climateIndicators": "Indicadores climáticos"
+    },
+    "labels": {
+      "period": "Período",
+      "startMonth": "Mes inicial",
+      "endMonth": "Mes final",
+      "startDate": "Fecha inicial",
+      "endDate": "Fecha final"
+    },
+    "period": {
+      "daily": "Diario",
+      "monthly": "Mensual",
+      "climatology": "Climatología",
+      "annual": "Anual",
+      "seasonal": "Estacional",
+      "decadal": "Decadal",
+      "other": "Otro"
+    },
+    "climate": {
+      "description": "Explora cómo han variado las principales variables del clima en esta estación. Visualiza la evolución de la temperatura, la precipitación y la radiación solar. Utiliza los filtros de fecha para ajustar la información a tu interés.",
+      "totalRange": "Rango total disponible: {{minDate}} hasta {{maxDate}}"
+    },
+    "indicators": {
+      "description": "Consulta la evolución de los indicadores climáticos de esta estación y descubre patrones relevantes. Filtra fácilmente por categoría y rango de fechas para personalizar tu análisis."
+    },
+    "warnings": {
+      "dateRangeTooLarge": "⚠️ El rango seleccionado es muy grande (más de 3 años). Por favor, selecciona un período menor."
+    },
+    "empty": {
+      "noClimateData": "No hay datos climáticos disponibles para el período seleccionado",
+      "noData": "No hay datos disponibles"
+    },
+    "chart": {
+      "stationData": "Datos estación"
+    },
+    "tooltips": {
+      "stationUnavailable": "Estación no disponible",
+      "enableSatellite": "Activar comparación satelital",
+      "disableSatellite": "Desactivar comparación satelital",
+      "loginRequiredFavorite": "Debe iniciar sesión para agregar a favoritos",
+      "addFavorite": "Agregar a favoritos",
+      "removeFavorite": "Quitar de favoritos"
+    },
+    "errors": {
+      "loadingStation": "Error al cargar datos de la estación",
+      "loadingDates": "Error al cargar fechas"
+    }
+  }
+}

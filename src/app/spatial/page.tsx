@@ -19,6 +19,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
 import type { CustomCommunityMarker } from "@/app/components/MapComponent";
+import { useI18n } from "@/app/contexts/I18nContext";
+import type { Locale } from "@/app/i18n/i18n";
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -46,30 +48,20 @@ interface LayerInfo {
 
 // Información de tooltip para cada variable climática
 const variableInfo: Record<string, string> = {
-  "Temperatura máxima":
-    "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
-  Precipitación:
-    "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
-  "Temperatura mínima":
-    "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
-  "Radiación solar":
-    "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²).",
-  Evapotranspiración:
-    "La evapotranspiración es la pérdida de agua del suelo por evaporación y transpiración de las plantas, medida en milímetros (mm).",
+  "Temperatura máxima": "spatial.variableInfo.tmax",
+  Precipitación: "spatial.variableInfo.prec",
+  "Temperatura mínima": "spatial.variableInfo.tmin",
+  "Radiación solar": "spatial.variableInfo.rad",
+  Evapotranspiración: "spatial.variableInfo.et0",
 };
 
 // Descripciones detalladas para cada variable climática
 const variableDescriptions: Record<string, string> = {
-  Precipitación:
-    "Este mapa muestra la distribución de la lluvia en el territorio para la fecha seleccionada. Navega por las zonas coloreadas para conocer los niveles de precipitación y usa la línea de tiempo para explorar otros días.",
-  "Temperatura máxima":
-    "Consulta cómo se comporta la temperatura máxima en distintas regiones del país. Desplázate por el mapa para ver los valores en cada zona y ajusta la fecha para comparar cambios a lo largo del tiempo.",
-  "Temperatura mínima":
-    "Consulta cómo desciende la temperatura en distintas zonas del país durante la fecha seleccionada. Usa el mapa para identificar áreas con noches más frías y compara cambios moviéndote a otras fechas.",
-  "Radiación solar":
-    "Este mapa muestra la cantidad de energía solar que recibe cada región. Explora los colores para reconocer zonas con mayor o menor radiación y ajusta la fecha para ver cómo varía a lo largo del tiempo.",
-  Evapotranspiración:
-    "Observa cuánto vapor de agua se pierde del suelo y la vegetación en cada área. Recorre el mapa para identificar zonas con mayor demanda hídrica y usa la línea de tiempo para analizar patrones diarios.",
+  Precipitación: "spatial.variableDescriptions.prec",
+  "Temperatura máxima": "spatial.variableDescriptions.tmax",
+  "Temperatura mínima": "spatial.variableDescriptions.tmin",
+  "Radiación solar": "spatial.variableDescriptions.rad",
+  Evapotranspiración: "spatial.variableDescriptions.et0",
 };
 
 // Descripciones para indicadores climáticos específicos
@@ -91,12 +83,12 @@ const countryCodeMap: Record<string, string> = {
 
 // Opciones de período para indicadores
 const indicatorPeriodOptions = [
-  { value: "daily", label: "Diario" },
-  { value: "monthly", label: "Mensual" },
-  { value: "annual", label: "Anual" },
-  { value: "seasonal", label: "Estacional" },
-  { value: "decadal", label: "Decadal" },
-  { value: "other", label: "Otro" },
+  { value: "daily", labelKey: "spatial.period.daily" },
+  { value: "monthly", labelKey: "spatial.period.monthly" },
+  { value: "annual", labelKey: "spatial.period.annual" },
+  { value: "seasonal", labelKey: "spatial.period.seasonal" },
+  { value: "decadal", labelKey: "spatial.period.decadal" },
+  { value: "other", labelKey: "spatial.period.other" },
 ];
 
 const agroDepartmentOptions = [
@@ -136,18 +128,17 @@ const isAgroclimaticCategory = (category: IndicatorCategory) => {
   );
 };
 
-const formatLayerMonthLabel = (dateStr: string): string => {
+const formatLayerMonthLabel = (dateStr: string, locale: Locale): string => {
   const [year, month, day] = dateStr.split("-");
   const dateObj = new Date(
     Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)),
   );
-  const monthName = dateObj.toLocaleString("es-ES", {
+  const localeTag = locale === "es" ? "es-ES" : "en-US";
+  return new Intl.DateTimeFormat(localeTag, {
     month: "long",
+    year: "numeric",
     timeZone: "UTC",
-  });
-  const capitalizedMonth =
-    monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  return `${capitalizedMonth} de ${year}`;
+  }).format(dateObj);
 };
 
 const AMAZONIA_COMMUNITY_MARKERS: CustomCommunityMarker[] = [
@@ -251,6 +242,7 @@ const AMAZONIA_COMMUNITY_MARKERS: CustomCommunityMarker[] = [
 
 export default function SpatialDataPage() {
   const config = useBranchConfig();
+  const { t, locale } = useI18n();
   const shouldShowAmazoniaCommunities = config.name === "amazonia";
   const branchCommunityMarkers = shouldShowAmazoniaCommunities
     ? AMAZONIA_COMMUNITY_MARKERS
@@ -307,6 +299,15 @@ export default function SpatialDataPage() {
     Array<{ name: string; workspace: string; store: string; layer: string }>
   >([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
+
+  const timePeriodLabelMap: Record<string, string> = {
+    daily: t("spatial.period.daily"),
+    monthly: t("spatial.period.monthly"),
+    climatology: t("spatial.period.climatology"),
+  };
+
+  const resolveTimePeriodLabel = (period: string) =>
+    timePeriodLabelMap[period] || period;
 
   //const countryId = "2";
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
@@ -368,7 +369,9 @@ export default function SpatialDataPage() {
         if (dates.length > 0) {
           const latest = dates[dates.length - 1];
           setLatestForecastPctTime(latest);
-          setForecastPctDateLabel(formatLayerMonthLabel(latest));
+              setForecastPctDateLabel(
+                formatLayerMonthLabel(latest, locale),
+              );
         }
       } catch (error) {
         console.error("Error cargando fecha para cambio porcentual:", error);
@@ -376,7 +379,7 @@ export default function SpatialDataPage() {
     };
 
     loadForecastPctDate();
-  }, [config.spatial?.showForecastPctChange]);
+  }, [config.spatial?.showForecastPctChange, locale]);
 
   useEffect(() => {
     const loadScenarioDate = async () => {
@@ -391,7 +394,7 @@ export default function SpatialDataPage() {
         if (dates.length > 0) {
           const latest = dates[dates.length - 1];
           setLatestScenarioTime(latest);
-          setScenarioDateLabel(formatLayerMonthLabel(latest));
+              setScenarioDateLabel(formatLayerMonthLabel(latest, locale));
         }
       } catch (error) {
         console.error("Error cargando fecha para escenario mensual:", error);
@@ -399,7 +402,7 @@ export default function SpatialDataPage() {
     };
 
     loadScenarioDate();
-  }, [config.showScenario]);
+  }, [config.showScenario, locale]);
 
   // Cargar capas administrativas dinámicamente
   useEffect(() => {
@@ -755,7 +758,7 @@ export default function SpatialDataPage() {
       });
 
       if (allLayers.length === 0) {
-        alert("No hay capas disponibles para descargar.");
+        alert(t("spatial.errors.noLayers"));
         setDownloadProgress(0);
         setIsPreparingDownload(false);
         return;
@@ -778,7 +781,7 @@ export default function SpatialDataPage() {
       }
 
       if (filesToDownload.length === 0) {
-        alert("No se pudieron obtener los archivos para descargar.");
+        alert(t("spatial.errors.noFiles"));
         setDownloadProgress(0);
         setIsPreparingDownload(false);
         return;
@@ -831,9 +834,7 @@ export default function SpatialDataPage() {
       }, 2000);
     } catch (error) {
       console.error("Error descargando archivos:", error);
-      alert(
-        "Ocurrió un error al descargar los archivos. Por favor, intenta nuevamente.",
-      );
+      alert(t("spatial.errors.downloadAll"));
       setDownloadProgress(0);
       setIsPreparingDownload(false);
     }
@@ -850,9 +851,7 @@ export default function SpatialDataPage() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error descargando archivo:", error);
-      alert(
-        "Ocurrió un error al descargar el archivo. Por favor, intenta nuevamente.",
-      );
+      alert(t("spatial.errors.downloadOne"));
     }
   };
 
@@ -882,22 +881,21 @@ export default function SpatialDataPage() {
       <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            Datos espaciales
+            {t("spatial.title")}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Explora datos e indicadores climáticos de {COUNTRY_NAME} y analiza
-            cómo ha sido el cambio a través del tiempo. Usa esta vista para
-            identificar patrones, zonas vulnerables y descargar la información
-            que necesites para tus análisis.
+            {t("spatial.header.description", {
+              country: COUNTRY_NAME,
+            })}
           </p>
           <div className="mt-3">
             <p className="text-sm sm:text-base text-gray-600">
-              Puedes usarla para:
+              {t("spatial.header.usesTitle")}
             </p>
             <ul className="list-disc list-inside text-sm sm:text-base text-gray-600 mt-1 ms-3">
-              <li>Ver cómo varían estos indicadores en diferentes regiones</li>
-              <li>Identificar zonas agrícolas con mayor riesgo climático</li>
-              <li>Descargar datos raster para análisis especializados</li>
+              <li>{t("spatial.header.uses.item1")}</li>
+              <li>{t("spatial.header.uses.item2")}</li>
+              <li>{t("spatial.header.uses.item3")}</li>
             </ul>
           </div>
         </div>
@@ -918,7 +916,7 @@ export default function SpatialDataPage() {
                     aria-expanded={isClimaticOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Datos climáticos
+                      {t("spatial.accordion.climateData.title")}
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isClimaticOpen ? "rotate-180" : ""}`}
@@ -943,18 +941,16 @@ export default function SpatialDataPage() {
                     <div className="flex flex-col gap-8">
                       <div>
                         <p className="text-gray-600 mt-2">
-                          Esta sección reúne las principales variables
-                          climáticas del país en formato de mapas interactivos.
-                          Explora cada variable para entender cómo cambian las
-                          condiciones en el territorio y usa la fecha para
-                          comparar distintos momentos en el tiempo.{" "}
+                          {t("spatial.climateData.description")}
                         </p>
                         <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
                           <FontAwesomeIcon
                             icon={faDatabase}
                             className="text-sm"
                           />
-                          Fuente: ERA5 y CHIRPS
+                          {t("common.dataSource", {
+                            sources: t("common.sourcesEraChirps"),
+                          })}
                         </p>
 
                         {/* Selector de período de tiempo para datos climáticos */}
@@ -963,7 +959,7 @@ export default function SpatialDataPage() {
                             htmlFor="timePeriod"
                             className="block font-medium text-gray-700 mb-2"
                           >
-                            Período de tiempo
+                            {t("spatial.labels.timePeriod")}
                           </label>
                           <select
                             id="timePeriod"
@@ -971,9 +967,9 @@ export default function SpatialDataPage() {
                             onChange={(e) => setTimePeriod(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
                           >
-                            <option value="daily">Diario</option>
-                            <option value="monthly">Mensual</option>
-                            <option value="climatology">Climatología</option>
+                            <option value="daily">{t("spatial.period.daily")}</option>
+                            <option value="monthly">{t("spatial.period.monthly")}</option>
+                            <option value="climatology">{t("spatial.period.climatology")}</option>
                           </select>
                         </div>
                       </div>
@@ -982,12 +978,12 @@ export default function SpatialDataPage() {
                         <div className="flex items-center justify-center py-12">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
                           <span className="ml-3 text-gray-600">
-                            Cargando capas disponibles...
+                            {t("spatial.loading.layers")}
                           </span>
                         </div>
                       ) : availableLayers.length === 0 ? (
                         <div className="text-center py-12 text-gray-600">
-                          No hay capas disponibles para el período seleccionado.
+                          {t("spatial.empty.layers")}
                         </div>
                       ) : (
                         availableLayers.map((layer) => {
@@ -1049,7 +1045,9 @@ export default function SpatialDataPage() {
                                   role="tooltip"
                                   className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip"
                                 >
-                                  {variableInfo[layer.title]}
+                                  {variableInfo[layer.title]
+                                    ? t(variableInfo[layer.title])
+                                    : ""}
                                   <div
                                     className="tooltip-arrow"
                                     data-popper-arrow
@@ -1059,7 +1057,7 @@ export default function SpatialDataPage() {
                                 {/* Badge de no disponible */}
                                 {!layer.available && (
                                   <span className="ml-auto px-3 py-1 text-xs font-medium text-amber-800 bg-amber-100 rounded-full">
-                                    Datos no disponibles
+                                    {t("spatial.badge.noData")}
                                   </span>
                                 )}
                               </div>
@@ -1067,7 +1065,7 @@ export default function SpatialDataPage() {
                               {/* Descripción detallada de la variable */}
                               {variableDescriptions[layer.title] && (
                                 <p className="text-sm text-gray-600 leading-relaxed">
-                                  {variableDescriptions[layer.title]}
+                                  {t(variableDescriptions[layer.title])}
                                 </p>
                               )}
 
@@ -1124,7 +1122,7 @@ export default function SpatialDataPage() {
                                       }
                                     }}
                                     className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                    title="Descargar capa raster"
+                                  title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
                                       icon={faFileArrowDown}
@@ -1149,11 +1147,12 @@ export default function SpatialDataPage() {
                                       />
                                     </svg>
                                     <p className="mt-2 text-gray-500">
-                                      No hay datos disponibles para esta
-                                      variable
+                                      {t("spatial.empty.variable")}
                                     </p>
                                     <p className="text-sm text-gray-400">
-                                      en el período {timePeriod}
+                                      {t("spatial.empty.variablePeriod", {
+                                        period: resolveTimePeriodLabel(timePeriod),
+                                      })}
                                     </p>
                                   </div>
                                 </div>
@@ -1180,7 +1179,7 @@ export default function SpatialDataPage() {
                     aria-expanded={isForecastChangeOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Escenarios
+                      {t("spatial.accordion.scenarios.title")}
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isForecastChangeOpen ? "rotate-180" : ""}`}
@@ -1208,13 +1207,10 @@ export default function SpatialDataPage() {
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <h3 className="font-semibold text-gray-700 text-lg mb-1">
-                                Cambio porcentual del pronóstico mensual
+                                {t("spatial.scenarios.pctChange.title")}
                               </h3>
                               <p className="text-gray-600">
-                                Este mapa muestra el cambio porcentual del
-                                pronóstico climático mensual en el territorio.
-                                Usa la línea de tiempo para explorar cómo varían
-                                los cambios entre meses.
+                                {t("spatial.scenarios.pctChange.description")}
                               </p>
                             </div>
                           </div>
@@ -1232,7 +1228,7 @@ export default function SpatialDataPage() {
                                   opacity: 1.0,
                                   transparent: true,
                                   title:
-                                    "Cambio porcentual del pronóstico mensual",
+                                    t("spatial.scenarios.pctChange.title"),
                                   unit: "%",
                                 },
                               ]}
@@ -1246,7 +1242,7 @@ export default function SpatialDataPage() {
                               onTimeChange={(time) => {
                                 setLatestForecastPctTime(time);
                                 setForecastPctDateLabel(
-                                  formatLayerMonthLabel(time),
+                                  formatLayerMonthLabel(time, locale),
                                 );
                               }}
                             />
@@ -1259,13 +1255,10 @@ export default function SpatialDataPage() {
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <h3 className="font-semibold text-gray-700 text-lg mb-1">
-                                Pronóstico climático mensual
+                                {t("spatial.scenarios.monthly.title")}
                               </h3>
                               <p className="text-gray-600">
-                                Este mapa muestra los escenarios climático
-                                mensual para identificar condiciones esperadas
-                                en cada zona. Navega por los meses con la línea
-                                de tiempo para comparar su evolución.
+                                {t("spatial.scenarios.monthly.description")}
                               </p>
                             </div>
                           </div>
@@ -1282,7 +1275,7 @@ export default function SpatialDataPage() {
                                   time: latestScenarioTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,
-                                  title: "Pronóstico climático mensual",
+                                  title: t("spatial.scenarios.monthly.title"),
                                   unit: "",
                                 },
                               ]}
@@ -1296,7 +1289,7 @@ export default function SpatialDataPage() {
                               onTimeChange={(time) => {
                                 setLatestScenarioTime(time);
                                 setScenarioDateLabel(
-                                  formatLayerMonthLabel(time),
+                                  formatLayerMonthLabel(time, locale),
                                 );
                               }}
                             />
@@ -1320,7 +1313,7 @@ export default function SpatialDataPage() {
                     aria-expanded={isIndicatorsOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Indicadores climáticos
+                      {t("spatial.accordion.indicators.title")}
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
@@ -1345,17 +1338,16 @@ export default function SpatialDataPage() {
                     <div className="flex flex-col gap-4">
                       <div>
                         <p className="text-gray-600 mt-2">
-                          Explora patrones y extremos climáticos del país a lo
-                          largo del año. Selecciona la temporalidad y la
-                          categoría para visualizar los indicadores que mejor se
-                          ajusten a tu análisis.
+                          {t("spatial.indicators.description")}
                         </p>
                         <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
                           <FontAwesomeIcon
                             icon={faDatabase}
                             className="text-sm"
                           />
-                          Fuente: ERA5 y CHIRPS
+                          {t("common.dataSource", {
+                            sources: t("common.sourcesEraChirps"),
+                          })}
                         </p>
                       </div>
 
@@ -1367,7 +1359,7 @@ export default function SpatialDataPage() {
                             htmlFor="indicatorPeriod"
                             className="block font-medium text-gray-700 mb-2"
                           >
-                            Temporalidad
+                            {t("spatial.labels.temporality")}
                           </label>
                           <select
                             id="indicatorPeriod"
@@ -1377,7 +1369,7 @@ export default function SpatialDataPage() {
                             disabled={availableTemporalities.length === 0}
                           >
                             {availableTemporalities.length === 0 ? (
-                              <option value="">Cargando opciones...</option>
+                              <option value="">{t("spatial.loading.options")}</option>
                             ) : (
                               indicatorPeriodOptions
                                 .filter((option) =>
@@ -1388,7 +1380,7 @@ export default function SpatialDataPage() {
                                     key={option.value}
                                     value={option.value}
                                   >
-                                    {option.label}
+                                    {t(option.labelKey)}
                                   </option>
                                 ))
                             )}
@@ -1401,15 +1393,15 @@ export default function SpatialDataPage() {
                             htmlFor="indicatorCategory"
                             className="block font-medium text-gray-700 mb-2"
                           >
-                            Categoría
+                            {t("spatial.labels.category")}
                           </label>
                           {loadingCategories ? (
                             <div className="text-gray-500">
-                              Cargando categorías...
+                              {t("spatial.loading.categories")}
                             </div>
                           ) : indicatorCategories.length === 0 ? (
                             <div className="text-gray-500">
-                              No hay categorías disponibles
+                              {t("spatial.empty.categories")}
                             </div>
                           ) : (
                             <select
@@ -1437,14 +1429,14 @@ export default function SpatialDataPage() {
                       {selectedCategory && (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                           <p className="text-sm text-gray-700 leading-relaxed">
-                            Los indicadores climáticos de{" "}
-                            <span className="font-semibold">
-                              {selectedCategory.name}
-                            </span>{" "}
-                            {selectedCategory.description
-                              .charAt(0)
-                              .toLowerCase() +
-                              selectedCategory.description.slice(1)}
+                            {t("spatial.indicators.categoryDescription", {
+                              category: selectedCategory.name,
+                              description:
+                                selectedCategory.description
+                                  .charAt(0)
+                                  .toLowerCase() +
+                                  selectedCategory.description.slice(1),
+                            })}
                           </p>
                         </div>
                       )}
@@ -1454,13 +1446,12 @@ export default function SpatialDataPage() {
                         <div className="flex items-center justify-center py-12">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
                           <span className="ml-3 text-gray-600">
-                            Cargando indicadores...
+                            {t("spatial.loading.indicators")}
                           </span>
                         </div>
                       ) : indicators.length === 0 ? (
                         <div className="text-center py-12 text-gray-600">
-                          No hay datos disponibles para esta combinación de
-                          temporalidad y categoría
+                          {t("spatial.empty.indicators")}
                         </div>
                       ) : (
                         <div className="flex flex-col gap-8">
@@ -1534,7 +1525,7 @@ export default function SpatialDataPage() {
                                       }
                                     }}
                                     className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                    title="Descargar capa raster"
+                                    title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
                                       icon={faFileArrowDown}
@@ -1566,7 +1557,7 @@ export default function SpatialDataPage() {
                     aria-expanded={isAgroIndicatorsOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Indicadores agroclimáticos
+                      {t("spatial.accordion.agro.title")}
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isAgroIndicatorsOpen ? "rotate-180" : ""}`}
@@ -1591,16 +1582,16 @@ export default function SpatialDataPage() {
                     <div className="flex flex-col gap-4">
                       <div>
                         <p className="text-gray-600 mt-2">
-                          Explora los indicadores agroclimáticos disponibles
-                          para identificar condiciones relevantes para el manejo
-                          de cultivos y la planificación en territorio.
+                          {t("spatial.agro.description")}
                         </p>
                         <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
                           <FontAwesomeIcon
                             icon={faDatabase}
                             className="text-sm"
                           />
-                          Fuente: ERA5 y CHIRPS
+                          {t("common.dataSource", {
+                            sources: t("common.sourcesEraChirps"),
+                          })}
                         </p>
                       </div>
 
@@ -1611,7 +1602,7 @@ export default function SpatialDataPage() {
                               htmlFor="agroIndicatorDepartment"
                               className="block font-medium text-gray-700 mb-2"
                             >
-                              Departamento
+                              {t("spatial.labels.department")}
                             </label>
                             <select
                               id="agroIndicatorDepartment"
@@ -1638,15 +1629,15 @@ export default function SpatialDataPage() {
                             htmlFor="agroIndicatorCategory"
                             className="block font-medium text-gray-700 mb-2"
                           >
-                            Categoría
+                            {t("spatial.labels.category")}
                           </label>
                           {loadingAgroCategories ? (
                             <div className="text-gray-500">
-                              Cargando categorías...
+                              {t("spatial.loading.categories")}
                             </div>
                           ) : agroIndicatorCategories.length === 0 ? (
                             <div className="text-gray-500">
-                              No hay categorías agroclimáticas disponibles
+                              {t("spatial.empty.agroCategories")}
                             </div>
                           ) : (
                             <select
@@ -1673,14 +1664,14 @@ export default function SpatialDataPage() {
                       {selectedAgroCategory && (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                           <p className="text-sm text-gray-700 leading-relaxed">
-                            Los indicadores agroclimáticos de{" "}
-                            <span className="font-semibold">
-                              {selectedAgroCategory.name}
-                            </span>{" "}
-                            {selectedAgroCategory.description
-                              .charAt(0)
-                              .toLowerCase() +
-                              selectedAgroCategory.description.slice(1)}
+                            {t("spatial.agro.categoryDescription", {
+                              category: selectedAgroCategory.name,
+                              description:
+                                selectedAgroCategory.description
+                                  .charAt(0)
+                                  .toLowerCase() +
+                                  selectedAgroCategory.description.slice(1),
+                            })}
                           </p>
                         </div>
                       )}
@@ -1689,13 +1680,12 @@ export default function SpatialDataPage() {
                         <div className="flex items-center justify-center py-12">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
                           <span className="ml-3 text-gray-600">
-                            Cargando indicadores agroclimáticos...
+                            {t("spatial.loading.agroIndicators")}
                           </span>
                         </div>
                       ) : agroIndicators.length === 0 ? (
                         <div className="text-center py-12 text-gray-600">
-                          No hay datos disponibles para esta categoría
-                          agroclimática
+                          {t("spatial.empty.agroIndicators")}
                         </div>
                       ) : (
                         <div className="flex flex-col gap-8">
@@ -1773,7 +1763,7 @@ export default function SpatialDataPage() {
                                       }
                                     }}
                                     className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                    title="Descargar capa raster"
+                                    title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
                                       icon={faFileArrowDown}
@@ -1816,10 +1806,12 @@ export default function SpatialDataPage() {
         style={{ zIndex: 9999 }}
         title={
           !downloadReady
-            ? "Esperando que las capas se carguen..."
+            ? t("spatial.actions.waitingLayers")
             : downloadProgress > 0
-              ? `Descargando... ${downloadProgress}%`
-              : "Descargar todos los datos raster"
+              ? t("spatial.actions.downloading", {
+                  progress: downloadProgress,
+                })
+              : t("spatial.actions.downloadAll")
         }
       >
         {downloadProgress > 0 ? (
@@ -1839,7 +1831,9 @@ export default function SpatialDataPage() {
           style={{ zIndex: 9999 }}
         >
           <p className="text-sm text-gray-700 mb-2">
-            Descargando... {downloadProgress}%
+            {t("spatial.actions.downloading", {
+              progress: downloadProgress,
+            })}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
@@ -1857,7 +1851,7 @@ export default function SpatialDataPage() {
           disabled={!hasDataForPDF || pdfLoading}
           className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
           style={{ zIndex: 9999 }}
-          title="Descargar como PDF"
+          title={t("spatial.actions.downloadPdf")}
         >
           {pdfLoading ? (
             <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>

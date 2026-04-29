@@ -8,6 +8,7 @@ import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
 import { StationsProvider } from "@/app/contexts/StationsContext";
+import { I18nProvider } from "@/app/contexts/I18nContext";
 import { COUNTRY_NAME } from "./config";
 import { getBranchConfig } from "./configs";
 import { CookieConsentProvider } from "@/app/contexts/CookieConsentContext";
@@ -78,19 +79,23 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${montserrat.variable} antialiased`}>
-        <CookieConsentProvider>
-          <AuthProvider>
-            <CountryProvider>
-              <StationsProvider>
-                <Header />
-                {children}
-                <Footer />
-              </StationsProvider>
-            </CountryProvider>
-          </AuthProvider>
-          <CookieBanner />
-          <AnalyticsByConsent gaId={getBranchConfig().analytics?.gaId ?? ""} />
-        </CookieConsentProvider>
+        <I18nProvider>
+          <CookieConsentProvider>
+            <AuthProvider>
+              <CountryProvider>
+                <StationsProvider>
+                  <Header />
+                  {children}
+                  <Footer />
+                </StationsProvider>
+              </CountryProvider>
+            </AuthProvider>
+            <CookieBanner />
+            <AnalyticsByConsent
+              gaId={getBranchConfig().analytics?.gaId ?? ""}
+            />
+          </CookieConsentProvider>
+        </I18nProvider>
       </body>
     </html>
   );

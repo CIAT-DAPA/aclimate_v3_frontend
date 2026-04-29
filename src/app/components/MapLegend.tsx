@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useMap } from "react-leaflet";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 interface MapLegendProps {
   wmsUrl?: string;
@@ -20,14 +21,16 @@ const MapLegend: React.FC<MapLegendProps> = ({
   layerName,
   position = "bottomright",
   time,
-  title = "Leyenda",
+  title,
   children,
   maxHeight = "230px",
   avoidTimeline = false,
 }) => {
+  const { t } = useI18n();
   const map = useMap();
   const [legendUrl, setLegendUrl] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(true);
+  const legendTitle = title || t("mapLegend.title");
 
   useEffect(() => {
     // Solo obtener WMS legend si se proporcionan wmsUrl y layerName
@@ -73,7 +76,9 @@ const MapLegend: React.FC<MapLegendProps> = ({
     <div className={`absolute ${positionClasses[position]} z-[1000]`}>
       <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
         <div className="flex justify-between items-center mb-2">
-          <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
+          <h4 className="font-semibold text-sm text-gray-800">
+            {legendTitle}
+          </h4>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-gray-500 hover:text-gray-700"
@@ -115,7 +120,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
             ) : legendUrl ? (
               <img
                 src={legendUrl}
-                alt="Leyenda"
+                alt={legendTitle}
                 className="max-w-full h-auto"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;

@@ -6,6 +6,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
 import { useBranchConfig } from "@/app/configs/index";
 import { useState, useEffect } from "react";
+import { useI18n } from "@/app/contexts/I18nContext";
 import {
   faArrowRightFromBracket,
   faStar,
@@ -17,6 +18,7 @@ const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } =
     useAuth();
   const { countryName } = useCountry();
+  const { locale, setLocale, t } = useI18n();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -47,7 +49,7 @@ const Header = () => {
         <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <Image
             src="/assets/img/logo.png"
-            alt="AClimate Logo"
+            alt={t("common.logoAlt")}
             width={32}
             height={32}
           />
@@ -92,7 +94,7 @@ const Header = () => {
               href="/scenario"
               className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
             >
-              Escenarios
+              {t("nav.scenarios")}
             </Link>
           )}
           {SHOW_STATIONS_MODULE && (
@@ -100,15 +102,34 @@ const Header = () => {
               href="/locations"
               className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
             >
-              Estaciones
+              {t("nav.stations")}
             </Link>
           )}
           <Link
             href="/spatial"
             className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
           >
-            Datos espaciales
+            {t("nav.spatialData")}
           </Link>
+
+          <div className="flex items-center">
+            <label htmlFor="language-select" className="sr-only">
+              {t("nav.language")}
+            </label>
+            <select
+              id="language-select"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as typeof locale)}
+              className="bg-transparent text-amber-50 border border-amber-50/40 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+            >
+              <option value="es" className="text-gray-900">
+                ES
+              </option>
+              <option value="en" className="text-gray-900">
+                EN
+              </option>
+            </select>
+          </div>
 
           {/* Botón de login/usuario */}
           {SHOW_USERS_MODULE && (
@@ -127,7 +148,7 @@ const Header = () => {
                       onClick={login}
                       className="flex items-center justify-between p-2 font-medium text-amber-50 hover:text-amber-100 transition-colors"
                     >
-                      Login
+                      {t("nav.login")}
                     </button>
                   )}
 
@@ -139,7 +160,7 @@ const Header = () => {
                         title={
                           userInfo?.preferred_username ||
                           userInfo?.name ||
-                          "User"
+                          t("nav.userFallback")
                         }
                       >
                         {getInitials(
@@ -167,7 +188,7 @@ const Header = () => {
                               icon={faUser}
                               className="h-4 w-4 mr-2"
                             />
-                            Mi perfil
+                            {t("nav.profile")}
                           </Link>
                           <Link
                             href="/favorites"
@@ -178,7 +199,7 @@ const Header = () => {
                               icon={faStar}
                               className="h-4 w-4 mr-2"
                             />
-                            Favoritos
+                            {t("nav.favorites")}
                           </Link>
                           <button
                             onClick={() => {
@@ -191,7 +212,7 @@ const Header = () => {
                               icon={faArrowRightFromBracket}
                               className="h-4 w-4 mr-2"
                             />
-                            Logout
+                            {t("nav.logout")}
                           </button>
                         </div>
                       )}
@@ -213,7 +234,7 @@ const Header = () => {
                   className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  Escenarios
+                  {t("nav.scenarios")}
                 </Link>
               )}
               {SHOW_STATIONS_MODULE && (
@@ -222,7 +243,7 @@ const Header = () => {
                   className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  Estaciones
+                  {t("nav.stations")}
                 </Link>
               )}
               <Link
@@ -230,15 +251,37 @@ const Header = () => {
                 className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Datos espaciales
+                {t("nav.spatialData")}
               </Link>
               <Link
                 href="/about"
                 className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
                 onClick={() => setShowMobileMenu(false)}
               >
-                Acerca de
+                {t("nav.about")}
               </Link>
+
+              <div className="px-2 py-2">
+                <label
+                  htmlFor="language-select-mobile"
+                  className="block text-amber-50 text-xs mb-1"
+                >
+                  {t("nav.language")}
+                </label>
+                <select
+                  id="language-select-mobile"
+                  value={locale}
+                  onChange={(e) => setLocale(e.target.value as typeof locale)}
+                  className="w-full bg-transparent text-amber-50 border border-amber-50/40 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+                >
+                  <option value="es" className="text-gray-900">
+                    ES
+                  </option>
+                  <option value="en" className="text-gray-900">
+                    EN
+                  </option>
+                </select>
+              </div>
               {SHOW_USERS_MODULE && (
                 <div className="py-2 px-2 border-t border-[#3a4a26] mt-2">
                   {!loading && !authenticated && (
@@ -249,7 +292,7 @@ const Header = () => {
                       }}
                       className="text-amber-50 hover:text-amber-100 transition-colors w-full text-left"
                     >
-                      Login
+                      {t("nav.login")}
                     </button>
                   )}
                   {!loading && authenticated && (
@@ -270,14 +313,14 @@ const Header = () => {
                         className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
                         onClick={() => setShowMobileMenu(false)}
                       >
-                        Mi perfil
+                        {t("nav.profile")}
                       </Link>
                       <Link
                         href="/favorites"
                         className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
                         onClick={() => setShowMobileMenu(false)}
                       >
-                        Favoritos
+                        {t("nav.favorites")}
                       </Link>
                       <button
                         onClick={() => {
@@ -286,7 +329,7 @@ const Header = () => {
                         }}
                         className="text-amber-50 hover:text-amber-100 transition-colors text-sm text-left"
                       >
-                        Logout
+                        {t("nav.logout")}
                       </button>
                     </div>
                   )}

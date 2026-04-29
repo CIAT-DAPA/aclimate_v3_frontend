@@ -26,6 +26,7 @@ import {
 import { useBranchConfig } from "@/app/configs";
 import { spatialService } from "@/app/services/spatialService";
 import { useCountry } from "@/app/contexts/CountryContext";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -98,6 +99,7 @@ const DEPARTMENTS = {
 
 export default function AmazonasScenarioPage() {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { t, locale } = useI18n();
   const { idCountry } = useBranchConfig();
   const [selectedDept, setSelectedDept] = useState<string>("");
   const [selectedCommunity, setSelectedCommunity] = useState<string>("");
@@ -106,7 +108,7 @@ export default function AmazonasScenarioPage() {
     lon: number;
   } | null>(null);
   const [scenarioName, setScenarioName] = useState<string>(
-    "Ninguna ubicación seleccionada",
+    t("scenarioPage.states.noLocationSelected"),
   );
   const [scenarioFeatures, setScenarioFeatures] = useState<IndicatorFeature[]>(
     [],
@@ -166,13 +168,22 @@ export default function AmazonasScenarioPage() {
           const dateObj = new Date(
             Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)),
           );
-          const monthName = dateObj.toLocaleString("es-ES", {
+          const monthName = dateObj.toLocaleString(
+            locale === "es" ? "es-ES" : "en-US",
+            {
             month: "long",
             timeZone: "UTC",
-          });
-          const capitalizedMonth =
-            monthName.charAt(0).toUpperCase() + monthName.slice(1);
-          setLayerDate(`${capitalizedMonth} de ${year}`);
+            },
+          );
+          const formattedMonth =
+            locale === "es"
+              ? monthName.charAt(0).toUpperCase() + monthName.slice(1)
+              : monthName;
+          setLayerDate(
+            locale === "es"
+              ? `${formattedMonth} de ${year}`
+              : `${formattedMonth} ${year}`,
+          );
         }
       } catch (err) {
         console.error("Error cargando fecha de la capa:", err);
@@ -198,11 +209,11 @@ export default function AmazonasScenarioPage() {
 
   const getScenarioStyle = () => {
     const s = scenarioName.toLowerCase();
-    if (s.includes("invierno")) {
+    if (s.includes("invierno") || s.includes("winter")) {
       return { backgroundColor: "#2B83BA20", color: "#2B83BA" };
     } else if (s.includes("normal")) {
       return { backgroundColor: "#DEFFB540", color: "#7ea336" };
-    } else if (s.includes("verano")) {
+    } else if (s.includes("verano") || s.includes("summer")) {
       return { backgroundColor: "#D7191C20", color: "#D7191C" };
     }
     return { backgroundColor: "#f3f4f6", color: "#4b5563" };
@@ -256,21 +267,21 @@ export default function AmazonasScenarioPage() {
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Pronostico_Climatico_Mensual${timeValue ? `_${timeValue}` : ""}.tiff`;
+      link.download = `Monthly_Climate_Forecast${timeValue ? `_${timeValue}` : ""}.tiff`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error descargando archivo raster:", error);
       alert(
-        "Ocurrió un error al descargar la capa. Por favor, intenta de nuevo.",
+        t("scenarioPage.errors.downloadRaster"),
       );
     }
   };
 
   useEffect(() => {
     if (!activeLocationLatLon) {
-      setScenarioName("Ninguna ubicación seleccionada");
+      setScenarioName(t("scenarioPage.states.noLocationSelected"));
       setScenarioFeatures([]);
       setScenarioRecommendations([]);
       return;
@@ -278,7 +289,7 @@ export default function AmazonasScenarioPage() {
 
     const fetchScenario = async () => {
       try {
-        setScenarioName("Cargando...");
+        setScenarioName(t("scenarioPage.states.loading"));
         setLoadingContent(true);
         const { lat, lon } = activeLocationLatLon;
 
@@ -302,9 +313,9 @@ export default function AmazonasScenarioPage() {
             string,
             { label: string; indicatorId: number }
           > = {
-            "3": { label: "Invierno", indicatorId: 16 },
-            "2": { label: "Normal", indicatorId: 15 },
-            "1": { label: "Verano", indicatorId: 14 },
+            "3": { label: t("scenarioPage.states.winter"), indicatorId: 16 },
+            "2": { label: t("scenarioPage.states.normal"), indicatorId: 15 },
+            "1": { label: t("scenarioPage.states.summer"), indicatorId: 14 },
           };
 
           const matchedScenario = SCENARIO_MAP[String(value)];
@@ -381,18 +392,20 @@ export default function AmazonasScenarioPage() {
               ),
             );
           } else {
-            setScenarioName(`Escenario (Valor: ${value})`);
+            setScenarioName(
+              t("scenarioPage.states.scenarioValue", { value: String(value) }),
+            );
             setScenarioFeatures([]);
             setScenarioRecommendations([]);
           }
         } else {
-          setScenarioName("Sin datos para esta zona");
+          setScenarioName(t("scenarioPage.states.noDataForZone"));
           setScenarioFeatures([]);
           setScenarioRecommendations([]);
         }
       } catch (error) {
         console.error("Error al obtener el escenario:", error);
-        setScenarioName("Error al obtener datos");
+        setScenarioName(t("scenarioPage.states.errorLoadingData"));
         setScenarioFeatures([]);
         setScenarioRecommendations([]);
       } finally {
@@ -407,6 +420,8 @@ export default function AmazonasScenarioPage() {
     selectedCommunityData,
     idCountry,
     latestForecastTime,
+    t,
+    locale,
   ]);
 
   const mapStations = selectedCommunityData
@@ -432,7 +447,7 @@ export default function AmazonasScenarioPage() {
       ? ([
           {
             id: 1,
-            name: "Ubicación seleccionada",
+            name: t("scenarioPage.states.selectedLocation"),
             ext_id: "1",
             machine_name: "custom",
             latitude: customLocation.lat,
@@ -442,9 +457,9 @@ export default function AmazonasScenarioPage() {
             country_name: "CO",
             country_iso2: "CO",
             admin1_id: 1,
-            admin1_name: "Ubicación",
+            admin1_name: t("scenarioPage.states.location"),
             admin2_id: 1,
-            admin2_name: "seleccionada",
+            admin2_name: "Seleccionada",
           },
         ] as Station[])
       : [];
@@ -481,7 +496,7 @@ export default function AmazonasScenarioPage() {
           });
 
           pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
-          pdf.save("escenario_climatico.pdf");
+          pdf.save("climate_scenario_report.pdf");
         };
       })
       .catch((err) => {
@@ -500,7 +515,7 @@ export default function AmazonasScenarioPage() {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#283618]">
-                  Escenarios Climáticos
+                  {t("scenarioPage.title")}
                 </h1>
                 {layerDate && (
                   <span className="inline-block text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 shadow-sm self-start sm:self-auto">
@@ -509,25 +524,23 @@ export default function AmazonasScenarioPage() {
                 )}
               </div>
               <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
-                ¡Bienvenido! Aquí puedes explorar el escenario climático de tu
-                región. Busca y haz clic en cualquier lugar del mapa, o utiliza
-                los selectores para elegir un departamento y comunidad.
-                Descubrirás las características y las mejores recomendaciones
-                para el escenario propuesto.
+                {t("scenarioPage.description")}
               </p>
             </div>
 
             <div className="mt-5 sm:mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Departamento
+                  {t("scenarioPage.filters.department")}
                 </label>
                 <select
                   value={selectedDept}
                   onChange={handleDeptChange}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 sm:p-2.5 text-sm sm:text-base border text-black"
                 >
-                  <option value="">Seleccione un departamento...</option>
+                  <option value="">
+                    {t("scenarioPage.filters.selectDepartment")}
+                  </option>
                   {Object.entries(DEPARTMENTS).map(([key, dept]) => (
                     <option key={key} value={key}>
                       {dept.name}
@@ -538,7 +551,7 @@ export default function AmazonasScenarioPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Comunidad
+                  {t("scenarioPage.filters.community")}
                 </label>
                 <select
                   value={selectedCommunity}
@@ -546,7 +559,9 @@ export default function AmazonasScenarioPage() {
                   disabled={!selectedDept}
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-green focus:border-brand-green p-2 sm:p-2.5 text-sm sm:text-base border disabled:bg-gray-100 disabled:text-gray-500 text-black"
                 >
-                  <option value="">Seleccione una comunidad...</option>
+                  <option value="">
+                    {t("scenarioPage.filters.selectCommunity")}
+                  </option>
                   {selectedDept &&
                     DEPARTMENTS[
                       selectedDept as keyof typeof DEPARTMENTS
@@ -575,7 +590,7 @@ export default function AmazonasScenarioPage() {
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
                       <span className="mt-3 text-sm sm:text-base text-gray-500 font-medium">
-                        Cargando mapa...
+                        {t("scenarioPage.loading.map")}
                       </span>
                     </div>
                   </div>
@@ -594,6 +609,7 @@ export default function AmazonasScenarioPage() {
                           opacity: 1.0,
                           transparent: true,
                           title: "Pronóstico Climático Mensual",
+                          title: t("scenarioPage.map.monthlyForecastTitle"),
                           unit: "",
                         },
                       ]}
@@ -609,7 +625,7 @@ export default function AmazonasScenarioPage() {
                     <button
                       onClick={downloadRasterFile}
                       className="absolute top-4 right-4 sm:top-10 sm:right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                      title="Descargar capa raster de pronóstico"
+                      title={t("scenarioPage.actions.downloadRaster")}
                     >
                       <FontAwesomeIcon
                         icon={faFileArrowDown}
@@ -625,7 +641,7 @@ export default function AmazonasScenarioPage() {
                   href="/spatial#forecast-pct-accordion"
                   className="text-sm sm:text-base text-blue-700 hover:text-blue-900 underline font-medium"
                 >
-                  Desea ver más información?
+                  {t("scenarioPage.actions.moreInfo")}
                 </Link>
               </div>
             </div>
@@ -634,13 +650,13 @@ export default function AmazonasScenarioPage() {
           <div className="border-l-4 border-[#283618] pl-4 sm:pl-6 lg:pl-8 bg-white p-4 sm:p-6 lg:p-7 rounded-lg shadow-sm">
             <div>
               <h2 className="text-xl sm:text-2xl font-semibold text-[#283618] mb-3 sm:mb-4">
-                Características de la zona: {scenarioName}
+                {t("scenarioPage.sections.featuresTitle", { scenarioName })}
               </h2>
               <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
                 <div className="sm:hidden divide-y divide-gray-100">
                   {loadingContent ? (
                     <div className="px-4 py-4 text-center text-sm text-gray-600">
-                      Cargando características...
+                      {t("scenarioPage.loading.features")}
                     </div>
                   ) : scenarioFeatures.length > 0 ? (
                     scenarioFeatures.map((feature, idx) => (
@@ -666,8 +682,8 @@ export default function AmazonasScenarioPage() {
                   ) : (
                     <div className="px-4 py-4 text-center text-sm text-gray-600">
                       {!selectedCommunityData
-                        ? "Selecciona una comunidad para ver sus características."
-                        : "No hay características disponibles para esta zona."}
+                        ? t("scenarioPage.empty.featuresSelectCommunity")
+                        : t("scenarioPage.empty.featuresNoData")}
                     </div>
                   )}
                 </div>
@@ -676,10 +692,10 @@ export default function AmazonasScenarioPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-1/4">
-                        Categoría
+                        {t("scenarioPage.table.category")}
                       </th>
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-3/4">
-                        Descripción
+                        {t("scenarioPage.table.description")}
                       </th>
                     </tr>
                   </thead>
@@ -690,7 +706,7 @@ export default function AmazonasScenarioPage() {
                           colSpan={2}
                           className="px-4 lg:px-6 py-3 lg:py-4 text-center"
                         >
-                          Cargando características...
+                          {t("scenarioPage.loading.features")}
                         </td>
                       </tr>
                     ) : scenarioFeatures.length > 0 ? (
@@ -717,8 +733,8 @@ export default function AmazonasScenarioPage() {
                           className="px-4 lg:px-6 py-3 lg:py-4 text-center"
                         >
                           {!selectedCommunityData
-                            ? "Selecciona una comunidad para ver sus características."
-                            : "No hay características disponibles para esta zona."}
+                            ? t("scenarioPage.empty.featuresSelectCommunity")
+                            : t("scenarioPage.empty.featuresNoData")}
                         </td>
                       </tr>
                     )}
@@ -731,17 +747,18 @@ export default function AmazonasScenarioPage() {
           <div className="border-l-4 border-[#c86b24] pl-4 sm:pl-6 lg:pl-8 relative bg-white p-4 sm:p-6 lg:p-7 rounded-lg shadow-sm">
             <div>
               <h2 className="text-xl sm:text-2xl font-semibold text-[#283618] mb-1">
-                Recomendaciones: {scenarioName}
+                {t("scenarioPage.sections.recommendationsTitle", {
+                  scenarioName,
+                })}
               </h2>
               <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">
-                Basadas en escenarios climáticos y probabilidades de
-                precipitación
+                {t("scenarioPage.sections.recommendationsDescription")}
               </p>
               <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
                 <div className="sm:hidden divide-y divide-gray-100">
                   {loadingContent ? (
                     <div className="px-4 py-4 text-center text-sm text-gray-600">
-                      Cargando recomendaciones...
+                      {t("scenarioPage.loading.recommendations")}
                     </div>
                   ) : scenarioRecommendations.length > 0 ? (
                     scenarioRecommendations.map((rec, idx) => (
@@ -767,8 +784,8 @@ export default function AmazonasScenarioPage() {
                   ) : (
                     <div className="px-4 py-4 text-center text-sm text-gray-600">
                       {!selectedCommunityData
-                        ? "Selecciona una comunidad para ver recomendaciones."
-                        : "No hay recomendaciones disponibles para esta zona."}
+                        ? t("scenarioPage.empty.recommendationsSelectCommunity")
+                        : t("scenarioPage.empty.recommendationsNoData")}
                     </div>
                   )}
                 </div>
@@ -777,10 +794,10 @@ export default function AmazonasScenarioPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-1/3">
-                        Recomendación
+                        {t("scenarioPage.table.recommendation")}
                       </th>
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold text-gray-700 w-2/3">
-                        Descripción
+                        {t("scenarioPage.table.description")}
                       </th>
                     </tr>
                   </thead>
@@ -791,7 +808,7 @@ export default function AmazonasScenarioPage() {
                           colSpan={2}
                           className="px-4 lg:px-6 py-3 lg:py-4 text-center"
                         >
-                          Cargando recomendaciones...
+                          {t("scenarioPage.loading.recommendations")}
                         </td>
                       </tr>
                     ) : scenarioRecommendations.length > 0 ? (
@@ -818,8 +835,8 @@ export default function AmazonasScenarioPage() {
                           className="px-4 lg:px-6 py-3 lg:py-4 text-center"
                         >
                           {!selectedCommunityData
-                            ? "Selecciona una comunidad para ver recomendaciones."
-                            : "No hay recomendaciones disponibles para esta zona."}
+                            ? t("scenarioPage.empty.recommendationsSelectCommunity")
+                            : t("scenarioPage.empty.recommendationsNoData")}
                         </td>
                       </tr>
                     )}
@@ -834,7 +851,7 @@ export default function AmazonasScenarioPage() {
       <button
         onClick={downloadPdf}
         className="fixed bottom-8 right-8 bg-[#c86b24] hover:bg-[#a6561b] text-white p-4 rounded-full shadow-lg transition-all border-4 border-white z-50 cursor-pointer hover:scale-110 active:scale-95"
-        title="Descargar reporte en PDF"
+        title={t("scenarioPage.actions.downloadPdf")}
       >
         <FileText size={28} />
       </button>
