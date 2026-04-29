@@ -44,6 +44,53 @@ body {
   height: 0 !important;
 }
 
+@media (max-width: 640px) {
+  .leaflet-bottom.leaflet-right {
+    left: 0;
+    right: 0;
+  }
+
+  .leaflet-bottom.leaflet-right .leaflet-bar-timecontrol {
+    float: left;
+    margin: 0 8px 8px;
+    width: calc(100% - 16px);
+  }
+
+  .leaflet-bar-timecontrol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .leaflet-bar-timecontrol .leaflet-control-timecontrol {
+    float: none;
+    height: 32px;
+    line-height: 32px;
+    border-width: 0;
+  }
+
+  .leaflet-bar-timecontrol a.timecontrol-date,
+  .leaflet-bar-timecontrol a.timecontrol-date:hover {
+    min-width: 0;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .leaflet-bar-timecontrol .timecontrol-dateslider {
+    order: 2;
+    flex: 1 1 100%;
+  }
+
+  .leaflet-bar-timecontrol .timecontrol-dateslider .slider {
+    width: 100%;
+    margin: 6px 0 2px;
+  }
+}
+
 /* Forzar colores oscuros en tooltips de ApexCharts */
 .apexcharts-tooltip {
   background: #ffffff !important;

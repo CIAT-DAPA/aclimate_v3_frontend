@@ -18,6 +18,7 @@ export const VARIABLE_CONFIG: Record<string, { title: string; unit: string; colo
   'tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
   'Tmin': { title: 'Temperatura mínima', unit: '°C', color: '#FF9800' },
   'tmean': { title: 'Temperatura media', unit: '°C', color: '#9C27B0' },
+  'tmed': { title: 'Temperatura media', unit: '°C', color: '#9C27B0' },
   
   // Precipitación
   'prec': { title: 'Precipitación', unit: 'mm', color: '#4CAF50', chartType: 'bar' },
