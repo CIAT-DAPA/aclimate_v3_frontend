@@ -3,9 +3,11 @@ import { useBranchConfig } from "@/app/configs";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 export default function AboutPage() {
   const config = useBranchConfig();
+  const { t } = useI18n();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   const handleImageError = (partnerName: string) => {
@@ -29,7 +31,7 @@ export default function AboutPage() {
                       target="_blank"
                       className="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-white text-[#824b1a] border-2 border-[#bc6c25] font-semibold rounded-full hover:bg-[#bc6c25] hover:text-white transition-colors duration-300 text-sm md:text-base"
                     >
-                      Conoce más del proyecto
+                      {t("about.projectLink")}
                       <svg
                         className="ml-2 w-5 h-5"
                         fill="none"
@@ -156,17 +158,16 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center text-white">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6">
-              ¿Listo para explorar los datos climáticos?
+              {t("about.ctaTitle")}
             </h2>
             <p className="text-lg md:text-xl mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-              Accede a información climática detallada y herramientas de
-              análisis avanzadas
+              {t("about.ctaSubtitle")}
             </p>
             <Link
               href="/"
               className="inline-flex items-center px-6 md:px-8 py-3 md:py-4 bg-[#bc6c25] text-white font-bold rounded-full hover:bg-[#a85a1f] transition-colors duration-300 text-base md:text-lg"
             >
-              Comenzar ahora
+              {t("about.ctaButton")}
               <svg
                 className="ml-3 w-6 h-6"
                 fill="none"

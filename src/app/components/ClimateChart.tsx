@@ -4,14 +4,20 @@
 import React, { useEffect } from "react";
 import type { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import { useI18n } from "@/app/contexts/I18nContext";
+
+const LoadingChart = () => {
+  const { t } = useI18n();
+  return (
+    <div className="h-full w-full flex items-center justify-center text-gray-600">
+      {t("charts.loading")}
+    </div>
+  );
+};
 
 const Chart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
-  loading: () => (
-    <div className="h-full w-full flex items-center justify-center text-gray-600">
-      Cargando gráfica...
-    </div>
-  ),
+  loading: () => <LoadingChart />,
 });
 
 interface DatasetConfig {
@@ -33,14 +39,10 @@ interface ClimateChartProps {
 
 // Información de tooltip para cada variable climática
 const variableInfo = {
-  "Temperatura máxima":
-    "La temperatura máxima representa el valor más alto de temperatura del aire en un día, medido en grados Celsius (°C).",
-  Precipitación:
-    "La precipitación es la cantidad total de agua que cae sobre la superficie, medida en milímetros (mm). Incluye lluvia, nieve, granizo, etc.",
-  "Temperatura mínima":
-    "La temperatura mínima representa el valor más bajo de temperatura del aire en un día, medido en grados Celsius (°C).",
-  "Radiación solar":
-    "La radiación solar es la cantidad de energía radiante recibida del sol por unidad de área, medida en megajulios por metro cuadrado (MJ/m²).",
+  "Temperatura máxima": "spatial.variableInfo.tmax",
+  Precipitación: "spatial.variableInfo.prec",
+  "Temperatura mínima": "spatial.variableInfo.tmin",
+  "Radiación solar": "spatial.variableInfo.rad",
 };
 
 const ClimateChart: React.FC<ClimateChartProps> = ({
@@ -51,6 +53,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   chartType = "line",
   description,
 }) => {
+  const { t } = useI18n();
   const isClimatology = period === "climatology";
   const isMonthly = period === "monthly";
   const isDaily = period === "daily";
@@ -70,8 +73,10 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   const getTooltipContent = () => {
     if (description) return description;
     return (
-      variableInfo[title as keyof typeof variableInfo] ||
-      `Información sobre ${title.toLowerCase()}`
+      (variableInfo[title as keyof typeof variableInfo]
+        ? t(variableInfo[title as keyof typeof variableInfo])
+        : null) ||
+      t("charts.infoFallback", { title })
     );
   };
 
@@ -162,7 +167,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     },
     xaxis: {
       title: {
-        text: isClimatology ? "Meses" : "Fecha",
+        text: isClimatology ? t("charts.months") : t("charts.date"),
       },
       ...(isClimatology
         ? {
