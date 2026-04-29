@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import { config } from "@fortawesome/fontawesome-svg-core";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -11,6 +13,8 @@ import { getBranchConfig } from "./configs";
 import { CookieConsentProvider } from "@/app/contexts/CookieConsentContext";
 import CookieBanner from "./components/CookieBanner";
 import AnalyticsByConsent from "./components/AnalyticsByConsent";
+
+config.autoAddCss = false;
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",

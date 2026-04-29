@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { GEOSERVER_URL } from "@/app/config";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDatabase } from "@fortawesome/free-solid-svg-icons";
 import {
   spatialService,
   IndicatorCategory,
@@ -283,6 +285,10 @@ export default function HydrologicalIndicatorsSection({
                 Explora indicadores hidrológicos específicos a nivel de
                 microcuenca para tu comunidad. Selecciona tu ubicación para ver
                 los datos disponibles sobre erosión, inundaciones y más.
+              </p>
+              <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+                <FontAwesomeIcon icon={faDatabase} className="text-sm" />
+                Fuente: ERA5 y CHIRPS
               </p>
             </div>
 
