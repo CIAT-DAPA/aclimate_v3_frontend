@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 import {
   addUserStation,
   deleteUserStation,
@@ -41,6 +42,7 @@ import { faMapPin } from "@fortawesome/free-solid-svg-icons";
 import { faTint } from "@fortawesome/free-solid-svg-icons";
 import { faWater } from "@fortawesome/free-solid-svg-icons";
 import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 
 // Paleta de colores accesibles con buen contraste
 const ACCESSIBLE_COLORS = [
@@ -103,6 +105,59 @@ const createCommunityLabelIcon = (
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
+};
+
+const MapActionButton = ({
+  show,
+  onClick,
+}: {
+  show: boolean;
+  onClick?: () => void;
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!show || !onClick) return;
+
+    const control = new L.Control({ position: "topright" });
+
+    control.onAdd = () => {
+      const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+      const button = L.DomUtil.create("button", "", container);
+
+      button.type = "button";
+      button.title = "Descargar capa raster de pronóstico";
+      button.setAttribute("aria-label", button.title);
+      button.className =
+        "flex h-10 w-10 items-center justify-center rounded-md border border-black bg-white text-black shadow-md transition-colors hover:text-black/50";
+      button.style.lineHeight = "1";
+
+      // Extraer SVG del icono FontAwesome
+      const [width, height, , , paths] = faFileArrowDown.icon;
+      const pathString = Array.isArray(paths)
+        ? (paths as string[]).map((p) => `<path d="${p}"/>`).join("")
+        : `<path d="${paths as string}"/>`;
+
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="18" height="18" fill="currentColor">${pathString}</svg>`;
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
+      L.DomEvent.on(button, "click", (event) => {
+        L.DomEvent.stop(event);
+        onClick();
+      });
+
+      return container;
+    };
+
+    control.addTo(map);
+
+    return () => {
+      control.remove();
+    };
+  }, [map, onClick, show]);
+
+  return null;
 };
 
 const rasterLayers = [
@@ -176,6 +231,8 @@ interface MapComponentProps {
   displayFormat?: string;
   onMapClick?: (lat: number, lng: number) => void;
   customMarkers?: CustomCommunityMarker[];
+  showActionButton?: boolean;
+  onActionButtonClick?: () => void;
 }
 
 const MapComponent = ({
@@ -197,6 +254,8 @@ const MapComponent = ({
   displayFormat = "YYYY-MM-DD",
   onMapClick,
   customMarkers = [],
+  showActionButton = false,
+  onActionButtonClick,
 }: MapComponentProps) => {
   const { t, locale } = useI18n();
   const activeStations = stations.filter((station) => station.enable);
@@ -644,7 +703,7 @@ const MapComponent = ({
       <div className="flex flex-col">
         <div className="flex justify-between items-center text-sm text-gray-700 mb-2">
           <span>
-            {t("map.station.lastDate")}: {" "}
+            {t("map.station.lastDate")}:{" "}
             <span className="font-medium">{dateFormatted}</span>
           </span>
         </div>
@@ -834,6 +893,13 @@ const MapComponent = ({
 
         {showZoomControl && <ZoomControl position="topright" />}
 
+        {showActionButton && onActionButtonClick && (
+          <MapActionButton
+            show={showActionButton}
+            onClick={onActionButtonClick}
+          />
+        )}
+
         {showMarkers &&
           hasStations &&
           !singleStationMode &&
@@ -876,7 +942,8 @@ const MapComponent = ({
                     </div>
 
                     <div className="flex justify-between items-center mt-3 pt-2">
-                      <button
+                      <UIButton
+                        variant="secondary"
                         onClick={(e) =>
                           toggleFavorite(station.id.toString(), e)
                         }
@@ -884,14 +951,9 @@ const MapComponent = ({
                           loadingFavorites.has(station.id.toString()) ||
                           !authenticated
                         }
-                        className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
+                        className={`text-xs ${
                           favorites.has(station.id.toString())
-                            ? "text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100"
-                            : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
-                        } ${
-                          loadingFavorites.has(station.id.toString()) ||
-                          !authenticated
-                            ? "opacity-50 cursor-not-allowed"
+                            ? "text-[#a85a1f] border-[#bc6c25] bg-[#f8f3ee]"
                             : ""
                         }`}
                       >
@@ -918,7 +980,7 @@ const MapComponent = ({
                           : favorites.has(station.id.toString())
                             ? t("map.favorites.saved")
                             : t("map.favorites.favorite")}
-                      </button>
+                      </UIButton>
 
                       <Link
                         className="flex items-center justify-center text-sm px-4 py-2 bg-[#C27830] !text-white rounded-lg hover:bg-[#A96627] transition-colors font-medium"

@@ -16,7 +16,9 @@ import {
   faDatabase,
   faFileArrowDown,
   faDownload,
+  faFileText,
 } from "@fortawesome/free-solid-svg-icons";
+import { UIButton } from "@/app/components/ui/button";
 import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
 import type { CustomCommunityMarker } from "@/app/components/MapComponent";
 import { useI18n } from "@/app/contexts/I18nContext";
@@ -369,9 +371,7 @@ export default function SpatialDataPage() {
         if (dates.length > 0) {
           const latest = dates[dates.length - 1];
           setLatestForecastPctTime(latest);
-              setForecastPctDateLabel(
-                formatLayerMonthLabel(latest, locale),
-              );
+          setForecastPctDateLabel(formatLayerMonthLabel(latest, locale));
         }
       } catch (error) {
         console.error("Error cargando fecha para cambio porcentual:", error);
@@ -394,7 +394,7 @@ export default function SpatialDataPage() {
         if (dates.length > 0) {
           const latest = dates[dates.length - 1];
           setLatestScenarioTime(latest);
-              setScenarioDateLabel(formatLayerMonthLabel(latest, locale));
+          setScenarioDateLabel(formatLayerMonthLabel(latest, locale));
         }
       } catch (error) {
         console.error("Error cargando fecha para escenario mensual:", error);
@@ -967,9 +967,15 @@ export default function SpatialDataPage() {
                             onChange={(e) => setTimePeriod(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-green"
                           >
-                            <option value="daily">{t("spatial.period.daily")}</option>
-                            <option value="monthly">{t("spatial.period.monthly")}</option>
-                            <option value="climatology">{t("spatial.period.climatology")}</option>
+                            <option value="daily">
+                              {t("spatial.period.daily")}
+                            </option>
+                            <option value="monthly">
+                              {t("spatial.period.monthly")}
+                            </option>
+                            <option value="climatology">
+                              {t("spatial.period.climatology")}
+                            </option>
                           </select>
                         </div>
                       </div>
@@ -1122,7 +1128,7 @@ export default function SpatialDataPage() {
                                       }
                                     }}
                                     className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                                  title={t("spatial.actions.downloadRaster")}
+                                    title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
                                       icon={faFileArrowDown}
@@ -1151,7 +1157,8 @@ export default function SpatialDataPage() {
                                     </p>
                                     <p className="text-sm text-gray-400">
                                       {t("spatial.empty.variablePeriod", {
-                                        period: resolveTimePeriodLabel(timePeriod),
+                                        period:
+                                          resolveTimePeriodLabel(timePeriod),
                                       })}
                                     </p>
                                   </div>
@@ -1227,8 +1234,7 @@ export default function SpatialDataPage() {
                                   time: latestForecastPctTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,
-                                  title:
-                                    t("spatial.scenarios.pctChange.title"),
+                                  title: t("spatial.scenarios.pctChange.title"),
                                   unit: "%",
                                 },
                               ]}
@@ -1369,7 +1375,9 @@ export default function SpatialDataPage() {
                             disabled={availableTemporalities.length === 0}
                           >
                             {availableTemporalities.length === 0 ? (
-                              <option value="">{t("spatial.loading.options")}</option>
+                              <option value="">
+                                {t("spatial.loading.options")}
+                              </option>
                             ) : (
                               indicatorPeriodOptions
                                 .filter((option) =>
@@ -1435,7 +1443,7 @@ export default function SpatialDataPage() {
                                 selectedCategory.description
                                   .charAt(0)
                                   .toLowerCase() +
-                                  selectedCategory.description.slice(1),
+                                selectedCategory.description.slice(1),
                             })}
                           </p>
                         </div>
@@ -1670,7 +1678,7 @@ export default function SpatialDataPage() {
                                 selectedAgroCategory.description
                                   .charAt(0)
                                   .toLowerCase() +
-                                  selectedAgroCategory.description.slice(1),
+                                selectedAgroCategory.description.slice(1),
                             })}
                           </p>
                         </div>
@@ -1799,11 +1807,12 @@ export default function SpatialDataPage() {
       </main>
 
       {/* Botón flotante de descarga de todos los rasters */}
-      <button
+      <UIButton
         onClick={downloadAllData}
         disabled={!downloadReady || isPreparingDownload}
-        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
-        style={{ zIndex: 9999 }}
+        variant="secondary"
+        size="sm"
+        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 z-[9999] rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
         title={
           !downloadReady
             ? t("spatial.actions.waitingLayers")
@@ -1822,7 +1831,7 @@ export default function SpatialDataPage() {
             className="h-6 w-6 sm:h-8 sm:w-8"
           />
         )}
-      </button>
+      </UIButton>
 
       {/* Barra de progreso flotante */}
       {downloadProgress > 0 && (
@@ -1846,22 +1855,23 @@ export default function SpatialDataPage() {
 
       {/* Botón flotante de descarga PDF */}
       {hasDataForPDF && (
-        <button
+        <UIButton
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
-          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-3 sm:p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-all hover:scale-110"
-          style={{ zIndex: 9999 }}
+          variant="secondary"
+          size="sm"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999] w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
           title={t("spatial.actions.downloadPdf")}
         >
           {pdfLoading ? (
             <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
           ) : (
             <FontAwesomeIcon
-              icon={faFileArrowDown}
+              icon={faFileText}
               className="h-6 w-6 sm:h-8 sm:w-8"
             />
           )}
-        </button>
+        </UIButton>
       )}
     </div>
   );

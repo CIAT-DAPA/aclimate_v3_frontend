@@ -11,8 +11,6 @@ import {
   Calendar,
 } from "lucide-react";
 import React, { useRef, useCallback, useState, useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
@@ -27,6 +25,9 @@ import { useBranchConfig } from "@/app/configs";
 import { spatialService } from "@/app/services/spatialService";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
+import { faFileText, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -171,8 +172,8 @@ export default function AmazonasScenarioPage() {
           const monthName = dateObj.toLocaleString(
             locale === "es" ? "es-ES" : "en-US",
             {
-            month: "long",
-            timeZone: "UTC",
+              month: "long",
+              timeZone: "UTC",
             },
           );
           const formattedMonth =
@@ -273,9 +274,7 @@ export default function AmazonasScenarioPage() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error descargando archivo raster:", error);
-      alert(
-        t("scenarioPage.errors.downloadRaster"),
-      );
+      alert(t("scenarioPage.errors.downloadRaster"));
     }
   };
 
@@ -608,7 +607,6 @@ export default function AmazonasScenarioPage() {
                           time: latestForecastTime || undefined,
                           opacity: 1.0,
                           transparent: true,
-                          title: "Pronóstico Climático Mensual",
                           title: t("scenarioPage.map.monthlyForecastTitle"),
                           unit: "",
                         },
@@ -620,18 +618,9 @@ export default function AmazonasScenarioPage() {
                       showLegend={true}
                       showAdminLayer={true}
                       onMapClick={handleMapClick}
+                      showActionButton={true}
+                      onActionButtonClick={downloadRasterFile}
                     />
-
-                    <button
-                      onClick={downloadRasterFile}
-                      className="absolute top-4 right-4 sm:top-10 sm:right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
-                      title={t("scenarioPage.actions.downloadRaster")}
-                    >
-                      <FontAwesomeIcon
-                        icon={faFileArrowDown}
-                        className="h-4 w-4"
-                      />
-                    </button>
                   </>
                 )}
               </div>
@@ -835,7 +824,9 @@ export default function AmazonasScenarioPage() {
                           className="px-4 lg:px-6 py-3 lg:py-4 text-center"
                         >
                           {!selectedCommunityData
-                            ? t("scenarioPage.empty.recommendationsSelectCommunity")
+                            ? t(
+                                "scenarioPage.empty.recommendationsSelectCommunity",
+                              )
                             : t("scenarioPage.empty.recommendationsNoData")}
                         </td>
                       </tr>
@@ -848,13 +839,15 @@ export default function AmazonasScenarioPage() {
         </div>
       </div>
 
-      <button
+      <UIButton
         onClick={downloadPdf}
-        className="fixed bottom-8 right-8 bg-[#c86b24] hover:bg-[#a6561b] text-white p-4 rounded-full shadow-lg transition-all border-4 border-white z-50 cursor-pointer hover:scale-110 active:scale-95"
+        size="sm"
+        variant="secondary"
+        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 z-[9999] rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
         title={t("scenarioPage.actions.downloadPdf")}
       >
-        <FileText size={28} />
-      </button>
+        <FontAwesomeIcon icon={faFileText} className="h-6 w-6 sm:h-8 sm:w-8" />
+      </UIButton>
     </div>
   );
 }
