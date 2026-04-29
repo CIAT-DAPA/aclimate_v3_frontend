@@ -7,6 +7,7 @@ import { useStations } from "@/app/contexts/StationsContext";
 import { Station } from "@/app/types/Station";
 import { useBranchConfig } from "@/app/configs";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 
 function MapLoadingFallback() {
   const { t } = useI18n();
@@ -58,12 +59,9 @@ export default function LocationsPage() {
           <p className="text-red-600 mb-4">
             {t("locations.errorLabel", { error })}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
-          >
+          <UIButton onClick={() => window.location.reload()}>
             {t("locations.retry")}
-          </button>
+          </UIButton>
         </div>
       </div>
     );
