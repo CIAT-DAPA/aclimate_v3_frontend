@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 import {
   addUserStation,
   deleteUserStation,
@@ -876,7 +877,8 @@ const MapComponent = ({
                     </div>
 
                     <div className="flex justify-between items-center mt-3 pt-2">
-                      <button
+                      <UIButton
+                        variant="secondary"
                         onClick={(e) =>
                           toggleFavorite(station.id.toString(), e)
                         }
@@ -884,14 +886,9 @@ const MapComponent = ({
                           loadingFavorites.has(station.id.toString()) ||
                           !authenticated
                         }
-                        className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
+                        className={`text-xs ${
                           favorites.has(station.id.toString())
-                            ? "text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100"
-                            : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
-                        } ${
-                          loadingFavorites.has(station.id.toString()) ||
-                          !authenticated
-                            ? "opacity-50 cursor-not-allowed"
+                            ? "text-[#a85a1f] border-[#bc6c25] bg-[#f8f3ee]"
                             : ""
                         }`}
                       >
@@ -918,7 +915,7 @@ const MapComponent = ({
                           : favorites.has(station.id.toString())
                             ? t("map.favorites.saved")
                             : t("map.favorites.favorite")}
-                      </button>
+                      </UIButton>
 
                       <Link
                         className="flex items-center justify-center text-sm px-4 py-2 bg-[#C27830] !text-white rounded-lg hover:bg-[#A96627] transition-colors font-medium"

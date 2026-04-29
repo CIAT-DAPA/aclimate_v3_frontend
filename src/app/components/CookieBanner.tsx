@@ -2,6 +2,7 @@
 
 import { useCookieConsent } from "@/app/contexts/CookieConsentContext";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 
 const CookieBanner = () => {
   const { consent, isLoaded, acceptCookies, rejectCookies } =
@@ -19,18 +20,16 @@ const CookieBanner = () => {
           {t("cookies.message")}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button
+          <UIButton
             onClick={rejectCookies}
-            className="rounded-lg border border-amber-200/60 px-4 py-2 text-sm font-semibold text-amber-100 transition-colors hover:bg-amber-50/10"
+            variant="secondary"
+            className="text-amber-100 border-amber-200/60 hover:bg-amber-50/10 hover:text-amber-100 bg-transparent"
           >
             {t("cookies.reject")}
-          </button>
-          <button
-            onClick={acceptCookies}
-            className="rounded-lg bg-[#bc6c25] px-4 py-2 text-sm font-semibold text-[#fefae0] transition-colors hover:bg-[#bc6c25]/90"
-          >
+          </UIButton>
+          <UIButton onClick={acceptCookies}>
             {t("cookies.accept")}
-          </button>
+          </UIButton>
         </div>
       </div>
     </div>

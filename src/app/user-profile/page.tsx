@@ -6,6 +6,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { updateUserProfile, UserProfile } from "@/app/services/userService";
 import { COUNTRY_NAME } from "@/app/config";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -102,12 +103,12 @@ export default function UserProfilePage() {
                   {t("profile.subtitle")}
                 </p>
               </div>
-              <button
+              <UIButton
                 onClick={() => setShowProfileModal(true)}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-amber-50 bg-[#bc6c25] rounded-lg hover:bg-amber-700 transition-colors w-full sm:w-auto whitespace-nowrap"
+                className="w-full sm:w-auto whitespace-nowrap"
               >
                 {t("profile.changeProfile")}
-              </button>
+              </UIButton>
             </div>
 
             <div className="mt-6 grid gap-4 sm:gap-6">
@@ -209,7 +210,7 @@ export default function UserProfilePage() {
             </div>
 
             <div className="flex gap-3 justify-end">
-              <button
+              <UIButton
                 onClick={() => {
                   setShowProfileModal(false);
                   const currentProfile = (userValidatedInfo?.user?.profile ||
@@ -222,14 +223,15 @@ export default function UserProfilePage() {
                   }
                 }}
                 disabled={savingProfile}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                variant="secondary"
+                className="text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800"
               >
                 {t("profile.cancel")}
-              </button>
-              <button
+              </UIButton>
+              <UIButton
                 onClick={handleUpdateProfile}
                 disabled={savingProfile}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#ffc107] rounded-lg hover:bg-[#ffb300] transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="bg-[#ffc107] border-[#ffc107] text-white hover:bg-[#ffb300] hover:border-[#ffb300]"
               >
                 {savingProfile ? (
                   <>
@@ -239,7 +241,7 @@ export default function UserProfilePage() {
                 ) : (
                   t("profile.save")
                 )}
-              </button>
+              </UIButton>
             </div>
           </div>
         </div>

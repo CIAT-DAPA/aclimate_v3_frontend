@@ -24,6 +24,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useBranchConfig } from "@/app/configs";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton, UIButtonLink } from "@/app/components/ui/button";
 import {
   addUserStation,
   deleteUserStation,
@@ -189,7 +190,20 @@ export default function StationDetailPage() {
           if (!Array.isArray(dates) || !Array.isArray(values)) return;
 
           // Para climatología, las fechas son nombres de mes abreviados (ej: "Ene", "Feb", ...)
-          const climMonthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+          const climMonthNames = [
+            "Ene",
+            "Feb",
+            "Mar",
+            "Abr",
+            "May",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dic",
+          ];
           const filteredIndices = dates
             .map((date: string, index: number) => {
               // Obtener número de mes (1-12) a partir del nombre abreviado
@@ -649,7 +663,9 @@ export default function StationDetailPage() {
         setStation(stationData[0]);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : t("stationPage.errors.loadingStation"),
+          err instanceof Error
+            ? err.message
+            : t("stationPage.errors.loadingStation"),
         );
       } finally {
         setLoading(false);
@@ -815,7 +831,11 @@ export default function StationDetailPage() {
             });
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : t("stationPage.errors.loadingDates"));
+          setError(
+            err instanceof Error
+              ? err.message
+              : t("stationPage.errors.loadingDates"),
+          );
         }
       };
 
@@ -1061,7 +1081,9 @@ export default function StationDetailPage() {
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
-          <p className="text-gray-600">{t("stationPage.states.loadingStation")}</p>
+          <p className="text-gray-600">
+            {t("stationPage.states.loadingStation")}
+          </p>
         </div>
       </div>
     );
@@ -1074,12 +1096,9 @@ export default function StationDetailPage() {
           <p className="text-red-600 mb-4">
             {t("stationPage.states.errorPrefix")}: {error}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
-          >
+          <UIButton onClick={() => window.location.reload()}>
             {t("stationPage.actions.retry")}
-          </button>
+          </UIButton>
         </div>
       </div>
     );
@@ -1092,12 +1111,9 @@ export default function StationDetailPage() {
           <p className="text-red-600 mb-4">
             {t("stationPage.states.notFound")}
           </p>
-          <Link
-            href="/"
-            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
-          >
+          <UIButtonLink href="/">
             {t("stationPage.actions.backHome")}
-          </Link>
+          </UIButtonLink>
         </div>
       </div>
     );
@@ -1294,16 +1310,15 @@ export default function StationDetailPage() {
                               </select>
                             </div>
                             <div>
-                              <button
+                              <UIButton
                                 onClick={handleSearch}
                                 disabled={
                                   !filterDatesClimatic.start ||
                                   !filterDatesClimatic.end
                                 }
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                               >
                                 {t("stationPage.actions.search")}
-                              </button>
+                              </UIButton>
                             </div>
                           </>
                         ) : (
@@ -1357,7 +1372,7 @@ export default function StationDetailPage() {
                               />
                             </div>
                             <div>
-                              <button
+                              <UIButton
                                 onClick={handleSearch}
                                 disabled={
                                   !filterDatesClimatic.start ||
@@ -1367,10 +1382,9 @@ export default function StationDetailPage() {
                                     filterDatesClimatic.end,
                                   )
                                 }
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                               >
                                 {t("stationPage.actions.search")}
-                              </button>
+                              </UIButton>
                             </div>
                           </>
                         )}
@@ -1495,7 +1509,9 @@ export default function StationDetailPage() {
                               }
                             >
                               {loadingPeriods ? (
-                                <option>{t("stationPage.states.loading")}</option>
+                                <option>
+                                  {t("stationPage.states.loading")}
+                                </option>
                               ) : availableIndicatorPeriods.length > 0 ? (
                                 availableIndicatorPeriods.map((option) => (
                                   <option
@@ -1613,16 +1629,15 @@ export default function StationDetailPage() {
       </main>
 
       {/* Botón flotante para comparación satelital */}
-      <button
+      <UIButton
+        variant={isSatelliteActive ? "primary" : "secondary"}
         onClick={toggleSatelliteComparison}
         disabled={!station || loadingSatellite}
-        className={`fixed bottom-40 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
+        className={`fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !station
-            ? "bg-gray-400 cursor-not-allowed"
-            : isSatelliteActive
-              ? "bg-blue-500 hover:bg-blue-600 focus:ring-blue-300"
-              : "bg-gray-600 hover:bg-gray-700 focus:ring-gray-400"
-        } focus:outline-none focus:ring-4`}
+            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
+            : ""
+        }`}
         title={
           !station
             ? t("stationPage.tooltips.stationUnavailable")
@@ -1632,23 +1647,24 @@ export default function StationDetailPage() {
         }
       >
         {loadingSatellite ? (
-          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 inline-block text-[#BC6C25]"></span>
         ) : (
           <FontAwesomeIcon icon={faSatellite} className="h-6 w-6" />
         )}
-      </button>
+      </UIButton>
 
       {/* Botón flotante de favoritos */}
-      <button
+      <UIButton
+        variant={isFavorite ? "primary" : "secondary"}
         onClick={toggleFavorite}
         disabled={!authenticated || loadingFavorite}
-        className={`fixed bottom-24 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
+        className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !authenticated
-            ? "bg-gray-400 cursor-not-allowed"
+            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
             : isFavorite
-              ? "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300"
-              : "bg-gray-600 hover:bg-gray-700 focus:ring-gray-400"
-        } focus:outline-none focus:ring-4`}
+              ? "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]"
+              : "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]"
+        }`}
         title={
           !authenticated
             ? t("stationPage.tooltips.loginRequiredFavorite")
@@ -1665,7 +1681,7 @@ export default function StationDetailPage() {
             className="h-6 w-6"
           />
         )}
-      </button>
+      </UIButton>
 
       {/* Botón flotante de descarga PDF */}
       {hasDataForPDF && (
