@@ -18,7 +18,7 @@ const Header = () => {
   const { userInfo, userValidatedInfo, loading, authenticated, login, logout } =
     useAuth();
   const { countryName } = useCountry();
-  const { locale, setLocale, t } = useI18n();
+  const { t } = useI18n();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -112,7 +112,7 @@ const Header = () => {
             {t("nav.spatialData")}
           </Link>
 
-          <div className="flex items-center">
+          {/* <div className="flex items-center">
             <label htmlFor="language-select" className="sr-only">
               {t("nav.language")}
             </label>
@@ -129,7 +129,7 @@ const Header = () => {
                 EN
               </option>
             </select>
-          </div>
+          </div> */}
 
           {/* Botón de login/usuario */}
           {SHOW_USERS_MODULE && (
@@ -261,7 +261,7 @@ const Header = () => {
                 {t("nav.about")}
               </Link>
 
-              <div className="px-2 py-2">
+              {/* <div className="px-2 py-2">
                 <label
                   htmlFor="language-select-mobile"
                   className="block text-amber-50 text-xs mb-1"
@@ -281,7 +281,7 @@ const Header = () => {
                     EN
                   </option>
                 </select>
-              </div>
+              </div> */}
               {SHOW_USERS_MODULE && (
                 <div className="py-2 px-2 border-t border-[#3a4a26] mt-2">
                   {!loading && !authenticated && (
