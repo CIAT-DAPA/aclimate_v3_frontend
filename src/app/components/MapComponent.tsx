@@ -42,6 +42,7 @@ import { faMapPin } from "@fortawesome/free-solid-svg-icons";
 import { faTint } from "@fortawesome/free-solid-svg-icons";
 import { faWater } from "@fortawesome/free-solid-svg-icons";
 import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 
 // Paleta de colores accesibles con buen contraste
 const ACCESSIBLE_COLORS = [
@@ -128,11 +129,16 @@ const MapActionButton = ({
       button.title = "Descargar capa raster de pronóstico";
       button.setAttribute("aria-label", button.title);
       button.className =
-        "flex h-10 w-10 items-center justify-center rounded-md border bg-white shadow-md transition-colors hover:bg-[#f8f3ee]";
-      button.style.color = "#000";
-      button.style.lineHeight = "0";
-      button.innerHTML =
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3a1 1 0 011 1v8.59l2.3-2.3a1 1 0 111.4 1.42l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.42l2.3 2.3V4a1 1 0 011-1z" fill="#000"/><path d="M5 18.5A2.5 2.5 0 007.5 21h9a2.5 2.5 0 002.5-2.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        "flex h-10 w-10 items-center justify-center rounded-md border border-black bg-white text-black shadow-md transition-colors hover:text-black/50";
+      button.style.lineHeight = "1";
+
+      // Extraer SVG del icono FontAwesome
+      const [width, height, , , paths] = faFileArrowDown.icon;
+      const pathString = Array.isArray(paths)
+        ? (paths as string[]).map((p) => `<path d="${p}"/>`).join("")
+        : `<path d="${paths as string}"/>`;
+
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="18" height="18" fill="currentColor">${pathString}</svg>`;
 
       L.DomEvent.disableClickPropagation(container);
       L.DomEvent.disableScrollPropagation(container);

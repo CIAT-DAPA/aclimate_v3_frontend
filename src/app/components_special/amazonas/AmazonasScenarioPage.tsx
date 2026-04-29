@@ -26,6 +26,8 @@ import { spatialService } from "@/app/services/spatialService";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButton } from "@/app/components/ui/button";
+import { faFileText, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -840,10 +842,11 @@ export default function AmazonasScenarioPage() {
       <UIButton
         onClick={downloadPdf}
         size="sm"
-        className="fixed bottom-8 right-8 z-[1300] rounded-full px-4 py-3 shadow-lg"
+        variant="secondary"
+        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 z-[9999] rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
         title={t("scenarioPage.actions.downloadPdf")}
       >
-        <FileText size={28} />
+        <FontAwesomeIcon icon={faFileText} className="h-6 w-6 sm:h-8 sm:w-8" />
       </UIButton>
     </div>
   );
