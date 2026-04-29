@@ -8,16 +8,22 @@ import { Station } from "@/app/types/Station";
 import { useBranchConfig } from "@/app/configs";
 import { useI18n } from "@/app/contexts/I18nContext";
 
-const MapComponent = dynamic(() => import("../components/MapComponent"), {
-  ssr: false,
-  loading: () => (
+function MapLoadingFallback() {
+  const { t } = useI18n();
+
+  return (
     <div className="h-screen w-full flex items-center justify-center bg-gray-100">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
-          <p className="text-gray-600">{t("locations.loadingMap")}</p>
+        <p className="text-gray-600">{t("locations.loadingMap")}</p>
       </div>
     </div>
-  ),
+  );
+}
+
+const MapComponent = dynamic(() => import("../components/MapComponent"), {
+  ssr: false,
+  loading: () => <MapLoadingFallback />,
 });
 
 export default function LocationsPage() {
@@ -66,17 +72,17 @@ export default function LocationsPage() {
   return (
     <div className="relative h-screen w-full">
       {/* Componente del mapa con las estaciones */}
-      <MapComponent 
-        center={mapCenter} 
-        zoom={mapZoom} 
-        stations={stations} 
+      <MapComponent
+        center={mapCenter}
+        zoom={mapZoom}
+        stations={stations}
         stationData={stationData}
         selectedStation={selectedStation}
       />
 
       {/* Buscador superpuesto */}
-      <MapSearch 
-        stations={stations} 
+      <MapSearch
+        stations={stations}
         onStationSelect={(station) => setSelectedStation(station)}
       />
 
