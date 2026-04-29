@@ -10,6 +10,7 @@ import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 interface StationData {
   id: string;
@@ -30,6 +31,7 @@ interface StationData {
 const WeatherCard = () => {
   const { authenticated, userValidatedInfo } = useAuth();
   const { countryId } = useCountry();
+  const { t, locale } = useI18n();
   const [favoriteStations, setFavoriteStations] = useState<StationData[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -123,9 +125,10 @@ const WeatherCard = () => {
   }, [authenticated, userValidatedInfo, countryId]);
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "Sin datos";
+    if (!dateString) return t("weather.noData");
     const date = new Date(dateString);
-    return date.toLocaleDateString("es-ES", {
+    const localeTag = locale === "es" ? "es-ES" : "en-US";
+    return date.toLocaleDateString(localeTag, {
       weekday: "long",
       year: "numeric",
       month: "2-digit",
@@ -144,7 +147,7 @@ const WeatherCard = () => {
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
           <p className="text-lg font-medium">
-            Inicia sesión para ver tus estaciones favoritas
+            {t("weather.signInPrompt")}
           </p>
         </div>
       </div>
@@ -156,7 +159,7 @@ const WeatherCard = () => {
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-50 mx-auto mb-4"></div>
-          <p>Cargando estaciones favoritas...</p>
+          <p>{t("weather.loadingFavorites")}</p>
         </div>
       </div>
     );
@@ -168,13 +171,13 @@ const WeatherCard = () => {
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
           <p className="text-lg font-medium mb-2">
-            No tienes estaciones favoritas
+            {t("weather.noFavorites")}
           </p>
           <Link
             href="/locations"
             className="text-sm text-amber-200 hover:text-amber-100 underline"
           >
-            Explora el mapa para agregar favoritos
+            {t("weather.exploreMap")}
           </Link>
         </div>
       </div>
@@ -225,7 +228,7 @@ const WeatherCard = () => {
                 <div className="text-right text-[10px] font-medium text-amber-200 shrink-0 whitespace-nowrap mt-1 bg-black/20 rounded-full px-2 py-0.5">
                   {station.latestData
                     ? formatDate(station.latestData.date)
-                    : "Sin datos"}
+                    : t("weather.noData")}
                 </div>
               </div>
 
@@ -241,7 +244,7 @@ const WeatherCard = () => {
                             size={18}
                           />
                           <span className="text-[10px] text-amber-100 uppercase font-semibold">
-                            T. Min/Max
+                            {t("weather.minMax")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
@@ -262,7 +265,7 @@ const WeatherCard = () => {
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <CloudRain className="text-blue-300" size={16} />
                           <span className="text-[10px] text-amber-100 uppercase font-semibold">
-                            Precip.
+                            {t("weather.precipShort")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
@@ -279,7 +282,7 @@ const WeatherCard = () => {
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <Sun className="text-yellow-300" size={16} />
                           <span className="text-[10px] text-amber-100 uppercase font-semibold">
-                            Rad.
+                            {t("weather.radShort")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
@@ -296,7 +299,7 @@ const WeatherCard = () => {
                 <div className="flex items-center justify-center h-20 bg-white/5 rounded-lg border border-white/10 mt-3">
                   <div className="text-amber-200 italic text-sm flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500/50"></span>
-                    Sin datos recientes
+                    {t("weather.noRecentData")}
                   </div>
                 </div>
               )}

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Frown, MapPin, Search } from "lucide-react";
 import { Station } from "../types/Station";
+import { useI18n } from "@/app/contexts/I18nContext";
 
 interface MapSearchProps {
   stations?: Station[];
@@ -11,6 +12,7 @@ interface MapSearchProps {
 
 const MapSearch = ({ stations, onStationSelect }: MapSearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const { t } = useI18n();
 
   const filteredStations = useMemo(() => {
     if (!searchTerm.trim()) return [];
@@ -44,7 +46,7 @@ const MapSearch = ({ stations, onStationSelect }: MapSearchProps) => {
           <Search className="h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar ubicación o estación..."
+            placeholder={t("mapSearch.placeholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"
@@ -86,7 +88,7 @@ const MapSearch = ({ stations, onStationSelect }: MapSearchProps) => {
               ))}
               {filteredStations.length === 5 && (
                 <div className="p-2 text-center text-xs text-gray-500 bg-gray-50">
-                  Mostrando primeros 5 resultados
+                  {t("mapSearch.firstResults")}
                 </div>
               )}
             </>
@@ -96,10 +98,10 @@ const MapSearch = ({ stations, onStationSelect }: MapSearchProps) => {
                 <Frown className="h-8 w-8 mx-auto opacity-75" />
               </div>
               <p className="text-sm text-gray-600 font-medium">
-                No hay estaciones que coincidan
+                {t("mapSearch.noResultsTitle")}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Intenta con otro término de búsqueda
+                {t("mapSearch.noResultsHint")}
               </p>
             </div>
           )}
