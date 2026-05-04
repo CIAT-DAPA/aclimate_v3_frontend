@@ -21,7 +21,10 @@
     "sourceWith": "Fuente: {{source}}",
     "dataSource": "Fuente: {{sources}}",
     "logoAlt": "Logo de AClimate",
-    "sourcesEraChirps": "ERA5 y CHIRPS"
+    "sourcesEraChirps": "ERA5 y CHIRPS",
+    "sourcesIdeamChirps": "Generados a partir de IDEAM y CHIRPS"
+    ,
+    "sourcesChirpsAgera5": "Generados a partir de CHIRPS y AgERA5"
   },
   "home": {
     "hero": {

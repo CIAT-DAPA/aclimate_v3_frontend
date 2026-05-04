@@ -21,7 +21,9 @@
     "sourceWith": "Source: {{source}}",
     "dataSource": "Source: {{sources}}",
     "logoAlt": "AClimate logo",
-    "sourcesEraChirps": "ERA5 and CHIRPS"
+    "sourcesEraChirps": "ERA5 and CHIRPS",
+    "sourcesIdeamChirps": "Generated from IDEAM and CHIRPS",
+    "sourcesChirpsAgera5": "Generated from CHIRPS and AgERA5"
   },
   "home": {
     "hero": {

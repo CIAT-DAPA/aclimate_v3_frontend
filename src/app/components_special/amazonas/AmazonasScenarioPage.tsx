@@ -26,7 +26,11 @@ import { spatialService } from "@/app/services/spatialService";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButton } from "@/app/components/ui/button";
-import { faFileText, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
+import {
+  faFileText,
+  faFileArrowDown,
+  faDatabase,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -522,6 +526,12 @@ export default function AmazonasScenarioPage() {
                   </span>
                 )}
               </div>
+              <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-2">
+                <FontAwesomeIcon icon={faDatabase} className="text-sm" />
+                {t("common.dataSource", {
+                  sources: t("common.sourcesChirpsAgera5"),
+                })}
+              </p>
               <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
                 {t("scenarioPage.description")}
               </p>
