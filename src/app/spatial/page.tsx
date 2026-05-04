@@ -1219,6 +1219,15 @@ export default function SpatialDataPage() {
                               <p className="text-gray-600">
                                 {t("spatial.scenarios.pctChange.description")}
                               </p>
+                              <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+                                <FontAwesomeIcon
+                                  icon={faDatabase}
+                                  className="text-sm"
+                                />
+                                {t("common.dataSource", {
+                                  sources: t("common.sourcesIdeamChirps"),
+                                })}
+                              </p>
                             </div>
                           </div>
 
@@ -1265,6 +1274,15 @@ export default function SpatialDataPage() {
                               </h3>
                               <p className="text-gray-600">
                                 {t("spatial.scenarios.monthly.description")}
+                              </p>
+                              <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+                                <FontAwesomeIcon
+                                  icon={faDatabase}
+                                  className="text-sm"
+                                />
+                                {t("common.dataSource", {
+                                  sources: t("common.sourcesChirpsAgera5"),
+                                })}
                               </p>
                             </div>
                           </div>
