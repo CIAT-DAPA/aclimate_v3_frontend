@@ -15,21 +15,21 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
     partnersTitle: "Socios",
     partners: [
       {
+        name: "Ministerio de Medio Ambiente y Recursos Naturales (MARN)",
+        url: "https://www.marn.gob.sv/",
+        logo: "/assets/img/partners/MARN.PNG",
+        alt: "MARN logo",
+      },
+      {
         name: "Alliance Bioversity-CIAT",
         url: "https://alliancebioversityciat.org/es",
         logo: "/assets/img/partners/alliance.png",
         alt: "Alliance Bioversity-CIAT logo",
       },
       {
-        name: "Ministerio de Medio Ambiente y Recursos Naturales (MARN)",
-        url: "https://www.marn.gob.sv/",
-        logo: "/assets/img/partners/MARN.jpg",
-        alt: "MARN logo",
-      },
-      {
         name: "Programa de las Naciones Unidas Para el Desarrollo (PNUD)",
         url: "https://www.undp.org/es",
-        logo: "/assets/img/partners/pnud.jpg",
+        logo: "/assets/img/partners/pnud.png",
         alt: "PNUD logo",
       },
       {
@@ -55,6 +55,9 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
   },
   station: {
     showClimateIndicator: true,
+    showForecast: true,
+    forecastSource: "Fuente: Dirección del Observatorio Ambiental (DOA) – MARN El Salvador. Modelo de pronóstico numérico operacional.",
+    sectionOrder: ["indicators", "forecast", "climate"],
   },
   data: {
     center: [13.69, -89.19],
