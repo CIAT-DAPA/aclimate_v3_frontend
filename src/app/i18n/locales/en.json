@@ -391,5 +391,20 @@
       "loadingStation": "Error loading station data",
       "loadingDates": "Error loading dates"
     }
+  },
+  "decadeCalendar": {
+    "decade1": "D1",
+    "decade2": "D2",
+    "decade3": "D3",
+    "totalYears": "{{count}} years",
+    "tooltip": {
+      "count": "Frequency: {{count}} time(s)",
+      "pct": "Percentage: {{pct}}%"
+    },
+    "legend": {
+      "low": "Lower frequency",
+      "high": "Higher frequency",
+      "note": "Historical relative frequency"
+    }
   }
 }

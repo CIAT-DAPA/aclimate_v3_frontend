@@ -6,10 +6,11 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
-import { spatialService } from "@/app/services/spatialService";
+import { spatialService, IndicatorCategory } from "@/app/services/spatialService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
+import DecadeCalendarChart from "@/app/components/DecadeCalendarChart";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMapMarkerAlt,
@@ -106,8 +107,15 @@ export default function StationDetailPage() {
   >([]);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
 
+  // Estados para categorías de indicadores
+  const [indicatorCategories, setIndicatorCategories] = useState<IndicatorCategory[]>([]);
+  const [selectedIndicatorCategory, setSelectedIndicatorCategory] = useState<IndicatorCategory | null>(null);
+  const [loadingIndicatorCategories, setLoadingIndicatorCategories] = useState(false);
+  const [categoryIndicatorShortNames, setCategoryIndicatorShortNames] = useState<Set<string>>(new Set());
+
   // Estados para control de búsqueda manual
   const [searchTrigger, setSearchTrigger] = useState(0);
+  const [searchTriggerIndicators, setSearchTriggerIndicators] = useState(0);
 
   // Convertir fecha a formato de mes (para climatología)
   const dateToMonthFormat = useCallback((date: string) => {
@@ -654,6 +662,55 @@ export default function StationDetailPage() {
     fetchAvailablePeriods();
   }, [machine_name, t]);
 
+  // Efecto para cargar categorías de indicadores
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!countryId) return;
+
+      setLoadingIndicatorCategories(true);
+      try {
+        const categories = await spatialService.getIndicatorCategories(countryId);
+        setIndicatorCategories(categories);
+        if (categories.length > 0) {
+          setSelectedIndicatorCategory(categories[0]);
+        } else {
+          setSelectedIndicatorCategory(null);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías de indicadores:", error);
+        setIndicatorCategories([]);
+        setSelectedIndicatorCategory(null);
+      } finally {
+        setLoadingIndicatorCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [countryId]);
+
+  // Efecto para cargar los short_names de indicadores de la categoría seleccionada
+  useEffect(() => {
+    const loadCategoryIndicators = async () => {
+      if (!countryId || !selectedIndicatorCategory) {
+        setCategoryIndicatorShortNames(new Set());
+        return;
+      }
+      try {
+        const indicators = await spatialService.getIndicators(
+          countryId,
+          timePeriodIndicators,
+          selectedIndicatorCategory.id,
+        );
+        setCategoryIndicatorShortNames(new Set(indicators.map((ind) => ind.short_name)));
+      } catch (error) {
+        console.error("Error cargando indicadores por categoría:", error);
+        setCategoryIndicatorShortNames(new Set());
+      }
+    };
+
+    loadCategoryIndicators();
+  }, [countryId, selectedIndicatorCategory, timePeriodIndicators]);
+
   // Efecto para cargar datos de la estación (solo una vez al montar)
   useEffect(() => {
     const fetchStation = async () => {
@@ -979,7 +1036,7 @@ export default function StationDetailPage() {
     timePeriodIndicators,
   ]);
 
-  // Efecto para filtrar datos de indicadores cuando cambian los filtros
+  // Efecto para filtrar datos de indicadores cuando cambian los filtros (requiere búsqueda manual)
   useEffect(() => {
     if (
       !indicatorsDataFull ||
@@ -1001,16 +1058,21 @@ export default function StationDetailPage() {
     }, 100);
 
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     indicatorsDataFull,
-    filterDatesIndicators.start,
-    filterDatesIndicators.end,
+    searchTriggerIndicators,
     filterIndicatorsData,
   ]);
 
   // Función para ejecutar búsqueda manual
   const handleSearch = useCallback(() => {
     setSearchTrigger((prev) => prev + 1);
+  }, []);
+
+  // Función para ejecutar búsqueda manual de indicadores
+  const handleSearchIndicators = useCallback(() => {
+    setSearchTriggerIndicators((prev) => prev + 1);
   }, []);
 
   // Formatear fechas (calcular antes de useEffect/useMemo)
@@ -1031,6 +1093,20 @@ export default function StationDetailPage() {
       setPdfLoading(false);
     }
   };
+
+  // Indicadores filtrados por categoría seleccionada
+  const filteredIndicatorsData = useMemo(() => {
+    if (!indicatorsData) return null;
+    if (categoryIndicatorShortNames.size === 0) return indicatorsData;
+
+    const filtered: any = {};
+    Object.entries(indicatorsData).forEach(([key, value]) => {
+      if (categoryIndicatorShortNames.has(key)) {
+        filtered[key] = value;
+      }
+    });
+    return Object.keys(filtered).length > 0 ? filtered : null;
+  }, [indicatorsData, categoryIndicatorShortNames]);
 
   // Verificar si hay datos suficientes para mostrar el botón PDF
   const hasDataForPDF = useMemo(() => {
@@ -1526,10 +1602,45 @@ export default function StationDetailPage() {
                               )}
                             </select>
                           </div>
+
+                          {/* Selector de categoría */}
+                          {indicatorCategories.length > 0 && (
+                            <div>
+                              <label
+                                htmlFor="category-indicators"
+                                className="block text-xs font-medium text-gray-700 mb-1"
+                              >
+                                {t("spatial.labels.category")}
+                              </label>
+                              {loadingIndicatorCategories ? (
+                                <div className="text-gray-500 text-sm">
+                                  {t("stationPage.states.loading")}
+                                </div>
+                              ) : (
+                                <select
+                                  id="category-indicators"
+                                  value={selectedIndicatorCategory?.id || ""}
+                                  onChange={(e) => {
+                                    const cat = indicatorCategories.find(
+                                      (c) => c.id === parseInt(e.target.value),
+                                    );
+                                    setSelectedIndicatorCategory(cat || null);
+                                  }}
+                                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                >
+                                  {indicatorCategories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                      {category.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Selector de fechas alineado a la derecha */}
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-end">
                           <div>
                             <label
                               htmlFor="start-date-indicators"
@@ -1578,14 +1689,33 @@ export default function StationDetailPage() {
                               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                             />
                           </div>
+                          <div>
+                            <UIButton
+                              onClick={handleSearchIndicators}
+                              disabled={
+                                !filterDatesIndicators.start ||
+                                !filterDatesIndicators.end
+                              }
+                            >
+                              {t("stationPage.actions.search")}
+                            </UIButton>
+                          </div>
                         </div>
                       </div>
 
                       {/* Gráficas de indicadores climáticos */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {indicatorsData &&
-                        Object.keys(indicatorsData).length > 0 ? (
-                          Object.entries(indicatorsData).map(
+                        {filteredIndicatorsData &&
+                        Object.keys(filteredIndicatorsData).length > 0 ? (
+                          Object.entries(filteredIndicatorsData)
+                            .sort(([keyA], [keyB]) => {
+                              const isCalendarA = keyA === "IELL-decade" || keyA === "IELS-decade";
+                              const isCalendarB = keyB === "IELL-decade" || keyB === "IELS-decade";
+                              if (isCalendarA && !isCalendarB) return -1;
+                              if (!isCalendarA && isCalendarB) return 1;
+                              return 0;
+                            })
+                            .map(
                             ([key, indicator]) => {
                               const typedIndicator = indicator as {
                                 name: string;
@@ -1593,6 +1723,25 @@ export default function StationDetailPage() {
                                 dates: string[];
                                 values: number[];
                               };
+
+                              // Decade-calendar indicators use a special visualizer
+                              if (
+                                key === "IELL-decade" ||
+                                key === "IELS-decade"
+                              ) {
+                                return (
+                                  <DecadeCalendarChart
+                                    key={key}
+                                    series={typedIndicator.values}
+                                    indicatorLabel={typedIndicator.name}
+                                    colorScheme={
+                                      key === "IELL-decade" ? "rainy" : "dry"
+                                    }
+                                    className="col-span-1 md:col-span-2"
+                                  />
+                                );
+                              }
+
                               return (
                                 <ClimateChart
                                   key={key}

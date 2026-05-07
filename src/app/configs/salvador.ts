@@ -53,6 +53,9 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
     showHydrologicalIndicator: false,
     showForecastPctChange: false,
   },
+  station: {
+    showClimateIndicator: true,
+  },
   data: {
     center: [13.69, -89.19],
     zoom: 10,
