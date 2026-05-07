@@ -131,7 +131,7 @@ const DecadeCalendarChart: React.FC<DecadeCalendarChartProps> = ({
 
       {/* Calendar grid — responsive: 12 cols md+, 6 cols on small */}
       <div className="overflow-x-auto">
-        <table className="w-full border-separate border-spacing-1 text-xs min-w-[420px]">
+        <table className="w-full table-fixed border-separate border-spacing-1 text-xs min-w-[420px]">
           <thead>
             <tr>
               {/* empty corner */}
@@ -161,8 +161,6 @@ const DecadeCalendarChart: React.FC<DecadeCalendarChartProps> = ({
                     totalCount > 0
                       ? ((absCount / totalCount) * 100).toFixed(1)
                       : "0.0";
-                  const isMax =
-                    maxFreq > 0 && relFreq === maxFreq;
                   const cellColor = getCellColor(relFreq, maxFreq, scheme);
                   const tooltipId = `dc-${colorScheme}-m${month}-d${decade}`;
 
@@ -173,11 +171,7 @@ const DecadeCalendarChart: React.FC<DecadeCalendarChartProps> = ({
                         type="button"
                         data-tooltip-target={tooltipId}
                         data-tooltip-placement="top"
-                        className={`w-full aspect-square rounded-md transition-transform hover:scale-110 focus:outline-none ${
-                          isMax
-                            ? `ring-2 ring-offset-1 ${scheme.border}`
-                            : ""
-                        }`}
+                        className="w-full aspect-square rounded-md transition-transform hover:scale-110 focus:outline-none"
                         style={{ backgroundColor: cellColor, minWidth: "20px", minHeight: "20px" }}
                         aria-label={`${monthLabels[mi]} D${decade}: ${absCount} (${pct}%)`}
                       />

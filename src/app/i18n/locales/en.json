@@ -340,7 +340,8 @@
       "descriptionLocated": "located in",
       "descriptionRangeFrom": "has historical records from",
       "descriptionRangeTo": "to",
-      "descriptionSuffix": "providing key information for agroclimatic monitoring."
+      "descriptionSuffix": "providing key information for agroclimatic monitoring.",
+      "stationCode": "Identifier"
     },
     "sections": {
       "climateData": "Climate data",

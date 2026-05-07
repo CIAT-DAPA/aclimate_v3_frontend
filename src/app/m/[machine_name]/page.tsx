@@ -19,6 +19,7 @@ import {
   faFileArrowDown,
   faSatellite,
   faDatabase,
+  faFingerprint,
 } from "@fortawesome/free-solid-svg-icons";
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -1233,6 +1234,12 @@ export default function StationDetailPage() {
               source: station?.source || t("stationPage.common.na"),
             })}
           </p>
+          {station?.ext_id && (
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+              <FontAwesomeIcon icon={faFingerprint} className="text-sm" />
+              {t("stationPage.header.stationCode")}: <span className="font-medium text-gray-700">{station.ext_id}</span>
+            </p>
+          )}
         </div>
 
         {/* Línea divisora */}

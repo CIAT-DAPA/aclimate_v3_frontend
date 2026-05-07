@@ -341,7 +341,8 @@
       "descriptionLocated": "situada en",
       "descriptionRangeFrom": "cuenta con registros históricos desde el",
       "descriptionRangeTo": "hasta el",
-      "descriptionSuffix": "proporcionando información clave para el monitoreo agroclimático."
+      "descriptionSuffix": "proporcionando información clave para el monitoreo agroclimático.",
+      "stationCode": "Identificador"
     },
     "sections": {
       "climateData": "Datos climáticos",
