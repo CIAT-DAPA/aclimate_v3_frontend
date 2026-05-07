@@ -100,14 +100,27 @@ export default function AboutPage() {
             </h2>
             <div className="flex flex-wrap justify-center gap-6 md:gap-8">
               {config.aboutUs.partners.map((partner, index) => (
-                <div key={index} className="group w-48 md:w-56 lg:w-64">
+                <div
+                  key={index}
+                  className={`group ${
+                    partner.featured
+                      ? "w-56 md:w-64 lg:w-72"
+                      : "w-48 md:w-56 lg:w-64"
+                  }`}
+                >
                   <Link
                     href={partner.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
-                    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 md:p-6 h-32 md:h-36 lg:h-40 flex items-center justify-center group-hover:scale-105">
+                    <div
+                      className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 md:p-6 flex items-center justify-center group-hover:scale-105 ${
+                        partner.featured
+                          ? "h-36 md:h-44 lg:h-48 ring-2 ring-gray-200"
+                          : "h-32 md:h-36 lg:h-40"
+                      }`}
+                    >
                       <div className="relative w-full h-full">
                         {!imageErrors.has(partner.name) ? (
                           <Image
