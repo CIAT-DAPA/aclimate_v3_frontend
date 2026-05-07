@@ -1,0 +1,63 @@
+name: Sync Main to Country Branches
+
+on:
+  workflow_run:
+    workflows: ["AClimate Frontend CI/CD"]
+    types:
+      - completed
+    branches:
+      - stage
+  
+  workflow_dispatch:
+
+jobs:
+  sync-to-branches:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    name: Sync main to ${{ matrix.branch }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    strategy:
+      matrix:
+        branch:
+          - aclimate_honduras
+          - aclimate_nicaragua
+          - aclimate_salvador
+          - aclimate_sat
+      fail-fast: false
+    
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      
+      - name: Sync main to ${{ matrix.branch }}
+        run: |
+          echo "Syncing main → ${{ matrix.branch }}"
+          git fetch origin main ${{ matrix.branch }}
+          
+          if ! git show-ref --verify --quiet refs/remotes/origin/${{ matrix.branch }}; then
+            git checkout -b ${{ matrix.branch }} origin/main
+            git push origin ${{ matrix.branch }}
+            echo "Branch ${{ matrix.branch }} created from main"
+            exit 0
+          fi
+          
+          git checkout ${{ matrix.branch }}
+          
+          if git merge --no-ff --no-edit origin/main; then
+            git push origin ${{ matrix.branch }}
+            echo "${{ matrix.branch }} successfully updated"
+          else
+            echo "CONFLICTS in ${{ matrix.branch }} - manual resolution required"
+            git merge --abort
+            exit 1
+          fi
