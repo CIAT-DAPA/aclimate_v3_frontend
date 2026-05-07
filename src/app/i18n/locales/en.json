@@ -340,11 +340,20 @@
       "descriptionLocated": "located in",
       "descriptionRangeFrom": "has historical records from",
       "descriptionRangeTo": "to",
-      "descriptionSuffix": "providing key information for agroclimatic monitoring."
+      "descriptionSuffix": "providing key information for agroclimatic monitoring.",
+      "stationCode": "Identifier"
     },
     "sections": {
       "climateData": "Climate data",
-      "climateIndicators": "Climate indicators"
+      "climateIndicators": "Climate indicators",
+      "forecast": "Forecast"
+    },
+    "forecast": {
+      "description": "View the weather forecast for this station. Data is automatically updated from the numerical prediction service.",
+      "tabs": {
+        "climogram": "Climogram",
+        "climogramTooltip": "Climogram — daily precipitation (bars) and temperature (lines)"
+      }
     },
     "labels": {
       "period": "Period",
@@ -390,6 +399,21 @@
     "errors": {
       "loadingStation": "Error loading station data",
       "loadingDates": "Error loading dates"
+    }
+  },
+  "decadeCalendar": {
+    "decade1": "D1",
+    "decade2": "D2",
+    "decade3": "D3",
+    "totalYears": "{{count}} years",
+    "tooltip": {
+      "count": "Frequency: {{count}} time(s)",
+      "pct": "Percentage: {{pct}}%"
+    },
+    "legend": {
+      "low": "Lower frequency",
+      "high": "Higher frequency",
+      "note": "Historical relative frequency"
     }
   }
 }
