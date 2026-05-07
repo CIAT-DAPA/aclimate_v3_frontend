@@ -39,6 +39,12 @@ import {
   getIndicatorColor,
 } from "./config";
 
+// Cargar ForecastSection dinámicamente sin SSR (se carga en background)
+const ForecastSection = dynamic(
+  () => import("@/app/components/ForecastSection"),
+  { ssr: false },
+);
+
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -1266,8 +1272,10 @@ export default function StationDetailPage() {
           <div className="bg-white rounded-lg shadow-sm">
             {/* Acordeones para selección de tipo de datos */}
             <div id="accordion-collapse" data-accordion="collapse">
-              {/* Acordeón para Datos climáticos */}
-              <div id="climatic-accordion">
+              {(branchConfig.station?.sectionOrder ?? ["climate", "indicators"]).map((section) => {
+                if (section === "climate") return (
+                  /* Acordeón para Datos climáticos */
+                  <div key="climate" id="climatic-accordion">
                 <h2 id="climatic-accordion-trigger">
                   <button
                     type="button"
@@ -1524,10 +1532,10 @@ export default function StationDetailPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Acordeón para Indicadores climáticos */}
-              {branchConfig.station?.showClimateIndicator && (
-                <div id="indicators-accordion">
+                );
+                if (section === "indicators") return branchConfig.station?.showClimateIndicator ? (
+                  /* Acordeón para Indicadores climáticos */
+                  <div key="indicators" id="indicators-accordion">
                   <h2 id="indicators-accordion-trigger">
                     <button
                       type="button"
@@ -1771,7 +1779,13 @@ export default function StationDetailPage() {
                     </div>
                   </div>
                 </div>
-              )}
+                ) : null;
+                if (section === "forecast") return branchConfig.station?.showForecast ? (
+                  /* Acordeón para Pronóstico */
+                  <ForecastSection key="forecast" extId={station.ext_id} />
+                ) : null;
+                return null;
+              })}
             </div>
           </div>
         </div>

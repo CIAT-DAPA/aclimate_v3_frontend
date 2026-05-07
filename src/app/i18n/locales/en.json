@@ -344,7 +344,15 @@
     },
     "sections": {
       "climateData": "Climate data",
-      "climateIndicators": "Climate indicators"
+      "climateIndicators": "Climate indicators",
+      "forecast": "Forecast"
+    },
+    "forecast": {
+      "description": "View the weather forecast for this station. Data is automatically updated from the numerical prediction service.",
+      "tabs": {
+        "climogram": "Climogram",
+        "climogramTooltip": "Climogram — daily precipitation (bars) and temperature (lines)"
+      }
     },
     "labels": {
       "period": "Period",

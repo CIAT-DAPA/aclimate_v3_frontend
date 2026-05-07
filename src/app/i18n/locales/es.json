@@ -345,7 +345,15 @@
     },
     "sections": {
       "climateData": "Datos climáticos",
-      "climateIndicators": "Indicadores climáticos"
+      "climateIndicators": "Indicadores climáticos",
+      "forecast": "Pronóstico"
+    },
+    "forecast": {
+      "description": "Visualiza el pronóstico meteorológico para esta estación. Los datos se actualizan automáticamente desde el servicio de predicción numérica.",
+      "tabs": {
+        "climogram": "Climograma",
+        "climogramTooltip": "Climograma — precipitación (barras) y temperatura (líneas) agregadas por día"
+      }
     },
     "labels": {
       "period": "Período",
