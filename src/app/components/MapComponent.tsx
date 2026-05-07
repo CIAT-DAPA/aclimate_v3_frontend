@@ -25,6 +25,8 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
 import {
   addUserStation,
   deleteUserStation,
@@ -40,6 +42,7 @@ import { faMapPin } from "@fortawesome/free-solid-svg-icons";
 import { faTint } from "@fortawesome/free-solid-svg-icons";
 import { faWater } from "@fortawesome/free-solid-svg-icons";
 import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 
 // Paleta de colores accesibles con buen contraste
 const ACCESSIBLE_COLORS = [
@@ -102,6 +105,59 @@ const createCommunityLabelIcon = (
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
+};
+
+const MapActionButton = ({
+  show,
+  onClick,
+}: {
+  show: boolean;
+  onClick?: () => void;
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!show || !onClick) return;
+
+    const control = new L.Control({ position: "topright" });
+
+    control.onAdd = () => {
+      const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+      const button = L.DomUtil.create("button", "", container);
+
+      button.type = "button";
+      button.title = "Descargar capa raster de pronóstico";
+      button.setAttribute("aria-label", button.title);
+      button.className =
+        "flex h-10 w-10 items-center justify-center rounded-md border border-black bg-white text-black shadow-md transition-colors hover:text-black/50";
+      button.style.lineHeight = "1";
+
+      // Extraer SVG del icono FontAwesome
+      const [width, height, , , paths] = faFileArrowDown.icon;
+      const pathString = Array.isArray(paths)
+        ? (paths as string[]).map((p) => `<path d="${p}"/>`).join("")
+        : `<path d="${paths as string}"/>`;
+
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="18" height="18" fill="currentColor">${pathString}</svg>`;
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
+      L.DomEvent.on(button, "click", (event) => {
+        L.DomEvent.stop(event);
+        onClick();
+      });
+
+      return container;
+    };
+
+    control.addTo(map);
+
+    return () => {
+      control.remove();
+    };
+  }, [map, onClick, show]);
+
+  return null;
 };
 
 const rasterLayers = [
@@ -175,6 +231,8 @@ interface MapComponentProps {
   displayFormat?: string;
   onMapClick?: (lat: number, lng: number) => void;
   customMarkers?: CustomCommunityMarker[];
+  showActionButton?: boolean;
+  onActionButtonClick?: () => void;
 }
 
 const MapComponent = ({
@@ -196,7 +254,10 @@ const MapComponent = ({
   displayFormat = "YYYY-MM-DD",
   onMapClick,
   customMarkers = [],
+  showActionButton = false,
+  onActionButtonClick,
 }: MapComponentProps) => {
+  const { t, locale } = useI18n();
   const activeStations = stations.filter((station) => station.enable);
   const hasStations = activeStations.length > 0;
   const singleStationMode = activeStations.length === 1;
@@ -325,7 +386,7 @@ const MapComponent = ({
     e.preventDefault();
 
     if (!authenticated || !userValidatedInfo) {
-      alert("Debe iniciar sesión para gestionar favoritos");
+      alert(t("map.alerts.loginRequired"));
       return;
     }
 
@@ -333,7 +394,7 @@ const MapComponent = ({
     const userId = userValidatedInfo.user?.id ?? userValidatedInfo.id;
     if (!userId) {
       console.error("No se pudo encontrar userId para toggleFavorite");
-      alert("Error: No se pudo identificar al usuario");
+      alert(t("map.alerts.userMissing"));
       return;
     }
 
@@ -417,6 +478,10 @@ const MapComponent = ({
     useMapEvents({
       click: async (e) => {
         const { lat, lng } = e.latlng;
+        const pixelTitle = t("map.pixel.title");
+        const pixelLoading = t("map.pixel.loading");
+        const pixelValueLabel = t("map.pixel.value");
+        const pixelError = t("map.pixel.error");
 
         // Si hay una función personalizada para clics, usarla y salir
         if (onMapClick) {
@@ -434,7 +499,7 @@ const MapComponent = ({
         popupContent.className = "p-2";
         popupContent.innerHTML = `
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <h3 class="font-semibold text-sm">Valor del píxel</h3>
+            <h3 class="font-semibold text-sm">${pixelTitle}</h3>
             <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
               <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
@@ -443,7 +508,7 @@ const MapComponent = ({
               </span>
               <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
             </div>
-            <div class="text-sm text-gray-500" style="line-height:1.2;">Cargando...</div>
+            <div class="text-sm text-gray-500" style="line-height:1.2;">${pixelLoading}</div>
           </div>
         `;
 
@@ -496,7 +561,7 @@ const MapComponent = ({
           const response = await fetch(url);
           const data = await response.json();
 
-          let pixelValue = "Sin datos";
+          let pixelValue = t("map.pixel.noData");
 
           if (data.features && data.features.length > 0) {
             const properties = data.features[0].properties;
@@ -514,7 +579,7 @@ const MapComponent = ({
           // Actualizar el contenido del popup
           popupContent.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:4px;">
-              <h3 class="font-semibold text-sm">Valor del píxel</h3>
+              <h3 class="font-semibold text-sm">${pixelTitle}</h3>
               <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
                 <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
@@ -524,7 +589,7 @@ const MapComponent = ({
                 <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
               </div>
               <div class="text-sm font-medium text-gray-800" style="line-height:1.2;">
-                Valor: ${pixelValue}${unit ? " " + unit : ""}
+                ${pixelValueLabel}: ${pixelValue}${unit ? " " + unit : ""}
               </div>
             </div>
           `;
@@ -532,7 +597,7 @@ const MapComponent = ({
           console.error("Error al obtener información del píxel:", error);
           popupContent.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:4px;">
-              <h3 class="font-semibold text-sm">Valor del píxel</h3>
+              <h3 class="font-semibold text-sm">${pixelTitle}</h3>
               <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
                 <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
@@ -541,7 +606,7 @@ const MapComponent = ({
                 </span>
                 <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
               </div>
-              <div class="text-sm text-red-600" style="line-height:1.2;">Error al cargar datos</div>
+              <div class="text-sm text-red-600" style="line-height:1.2;">${pixelError}</div>
             </div>
           `;
         }
@@ -555,50 +620,70 @@ const MapComponent = ({
   const renderStationData = (station: Station) => {
     const data = stationData[station.id.toString()];
     const hasData = data && data.length > 0;
+    const localeTag = locale === "es" ? "es-ES" : "en-US";
 
     // Obtener la fecha formateada si hay datos
     const dateFormatted = hasData
-      ? new Date(data[0].date).toLocaleDateString()
+      ? new Date(data[0].date).toLocaleDateString(localeTag)
       : "N/A";
 
     // Mapeo de medidas a iconos y configuración
     const measureConfig: Record<
       string,
-      { label?: string; unit?: string; icon?: any }
+      { labelKey?: string; unit?: string; icon?: any }
     > = {
       Tmax: {
-        label: "Temperatura máxima",
+        labelKey: "map.measureLabels.tmax",
         unit: "°C",
         icon: faTemperatureArrowUp,
       },
       Tmin: {
-        label: "Temperatura mínima",
+        labelKey: "map.measureLabels.tmin",
         unit: "°C",
         icon: faTemperatureArrowDown,
       },
-      Prec: { label: "Precipitación", unit: "mm", icon: faCloudRain },
-      Rad: { label: "Radiación solar", unit: "MJ/m²", icon: faSun },
-      Cmax: { label: "Caudal máximo diario", unit: "mm³/seg", icon: faWater },
-      Cmin: { label: "Caudal mínimo diario", unit: "mm³/seg", icon: faTint },
+      Prec: {
+        labelKey: "map.measureLabels.prec",
+        unit: "mm",
+        icon: faCloudRain,
+      },
+      Rad: {
+        labelKey: "map.measureLabels.rad",
+        unit: "MJ/m²",
+        icon: faSun,
+      },
+      Cmax: {
+        labelKey: "map.measureLabels.cmax",
+        unit: "mm³/seg",
+        icon: faWater,
+      },
+      Cmin: {
+        labelKey: "map.measureLabels.cmin",
+        unit: "mm³/seg",
+        icon: faTint,
+      },
       Cmed: {
-        label: "Caudal medio diario",
+        labelKey: "map.measureLabels.cmed",
         unit: "mm³/seg",
         icon: faWaveSquare,
       },
     };
 
-    // Helper map to translate english names when short names don't match
-    const englishToSpanish: Record<string, string> = {
-      "maximum temperature": "Temperatura máxima",
-      "minimum temperature": "Temperatura mínima",
-      precipitation: "Precipitación",
-      "solar radiation": "Radiación solar",
-      "caudal mínimo diario": "Caudal mínimo diario",
-      "caudal máximo diario": "Caudal máximo diario",
-      "caudal medio diario": "Caudal medio diario",
+    // Helper map to translate names when short names don't match
+    const labelAliasMap: Record<string, string> = {
+      "maximum temperature": "map.measureLabels.tmax",
+      "minimum temperature": "map.measureLabels.tmin",
+      "temperatura máxima": "map.measureLabels.tmax",
+      "temperatura minima": "map.measureLabels.tmin",
+      precipitation: "map.measureLabels.prec",
+      precipitación: "map.measureLabels.prec",
+      "solar radiation": "map.measureLabels.rad",
+      "radiación solar": "map.measureLabels.rad",
+      "caudal mínimo diario": "map.measureLabels.cmin",
+      "caudal maximo diario": "map.measureLabels.cmax",
+      "caudal máximo diario": "map.measureLabels.cmax",
+      "caudal medio diario": "map.measureLabels.cmed",
     };
-
-    // Get the icon matching a text description if the short name didn't match via config
     const getFallbackIcon = (label: string): any => {
       const lowerLabel = label.toLowerCase();
       if (lowerLabel.includes("caudal máximo")) return faWater;
@@ -618,30 +703,33 @@ const MapComponent = ({
       <div className="flex flex-col">
         <div className="flex justify-between items-center text-sm text-gray-700 mb-2">
           <span>
-            Última fecha: <span className="font-medium">{dateFormatted}</span>
+            {t("map.station.lastDate")}:{" "}
+            <span className="font-medium">{dateFormatted}</span>
           </span>
         </div>
 
         <h4 className="font-semibold text-sm text-brand-green mb-1 uppercase tracking-wider">
-          Resumen de datos
+          {t("map.station.summary")}
         </h4>
 
         <div className="flex flex-col gap-1">
           {!hasData ? (
             <p className="text-gray-500 text-sm italic">
-              No hay datos disponibles
+              {t("map.station.noData")}
             </p>
           ) : (
             data.map((item: any, index: number) => {
               const config = measureConfig[item.measure_short_name];
-              let label =
-                config?.label || item.measure_name || item.measure_short_name;
+              let label = config?.labelKey
+                ? t(config.labelKey)
+                : item.measure_name || item.measure_short_name;
               let unit = config?.unit || item.measure_unit || "";
               let icon = config?.icon;
 
               // Force translation if needed
-              if (englishToSpanish[label.toLowerCase()]) {
-                label = englishToSpanish[label.toLowerCase()];
+              const aliasKey = labelAliasMap[label.toLowerCase()];
+              if (aliasKey) {
+                label = t(aliasKey);
               }
 
               // Try fallback icon if not found by short name
@@ -766,7 +854,10 @@ const MapComponent = ({
               ))}
 
               {customMarkers.length > 0 && (
-                <LayersControl.Overlay name="Comunidades" checked={true}>
+                <LayersControl.Overlay
+                  name={t("map.communities")}
+                  checked={true}
+                >
                   <LayerGroup>{renderCommunityLabels()}</LayerGroup>
                 </LayersControl.Overlay>
               )}
@@ -796,10 +887,18 @@ const MapComponent = ({
             wmsUrl={wmsLayers[0].url}
             layerName={wmsLayers[0].layers}
             position="bottomleft"
+            avoidTimeline={showTimeline}
           />
         )}
 
         {showZoomControl && <ZoomControl position="topright" />}
+
+        {showActionButton && onActionButtonClick && (
+          <MapActionButton
+            show={showActionButton}
+            onClick={onActionButtonClick}
+          />
+        )}
 
         {showMarkers &&
           hasStations &&
@@ -843,7 +942,8 @@ const MapComponent = ({
                     </div>
 
                     <div className="flex justify-between items-center mt-3 pt-2">
-                      <button
+                      <UIButton
+                        variant="secondary"
                         onClick={(e) =>
                           toggleFavorite(station.id.toString(), e)
                         }
@@ -851,14 +951,9 @@ const MapComponent = ({
                           loadingFavorites.has(station.id.toString()) ||
                           !authenticated
                         }
-                        className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
+                        className={`text-xs ${
                           favorites.has(station.id.toString())
-                            ? "text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100"
-                            : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
-                        } ${
-                          loadingFavorites.has(station.id.toString()) ||
-                          !authenticated
-                            ? "opacity-50 cursor-not-allowed"
+                            ? "text-[#a85a1f] border-[#bc6c25] bg-[#f8f3ee]"
                             : ""
                         }`}
                       >
@@ -881,11 +976,11 @@ const MapComponent = ({
                           </svg>
                         )}
                         {!authenticated
-                          ? "Iniciar sesión"
+                          ? t("map.favorites.login")
                           : favorites.has(station.id.toString())
-                            ? "Guardado"
-                            : "Favorito"}
-                      </button>
+                            ? t("map.favorites.saved")
+                            : t("map.favorites.favorite")}
+                      </UIButton>
 
                       <Link
                         className="flex items-center justify-center text-sm px-4 py-2 bg-[#C27830] !text-white rounded-lg hover:bg-[#A96627] transition-colors font-medium"
@@ -893,7 +988,7 @@ const MapComponent = ({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <FontAwesomeIcon icon={faChartPie} className="mr-2" />
-                        Datos
+                        {t("map.dataButton")}
                       </Link>
                     </div>
                   </div>
@@ -933,7 +1028,7 @@ const MapComponent = ({
           Object.keys(sourceColorMap).length > 0 && (
             <MapLegend
               position="topright"
-              title="Fuentes de datos "
+              title={t("map.legendSources")}
               maxHeight="200px"
             >
               <div className="space-y-1">
