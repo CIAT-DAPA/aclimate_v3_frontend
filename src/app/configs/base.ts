@@ -15,6 +15,8 @@ export interface BranchConfig {
       url: string;
       logo: string;
       alt: string;
+      /** Renders the card larger and with a subtle highlight ring */
+      featured?: boolean;
     }>;
   };
   showScenario?: boolean;
