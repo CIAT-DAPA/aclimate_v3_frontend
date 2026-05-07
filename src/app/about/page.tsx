@@ -3,9 +3,12 @@ import { useBranchConfig } from "@/app/configs";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButtonLink } from "@/app/components/ui/button";
 
 export default function AboutPage() {
   const config = useBranchConfig();
+  const { t } = useI18n();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   const handleImageError = (partnerName: string) => {
@@ -24,12 +27,12 @@ export default function AboutPage() {
                 </h2>
                 {config.aboutUs.projectLink && (
                   <div className="mt-6 md:mt-8">
-                    <Link
+                    <UIButtonLink
                       href={config.aboutUs.projectLink}
-                      target="_blank"
-                      className="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-white text-[#824b1a] border-2 border-[#bc6c25] font-semibold rounded-full hover:bg-[#bc6c25] hover:text-white transition-colors duration-300 text-sm md:text-base"
+                      variant="secondary"
+                      className="text-sm md:text-base md:px-6 md:py-3"
                     >
-                      Conoce más del proyecto
+                      {t("about.projectLink")}
                       <svg
                         className="ml-2 w-5 h-5"
                         fill="none"
@@ -43,7 +46,7 @@ export default function AboutPage() {
                           d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                         />
                       </svg>
-                    </Link>
+                    </UIButtonLink>
                   </div>
                 )}
               </div>
@@ -97,14 +100,27 @@ export default function AboutPage() {
             </h2>
             <div className="flex flex-wrap justify-center gap-6 md:gap-8">
               {config.aboutUs.partners.map((partner, index) => (
-                <div key={index} className="group w-48 md:w-56 lg:w-64">
+                <div
+                  key={index}
+                  className={`group ${
+                    partner.featured
+                      ? "w-56 md:w-64 lg:w-72"
+                      : "w-48 md:w-56 lg:w-64"
+                  }`}
+                >
                   <Link
                     href={partner.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
-                    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 md:p-6 h-32 md:h-36 lg:h-40 flex items-center justify-center group-hover:scale-105">
+                    <div
+                      className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 md:p-6 flex items-center justify-center group-hover:scale-105 ${
+                        partner.featured
+                          ? "h-36 md:h-44 lg:h-48 ring-2 ring-gray-200"
+                          : "h-32 md:h-36 lg:h-40"
+                      }`}
+                    >
                       <div className="relative w-full h-full">
                         {!imageErrors.has(partner.name) ? (
                           <Image
@@ -156,17 +172,16 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center text-white">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6">
-              ¿Listo para explorar los datos climáticos?
+              {t("about.ctaTitle")}
             </h2>
             <p className="text-lg md:text-xl mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-              Accede a información climática detallada y herramientas de
-              análisis avanzadas
+              {t("about.ctaSubtitle")}
             </p>
-            <Link
+            <UIButtonLink
               href="/"
-              className="inline-flex items-center px-6 md:px-8 py-3 md:py-4 bg-[#bc6c25] text-white font-bold rounded-full hover:bg-[#a85a1f] transition-colors duration-300 text-base md:text-lg"
+              className="text-base md:text-lg md:px-8 md:py-4 font-bold"
             >
-              Comenzar ahora
+              {t("about.ctaButton")}
               <svg
                 className="ml-3 w-6 h-6"
                 fill="none"
@@ -180,7 +195,7 @@ export default function AboutPage() {
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
-            </Link>
+            </UIButtonLink>
           </div>
         </div>
       </section>

@@ -6,10 +6,11 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
-import { spatialService } from "@/app/services/spatialService";
+import { spatialService, IndicatorCategory } from "@/app/services/spatialService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
+import DecadeCalendarChart from "@/app/components/DecadeCalendarChart";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMapMarkerAlt,
@@ -18,11 +19,14 @@ import {
   faFileArrowDown,
   faSatellite,
   faDatabase,
+  faFingerprint,
 } from "@fortawesome/free-solid-svg-icons";
 import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useBranchConfig } from "@/app/configs";
+import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton, UIButtonLink } from "@/app/components/ui/button";
 import {
   addUserStation,
   deleteUserStation,
@@ -35,6 +39,12 @@ import {
   indicatorPeriodOptions,
   getIndicatorColor,
 } from "./config";
+
+// Cargar ForecastSection dinámicamente sin SSR (se carga en background)
+const ForecastSection = dynamic(
+  () => import("@/app/components/ForecastSection"),
+  { ssr: false },
+);
 
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
@@ -82,6 +92,7 @@ export default function StationDetailPage() {
   const [satelliteData, setSatelliteData] = useState<any>(null);
 
   const { authenticated, userValidatedInfo } = useAuth();
+  const { t } = useI18n();
 
   // Datos completos sin filtrar (cargados una sola vez)
   const [climateHistoricalDataFull, setClimateHistoricalDataFull] =
@@ -103,8 +114,15 @@ export default function StationDetailPage() {
   >([]);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
 
+  // Estados para categorías de indicadores
+  const [indicatorCategories, setIndicatorCategories] = useState<IndicatorCategory[]>([]);
+  const [selectedIndicatorCategory, setSelectedIndicatorCategory] = useState<IndicatorCategory | null>(null);
+  const [loadingIndicatorCategories, setLoadingIndicatorCategories] = useState(false);
+  const [categoryIndicatorShortNames, setCategoryIndicatorShortNames] = useState<Set<string>>(new Set());
+
   // Estados para control de búsqueda manual
   const [searchTrigger, setSearchTrigger] = useState(0);
+  const [searchTriggerIndicators, setSearchTriggerIndicators] = useState(0);
 
   // Convertir fecha a formato de mes (para climatología)
   const dateToMonthFormat = useCallback((date: string) => {
@@ -186,14 +204,29 @@ export default function StationDetailPage() {
 
           if (!Array.isArray(dates) || !Array.isArray(values)) return;
 
-          // Para climatología, las fechas vienen en formato "2000-MM-01"
+          // Para climatología, las fechas son nombres de mes abreviados (ej: "Ene", "Feb", ...)
+          const climMonthNames = [
+            "Ene",
+            "Feb",
+            "Mar",
+            "Abr",
+            "May",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dic",
+          ];
           const filteredIndices = dates
             .map((date: string, index: number) => {
-              // Extraer el mes de la fecha formato "2000-MM-01"
-              const monthIndex = parseInt(date.split("-")[1]);
+              // Obtener número de mes (1-12) a partir del nombre abreviado
+              const monthIndex = climMonthNames.indexOf(date) + 1;
               return { date, index, monthIndex };
             })
             .filter(({ monthIndex }: { monthIndex: number }) => {
+              if (monthIndex === 0) return false; // nombre de mes no reconocido
               // Manejar casos donde el rango puede cruzar el año (ej: Oct-Feb)
               if (startMonth <= endMonth) {
                 return monthIndex >= startMonth && monthIndex <= endMonth;
@@ -597,12 +630,12 @@ export default function StationDetailPage() {
 
         // Mapeo de labels en inglés a español
         const labelMap: Record<string, string> = {
-          Daily: "Diario",
-          Monthly: "Mensual",
-          Annual: "Anual",
-          Seasonal: "Estacional",
-          Decadal: "Decadal",
-          Other: "Otro",
+          Daily: t("stationPage.period.daily"),
+          Monthly: t("stationPage.period.monthly"),
+          Annual: t("stationPage.period.annual"),
+          Seasonal: t("stationPage.period.seasonal"),
+          Decadal: t("stationPage.period.decadal"),
+          Other: t("stationPage.period.other"),
         };
 
         // Filtrar solo los períodos que tienen datos y traducir labels
@@ -625,8 +658,8 @@ export default function StationDetailPage() {
         console.error("Error cargando períodos disponibles:", error);
         // En caso de error, mantener las opciones por defecto
         setAvailableIndicatorPeriods([
-          { value: "monthly", label: "Mensual" },
-          { value: "annual", label: "Anual" },
+          { value: "monthly", label: t("stationPage.period.monthly") },
+          { value: "annual", label: t("stationPage.period.annual") },
         ]);
       } finally {
         setLoadingPeriods(false);
@@ -634,7 +667,56 @@ export default function StationDetailPage() {
     };
 
     fetchAvailablePeriods();
-  }, [machine_name]);
+  }, [machine_name, t]);
+
+  // Efecto para cargar categorías de indicadores
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!countryId) return;
+
+      setLoadingIndicatorCategories(true);
+      try {
+        const categories = await spatialService.getIndicatorCategories(countryId);
+        setIndicatorCategories(categories);
+        if (categories.length > 0) {
+          setSelectedIndicatorCategory(categories[0]);
+        } else {
+          setSelectedIndicatorCategory(null);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías de indicadores:", error);
+        setIndicatorCategories([]);
+        setSelectedIndicatorCategory(null);
+      } finally {
+        setLoadingIndicatorCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [countryId]);
+
+  // Efecto para cargar los short_names de indicadores de la categoría seleccionada
+  useEffect(() => {
+    const loadCategoryIndicators = async () => {
+      if (!countryId || !selectedIndicatorCategory) {
+        setCategoryIndicatorShortNames(new Set());
+        return;
+      }
+      try {
+        const indicators = await spatialService.getIndicators(
+          countryId,
+          timePeriodIndicators,
+          selectedIndicatorCategory.id,
+        );
+        setCategoryIndicatorShortNames(new Set(indicators.map((ind) => ind.short_name)));
+      } catch (error) {
+        console.error("Error cargando indicadores por categoría:", error);
+        setCategoryIndicatorShortNames(new Set());
+      }
+    };
+
+    loadCategoryIndicators();
+  }, [countryId, selectedIndicatorCategory, timePeriodIndicators]);
 
   // Efecto para cargar datos de la estación (solo una vez al montar)
   useEffect(() => {
@@ -645,7 +727,9 @@ export default function StationDetailPage() {
         setStation(stationData[0]);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Error loading station data",
+          err instanceof Error
+            ? err.message
+            : t("stationPage.errors.loadingStation"),
         );
       } finally {
         setLoading(false);
@@ -655,7 +739,7 @@ export default function StationDetailPage() {
     if (machine_name) {
       fetchStation();
     }
-  }, [machine_name]);
+  }, [machine_name, t]);
 
   // Efecto para cargar estado de favorito
   useEffect(() => {
@@ -811,7 +895,11 @@ export default function StationDetailPage() {
             });
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Error loading dates");
+          setError(
+            err instanceof Error
+              ? err.message
+              : t("stationPage.errors.loadingDates"),
+          );
         }
       };
 
@@ -823,6 +911,7 @@ export default function StationDetailPage() {
     timePeriodIndicators,
     dateToMonthFormat,
     getLast30Days,
+    t,
   ]);
 
   // Al cambiar el período climático, limpiar de inmediato los datos para evitar parpadeo de gráficos anteriores
@@ -954,7 +1043,7 @@ export default function StationDetailPage() {
     timePeriodIndicators,
   ]);
 
-  // Efecto para filtrar datos de indicadores cuando cambian los filtros
+  // Efecto para filtrar datos de indicadores cuando cambian los filtros (requiere búsqueda manual)
   useEffect(() => {
     if (
       !indicatorsDataFull ||
@@ -976,16 +1065,21 @@ export default function StationDetailPage() {
     }, 100);
 
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     indicatorsDataFull,
-    filterDatesIndicators.start,
-    filterDatesIndicators.end,
+    searchTriggerIndicators,
     filterIndicatorsData,
   ]);
 
   // Función para ejecutar búsqueda manual
   const handleSearch = useCallback(() => {
     setSearchTrigger((prev) => prev + 1);
+  }, []);
+
+  // Función para ejecutar búsqueda manual de indicadores
+  const handleSearchIndicators = useCallback(() => {
+    setSearchTriggerIndicators((prev) => prev + 1);
   }, []);
 
   // Formatear fechas (calcular antes de useEffect/useMemo)
@@ -1006,6 +1100,20 @@ export default function StationDetailPage() {
       setPdfLoading(false);
     }
   };
+
+  // Indicadores filtrados por categoría seleccionada
+  const filteredIndicatorsData = useMemo(() => {
+    if (!indicatorsData) return null;
+    if (categoryIndicatorShortNames.size === 0) return indicatorsData;
+
+    const filtered: any = {};
+    Object.entries(indicatorsData).forEach(([key, value]) => {
+      if (categoryIndicatorShortNames.has(key)) {
+        filtered[key] = value;
+      }
+    });
+    return Object.keys(filtered).length > 0 ? filtered : null;
+  }, [indicatorsData, categoryIndicatorShortNames]);
 
   // Verificar si hay datos suficientes para mostrar el botón PDF
   const hasDataForPDF = useMemo(() => {
@@ -1056,7 +1164,9 @@ export default function StationDetailPage() {
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando estación...</p>
+          <p className="text-gray-600">
+            {t("stationPage.states.loadingStation")}
+          </p>
         </div>
       </div>
     );
@@ -1066,13 +1176,12 @@ export default function StationDetailPage() {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
-          >
-            Reintentar
-          </button>
+          <p className="text-red-600 mb-4">
+            {t("stationPage.states.errorPrefix")}: {error}
+          </p>
+          <UIButton onClick={() => window.location.reload()}>
+            {t("stationPage.actions.retry")}
+          </UIButton>
         </div>
       </div>
     );
@@ -1082,13 +1191,12 @@ export default function StationDetailPage() {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Estación no encontrada</p>
-          <Link
-            href="/"
-            className="bg-[#bc6c25] text-white cursor-pointer px-4 py-2 rounded hover:bg-amber-700 transition-colors"
-          >
-            Volver al inicio
-          </Link>
+          <p className="text-red-600 mb-4">
+            {t("stationPage.states.notFound")}
+          </p>
+          <UIButtonLink href="/">
+            {t("stationPage.actions.backHome")}
+          </UIButtonLink>
         </div>
       </div>
     );
@@ -1100,27 +1208,38 @@ export default function StationDetailPage() {
       <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            Monitoreo
+            {t("stationPage.header.monitoring")}
           </h1>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
-            Estación {station?.name || "Desconocida"}
+            {t("stationPage.header.stationTitle", {
+              name: station?.name || t("stationPage.common.unknown"),
+            })}
           </h2>
         </div>
 
         <div className="mb-4">
           <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-2">
             <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm" />
-            {station?.admin1_name || "N/A"}, {station?.admin2_name || "N/A"}
+            {station?.admin1_name || t("stationPage.common.na")},{" "}
+            {station?.admin2_name || t("stationPage.common.na")}
           </p>
           <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
             <FontAwesomeIcon icon={faMapPin} className="text-sm" />
-            {station?.latitude?.toFixed(6) || "N/A"},{" "}
-            {station?.longitude?.toFixed(6) || "N/A"}
+            {station?.latitude?.toFixed(6) || t("stationPage.common.na")},{" "}
+            {station?.longitude?.toFixed(6) || t("stationPage.common.na")}
           </p>
           <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
             <FontAwesomeIcon icon={faDatabase} className="text-sm" />
-            Fuente: {station?.source || "N/A"}
+            {t("common.sourceWith", {
+              source: station?.source || t("stationPage.common.na"),
+            })}
           </p>
+          {station?.ext_id && (
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+              <FontAwesomeIcon icon={faFingerprint} className="text-sm" />
+              {t("stationPage.header.stationCode")}: <span className="font-medium text-gray-700">{station.ext_id}</span>
+            </p>
+          )}
         </div>
 
         {/* Línea divisora */}
@@ -1129,15 +1248,18 @@ export default function StationDetailPage() {
         {/* Descripción de la estación */}
         <div className="mt-4 mb-4 text-sm sm:text-base text-gray-700">
           <p>
-            La estación meteorológica{" "}
-            <strong>{station?.name || "Desconocida"}</strong>, situada en{" "}
+            {t("stationPage.header.descriptionPrefix")}{" "}
+            <strong>{station?.name || t("stationPage.common.unknown")}</strong>,{" "}
+            {t("stationPage.header.descriptionLocated")}{" "}
             <strong>
-              {station?.admin2_name || "N/A"}, {station?.country_name || "N/A"}
+              {station?.admin2_name || t("stationPage.common.na")},{" "}
+              {station?.country_name || t("stationPage.common.na")}
             </strong>
-            , cuenta con registros históricos desde el{" "}
-            <strong>{startDate || "..."}</strong> hasta el{" "}
-            <strong>{endDate || "..."}</strong>, proporcionando información
-            clave para el monitoreo agroclimático.
+            , {t("stationPage.header.descriptionRangeFrom")}{" "}
+            <strong>{startDate || "..."}</strong>{" "}
+            {t("stationPage.header.descriptionRangeTo")}{" "}
+            <strong>{endDate || "..."}</strong>,{" "}
+            {t("stationPage.header.descriptionSuffix")}
           </p>
         </div>
 
@@ -1157,8 +1279,10 @@ export default function StationDetailPage() {
           <div className="bg-white rounded-lg shadow-sm">
             {/* Acordeones para selección de tipo de datos */}
             <div id="accordion-collapse" data-accordion="collapse">
-              {/* Acordeón para Datos climáticos */}
-              <div id="climatic-accordion">
+              {(branchConfig.station?.sectionOrder ?? ["climate", "indicators"]).map((section) => {
+                if (section === "climate") return (
+                  /* Acordeón para Datos climáticos */
+                  <div key="climate" id="climatic-accordion">
                 <h2 id="climatic-accordion-trigger">
                   <button
                     type="button"
@@ -1167,7 +1291,7 @@ export default function StationDetailPage() {
                     aria-expanded={isClimaticOpen}
                   >
                     <span className="text-xl font-semibold text-gray-800">
-                      Datos climáticos
+                      {t("stationPage.sections.climateData")}
                     </span>
                     <svg
                       className={`w-6 h-6 shrink-0 ${isClimaticOpen ? "rotate-180" : ""}`}
@@ -1192,12 +1316,7 @@ export default function StationDetailPage() {
                     {/* Selector de período de tiempo para datos climáticos */}
                     <div className="mb-6 border-b border-gray-200 pb-4">
                       <p className="mb-4 text-gray-700">
-                        Explora cómo han variado las principales variables del
-                        clima en esta estación. Visualiza la evolución de la
-                        <strong> temperatura</strong>, la{" "}
-                        <strong>precipitación</strong> y la{" "}
-                        <strong>radiación solar</strong>. Utiliza los filtros de
-                        fecha para ajustar la información a tu interés.
+                        {t("stationPage.climate.description")}
                       </p>
 
                       {/* Controles en línea */}
@@ -1208,7 +1327,7 @@ export default function StationDetailPage() {
                             htmlFor="period-climatic"
                             className="block text-xs font-medium text-gray-700 mb-1"
                           >
-                            Período
+                            {t("stationPage.labels.period")}
                           </label>
                           <select
                             id="period-climatic"
@@ -1216,9 +1335,15 @@ export default function StationDetailPage() {
                             onChange={(e) => setTimePeriod(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                           >
-                            <option value="daily">Diario</option>
-                            <option value="monthly">Mensual</option>
-                            <option value="climatology">Climatología</option>
+                            <option value="daily">
+                              {t("stationPage.period.daily")}
+                            </option>
+                            <option value="monthly">
+                              {t("stationPage.period.monthly")}
+                            </option>
+                            <option value="climatology">
+                              {t("stationPage.period.climatology")}
+                            </option>
                           </select>
                         </div>
 
@@ -1230,7 +1355,7 @@ export default function StationDetailPage() {
                                 htmlFor="start-month"
                                 className="block text-xs font-medium text-gray-700 mb-1"
                               >
-                                Mes inicial
+                                {t("stationPage.labels.startMonth")}
                               </label>
                               <select
                                 id="start-month"
@@ -1255,7 +1380,7 @@ export default function StationDetailPage() {
                                 htmlFor="end-month"
                                 className="block text-xs font-medium text-gray-700 mb-1"
                               >
-                                Mes final
+                                {t("stationPage.labels.endMonth")}
                               </label>
                               <select
                                 id="end-month"
@@ -1276,16 +1401,15 @@ export default function StationDetailPage() {
                               </select>
                             </div>
                             <div>
-                              <button
+                              <UIButton
                                 onClick={handleSearch}
                                 disabled={
                                   !filterDatesClimatic.start ||
                                   !filterDatesClimatic.end
                                 }
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                               >
-                                Buscar
-                              </button>
+                                {t("stationPage.actions.search")}
+                              </UIButton>
                             </div>
                           </>
                         ) : (
@@ -1295,7 +1419,7 @@ export default function StationDetailPage() {
                                 htmlFor="start-date"
                                 className="block text-xs font-medium text-gray-700 mb-1"
                               >
-                                Fecha inicial
+                                {t("stationPage.labels.startDate")}
                               </label>
                               <input
                                 type="date"
@@ -1317,7 +1441,7 @@ export default function StationDetailPage() {
                                 htmlFor="end-date"
                                 className="block text-xs font-medium text-gray-700 mb-1"
                               >
-                                Fecha final
+                                {t("stationPage.labels.endDate")}
                               </label>
                               <input
                                 type="date"
@@ -1339,7 +1463,7 @@ export default function StationDetailPage() {
                               />
                             </div>
                             <div>
-                              <button
+                              <UIButton
                                 onClick={handleSearch}
                                 disabled={
                                   !filterDatesClimatic.start ||
@@ -1349,10 +1473,9 @@ export default function StationDetailPage() {
                                     filterDatesClimatic.end,
                                   )
                                 }
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                               >
-                                Buscar
-                              </button>
+                                {t("stationPage.actions.search")}
+                              </UIButton>
                             </div>
                           </>
                         )}
@@ -1366,8 +1489,7 @@ export default function StationDetailPage() {
                         ) && (
                           <div className="mt-3">
                             <span className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
-                              ⚠️ El rango seleccionado es muy grande (más de 3
-                              años). Por favor, selecciona un período menor.
+                              {t("stationPage.warnings.dateRangeTooLarge")}
                             </span>
                           </div>
                         )}
@@ -1396,25 +1518,31 @@ export default function StationDetailPage() {
                               datasets={chartData.datasets}
                               period={timePeriod}
                               chartType={chartData.chartType}
-                              description={`Rango total disponible: ${chartData.totalDateRange?.minDate || "N/A"} hasta ${chartData.totalDateRange?.maxDate || "N/A"}`}
+                              description={t("stationPage.climate.totalRange", {
+                                minDate:
+                                  chartData.totalDateRange?.minDate ||
+                                  t("stationPage.common.na"),
+                                maxDate:
+                                  chartData.totalDateRange?.maxDate ||
+                                  t("stationPage.common.na"),
+                              })}
                             />
                           ),
                         )
                       ) : (
                         // Mostrar mensaje cuando no hay datos
                         <div className="col-span-full text-center text-gray-500 py-8">
-                          No hay datos climáticos disponibles para el período
-                          seleccionado
+                          {t("stationPage.empty.noClimateData")}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Acordeón para Indicadores climáticos */}
-              {branchConfig.station?.showClimateIndicator && (
-                <div id="indicators-accordion">
+                );
+                if (section === "indicators") return branchConfig.station?.showClimateIndicator ? (
+                  /* Acordeón para Indicadores climáticos */
+                  <div key="indicators" id="indicators-accordion">
                   <h2 id="indicators-accordion-trigger">
                     <button
                       type="button"
@@ -1423,7 +1551,7 @@ export default function StationDetailPage() {
                       aria-expanded={isIndicatorsOpen}
                     >
                       <span className="text-xl font-semibold text-gray-800">
-                        Indicadores climáticos
+                        {t("stationPage.sections.climateIndicators")}
                       </span>
                       <svg
                         className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
@@ -1448,12 +1576,7 @@ export default function StationDetailPage() {
                       {/* Selector de período de tiempo para indicadores */}
                       <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
                         <p className="text-gray-700">
-                          Consulta la evolución de los{" "}
-                          <strong>indicadores climáticos</strong> de esta
-                          estación y descubre patrones relevantes. Filtra
-                          fácilmente por <strong>categoría</strong> y{" "}
-                          <strong>rango de fechas</strong> para personalizar tu
-                          análisis.
+                          {t("stationPage.indicators.description")}
                         </p>
                         <div className="flex items-center gap-6">
                           {/* Selector de período */}
@@ -1462,7 +1585,7 @@ export default function StationDetailPage() {
                               htmlFor="period-indicators"
                               className="block text-xs font-medium text-gray-700 mb-1"
                             >
-                              Período
+                              {t("stationPage.labels.period")}
                             </label>
                             <select
                               id="period-indicators"
@@ -1477,7 +1600,9 @@ export default function StationDetailPage() {
                               }
                             >
                               {loadingPeriods ? (
-                                <option>Cargando...</option>
+                                <option>
+                                  {t("stationPage.states.loading")}
+                                </option>
                               ) : availableIndicatorPeriods.length > 0 ? (
                                 availableIndicatorPeriods.map((option) => (
                                   <option
@@ -1488,20 +1613,55 @@ export default function StationDetailPage() {
                                   </option>
                                 ))
                               ) : (
-                                <option>No hay datos disponibles</option>
+                                <option>{t("stationPage.empty.noData")}</option>
                               )}
                             </select>
                           </div>
+
+                          {/* Selector de categoría */}
+                          {indicatorCategories.length > 0 && (
+                            <div>
+                              <label
+                                htmlFor="category-indicators"
+                                className="block text-xs font-medium text-gray-700 mb-1"
+                              >
+                                {t("spatial.labels.category")}
+                              </label>
+                              {loadingIndicatorCategories ? (
+                                <div className="text-gray-500 text-sm">
+                                  {t("stationPage.states.loading")}
+                                </div>
+                              ) : (
+                                <select
+                                  id="category-indicators"
+                                  value={selectedIndicatorCategory?.id || ""}
+                                  onChange={(e) => {
+                                    const cat = indicatorCategories.find(
+                                      (c) => c.id === parseInt(e.target.value),
+                                    );
+                                    setSelectedIndicatorCategory(cat || null);
+                                  }}
+                                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                >
+                                  {indicatorCategories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                      {category.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Selector de fechas alineado a la derecha */}
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-end">
                           <div>
                             <label
                               htmlFor="start-date-indicators"
                               className="block text-xs font-medium text-gray-700 mb-1"
                             >
-                              Fecha inicial
+                              {t("stationPage.labels.startDate")}
                             </label>
                             <input
                               type="date"
@@ -1523,7 +1683,7 @@ export default function StationDetailPage() {
                               htmlFor="end-date-indicators"
                               className="block text-xs font-medium text-gray-700 mb-1"
                             >
-                              Fecha final
+                              {t("stationPage.labels.endDate")}
                             </label>
                             <input
                               type="date"
@@ -1544,14 +1704,33 @@ export default function StationDetailPage() {
                               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                             />
                           </div>
+                          <div>
+                            <UIButton
+                              onClick={handleSearchIndicators}
+                              disabled={
+                                !filterDatesIndicators.start ||
+                                !filterDatesIndicators.end
+                              }
+                            >
+                              {t("stationPage.actions.search")}
+                            </UIButton>
+                          </div>
                         </div>
                       </div>
 
                       {/* Gráficas de indicadores climáticos */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {indicatorsData &&
-                        Object.keys(indicatorsData).length > 0 ? (
-                          Object.entries(indicatorsData).map(
+                        {filteredIndicatorsData &&
+                        Object.keys(filteredIndicatorsData).length > 0 ? (
+                          Object.entries(filteredIndicatorsData)
+                            .sort(([keyA], [keyB]) => {
+                              const isCalendarA = keyA === "IELL-decade" || keyA === "IELS-decade";
+                              const isCalendarB = keyB === "IELL-decade" || keyB === "IELS-decade";
+                              if (isCalendarA && !isCalendarB) return -1;
+                              if (!isCalendarA && isCalendarB) return 1;
+                              return 0;
+                            })
+                            .map(
                             ([key, indicator]) => {
                               const typedIndicator = indicator as {
                                 name: string;
@@ -1559,6 +1738,25 @@ export default function StationDetailPage() {
                                 dates: string[];
                                 values: number[];
                               };
+
+                              // Decade-calendar indicators use a special visualizer
+                              if (
+                                key === "IELL-decade" ||
+                                key === "IELS-decade"
+                              ) {
+                                return (
+                                  <DecadeCalendarChart
+                                    key={key}
+                                    series={typedIndicator.values}
+                                    indicatorLabel={typedIndicator.name}
+                                    colorScheme={
+                                      key === "IELL-decade" ? "rainy" : "dry"
+                                    }
+                                    className="col-span-1 md:col-span-2"
+                                  />
+                                );
+                              }
+
                               return (
                                 <ClimateChart
                                   key={key}
@@ -1566,7 +1764,7 @@ export default function StationDetailPage() {
                                   unit={typedIndicator.unit}
                                   datasets={[
                                     {
-                                      label: "Datos estación",
+                                      label: t("stationPage.chart.stationData"),
                                       color: getIndicatorColor(key),
                                       data: typedIndicator.values,
                                       dates: typedIndicator.dates,
@@ -1580,7 +1778,7 @@ export default function StationDetailPage() {
                         ) : (
                           <div className="col-span-2 flex items-center justify-center">
                             <p className="text-gray-500">
-                              No hay datos disponibles
+                              {t("stationPage.empty.noData")}
                             </p>
                           </div>
                         )}
@@ -1588,55 +1786,61 @@ export default function StationDetailPage() {
                     </div>
                   </div>
                 </div>
-              )}
+                ) : null;
+                if (section === "forecast") return branchConfig.station?.showForecast ? (
+                  /* Acordeón para Pronóstico */
+                  <ForecastSection key="forecast" extId={station.ext_id} />
+                ) : null;
+                return null;
+              })}
             </div>
           </div>
         </div>
       </main>
 
       {/* Botón flotante para comparación satelital */}
-      <button
+      <UIButton
+        variant={isSatelliteActive ? "primary" : "secondary"}
         onClick={toggleSatelliteComparison}
         disabled={!station || loadingSatellite}
-        className={`fixed bottom-40 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
+        className={`fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !station
-            ? "bg-gray-400 cursor-not-allowed"
-            : isSatelliteActive
-              ? "bg-blue-500 hover:bg-blue-600 focus:ring-blue-300"
-              : "bg-gray-600 hover:bg-gray-700 focus:ring-gray-400"
-        } focus:outline-none focus:ring-4`}
+            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
+            : ""
+        }`}
         title={
           !station
-            ? "Estación no disponible"
+            ? t("stationPage.tooltips.stationUnavailable")
             : isSatelliteActive
-              ? "Desactivar comparación satelital"
-              : "Activar comparación satelital"
+              ? t("stationPage.tooltips.disableSatellite")
+              : t("stationPage.tooltips.enableSatellite")
         }
       >
         {loadingSatellite ? (
-          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 inline-block text-[#BC6C25]"></span>
         ) : (
           <FontAwesomeIcon icon={faSatellite} className="h-6 w-6" />
         )}
-      </button>
+      </UIButton>
 
       {/* Botón flotante de favoritos */}
-      <button
+      <UIButton
+        variant={isFavorite ? "primary" : "secondary"}
         onClick={toggleFavorite}
         disabled={!authenticated || loadingFavorite}
-        className={`fixed bottom-24 right-8 text-white font-medium rounded-full p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 ${
+        className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !authenticated
-            ? "bg-gray-400 cursor-not-allowed"
+            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
             : isFavorite
-              ? "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-300"
-              : "bg-gray-600 hover:bg-gray-700 focus:ring-gray-400"
-        } focus:outline-none focus:ring-4`}
+              ? "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]"
+              : "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]"
+        }`}
         title={
           !authenticated
-            ? "Debe iniciar sesión para agregar a favoritos"
+            ? t("stationPage.tooltips.loginRequiredFavorite")
             : isFavorite
-              ? "Quitar de favoritos"
-              : "Agregar a favoritos"
+              ? t("stationPage.tooltips.removeFavorite")
+              : t("stationPage.tooltips.addFavorite")
         }
       >
         {loadingFavorite ? (
@@ -1647,7 +1851,7 @@ export default function StationDetailPage() {
             className="h-6 w-6"
           />
         )}
-      </button>
+      </UIButton>
 
       {/* Botón flotante de descarga PDF */}
       {hasDataForPDF && (
@@ -1655,7 +1859,7 @@ export default function StationDetailPage() {
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
           className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-[9999] transition-all hover:scale-110"
-          title="Descargar como PDF"
+          title={t("stationPage.actions.downloadPdf")}
         >
           {pdfLoading ? (
             <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>

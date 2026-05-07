@@ -15,6 +15,8 @@ export interface BranchConfig {
       url: string;
       logo: string;
       alt: string;
+      /** Renders the card larger and with a subtle highlight ring */
+      featured?: boolean;
     }>;
   };
   showScenario?: boolean;
@@ -25,6 +27,11 @@ export interface BranchConfig {
   };
   station?: {
     showClimateIndicator: boolean;
+    showForecast?: boolean;
+    /** Attribution / source text shown at the top of the forecast section */
+    forecastSource?: string;
+    /** Order of sections in the station detail page. Defaults to ["climate", "indicators"] */
+    sectionOrder?: Array<"climate" | "indicators" | "forecast">;
   };
   spatial?: {
     showClimateIndicator: boolean;
