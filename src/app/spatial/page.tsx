@@ -296,6 +296,10 @@ export default function SpatialDataPage() {
   const [loadingAgroCategories, setLoadingAgroCategories] = useState(false);
   const [loadingAgroIndicators, setLoadingAgroIndicators] = useState(false);
 
+  // Estado para departamento seleccionado en escenarios
+  const [selectedScenarioDepartment, setSelectedScenarioDepartment] =
+    useState<string>("amazonas");
+
   // Estados para capas administrativas dinámicas
   const [adminLayers, setAdminLayers] = useState<
     Array<{ name: string; workspace: string; store: string; layer: string }>
@@ -634,9 +638,12 @@ export default function SpatialDataPage() {
       // Crear URL para la capa específica usando formato GeoTIFF
       const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
 
+      // Guardar la URL proxificada para evitar CORS/ORB en el navegador
+      const proxiedUrl = `/api/wms?url=${encodeURIComponent(url)}`;
+
       // Actualizar la referencia sin causar rerender
       rasterFilesRef.current[layerName] = {
-        url,
+        url: proxiedUrl,
         layer: layerName,
         time,
         title: layerTitle,
@@ -658,7 +665,10 @@ export default function SpatialDataPage() {
         // Si no existe, obtener la primera fecha disponible de la capa
         const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
 
-        const response = await fetch(capabilitiesUrl);
+        // Usar el proxy para evitar bloqueos CORS al leer GetCapabilities
+        const response = await fetch(
+          `/api/wms?url=${encodeURIComponent(capabilitiesUrl)}`,
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -689,8 +699,9 @@ export default function SpatialDataPage() {
           // Usar image/geotiff para obtener los valores reales del raster
           // WMS 1.3.0 con EPSG:4326 requiere orden: miny,minx,maxy,maxx (lat,lon,lat,lon)
           const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${timeValue}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
+          const proxied = `/api/wms?url=${encodeURIComponent(url)}`;
           const fileInfo = {
-            url,
+            url: proxied,
             layer: layerName,
             time: timeValue,
             title: layerTitle,
@@ -1209,6 +1220,26 @@ export default function SpatialDataPage() {
                 >
                   <div className="p-5 border border-t-0 border-gray-200">
                     <div className="flex flex-col gap-8">
+                      {/* Department filter for scenarios */}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                        <label className="font-medium text-gray-700">
+                          {t("spatial.filters.department")}:
+                        </label>
+                        <select
+                          value={selectedScenarioDepartment}
+                          onChange={(e) =>
+                            setSelectedScenarioDepartment(e.target.value)
+                          }
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                        >
+                          {agroDepartmentOptions.map((dept) => (
+                            <option key={dept.value} value={dept.value}>
+                              {dept.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       {config.spatial?.showForecastPctChange && (
                         <div className="flex flex-col gap-3">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1237,9 +1268,8 @@ export default function SpatialDataPage() {
                               zoom={currentCountry.zoom}
                               wmsLayers={[
                                 {
-                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                                  layers:
-                                    "climate_forecast_st:climate_forecast_st_monthly_pct_change",
+                                  url: `${GEOSERVER_URL}/climate_forecast_monthly/wms`,
+                                  layers: `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_pct_change`,
                                   time: latestForecastPctTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,
@@ -1293,9 +1323,8 @@ export default function SpatialDataPage() {
                               zoom={currentCountry.zoom}
                               wmsLayers={[
                                 {
-                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                                  layers:
-                                    "climate_forecast_st:climate_forecast_st_monthly",
+                                  url: `${GEOSERVER_URL}/climate_forecast_monthly/wms`,
+                                  layers: `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_spei`,
                                   time: latestScenarioTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,
