@@ -521,9 +521,10 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
   // Initialise default tab once parameters are loaded
   useEffect(() => {
     if (parameters.length > 0 && !selectedTab) {
-      setSelectedTab(hasClimoData ? "__climogram__" : parameters[0].keyword);
+      const firstNonClimo = parameters[0]?.keyword;
+      setSelectedTab(firstNonClimo ?? "");
     }
-  }, [parameters, hasClimoData, selectedTab]);
+  }, [parameters, selectedTab]);
 
   const dailySummaries = useMemo(
     () => buildDailySummaries(forecastData, parameters, locale),
@@ -588,29 +589,32 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
               {/* Daily weather cards */}
               {hasCardData && <DailyCards summaries={dailySummaries} />}
 
-              {/* Parameter tabs — each pill has an icon colored by variable type */}
-              <div className="flex flex-wrap gap-2">
-                {hasClimoData && (() => {
-                  const isActive = selectedTab === "__climogram__";
-                  const tooltipText = t("stationPage.forecast.tabs.climogramTooltip");
-                  return (
-                    <button
-                      onClick={() => setSelectedTab("__climogram__")}
-                      className={`relative group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border select-none ${
-                        isActive ? "text-white border-transparent" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-                      }`}
-                      style={isActive ? { backgroundColor: "#16A34A", borderColor: "#16A34A" } : {}}
-                    >
-                      <FontAwesomeIcon icon={faCloudSun} className="w-3.5 h-3.5" />
+              {/* Climogram — always visible when data is available */}
+              {hasClimoData && precKw && (
+                <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+                  <div>
+                    <h3 className="font-medium text-lg text-gray-800">
                       {t("stationPage.forecast.tabs.climogram")}
-                      {tooltipText && (
-                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 font-normal">
-                          {tooltipText}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()}
+                    </h3>
+                    <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-md mt-1">
+                      {t("stationPage.forecast.tabs.climogramTooltip")}
+                    </p>
+                  </div>
+                  <div className="relative h-80 overflow-hidden">
+                    <ClimoChart
+                      forecastData={forecastData}
+                      precKw={precKw}
+                      tempMaxKw={tempMaxKw}
+                      tempMinKw={tempMinKw}
+                      tempKw={tempKw}
+                      parameters={parameters}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Parameter tabs — individual variable pills */}
+              <div className="flex flex-wrap gap-2">
                 {parameters.map((p) => {
                   const meta = getParamMeta(p.keyword);
                   const isActive = selectedTab === p.keyword;
@@ -639,29 +643,17 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
                 })}
               </div>
 
-              {/* Chart */}
-              <div className="relative h-80 overflow-hidden">
-                {selectedTab === "__climogram__" && precKw && (
-                  <ClimoChart
-                    forecastData={forecastData}
-                    precKw={precKw}
-                    tempMaxKw={tempMaxKw}
-                    tempMinKw={tempMinKw}
-                    tempKw={tempKw}
-                    parameters={parameters}
+              {/* Chart for selected individual parameter */}
+              {selectedTab && forecastData[selectedTab] && (
+                <div className="relative h-80 overflow-hidden">
+                  <LineChart
+                    points={forecastData[selectedTab]}
+                    parameter={parameters.find((p) => p.keyword === selectedTab)!}
                   />
-                )}
-                {selectedTab !== "__climogram__" &&
-                  selectedTab &&
-                  forecastData[selectedTab] && (
-                    <LineChart
-                      points={forecastData[selectedTab]}
-                      parameter={parameters.find((p) => p.keyword === selectedTab)!}
-                    />
-                  )}
-              </div>
+                </div>
+              )}
               {/* Parameter description from API */}
-              {selectedTab !== "__climogram__" && selectedTab &&
+              {selectedTab &&
                 parameters.find((p) => p.keyword === selectedTab)?.interpretacion && (
                   <p className="text-xs text-gray-400 italic mt-1.5 px-1">
                     {parameters.find((p) => p.keyword === selectedTab)?.interpretacion}
