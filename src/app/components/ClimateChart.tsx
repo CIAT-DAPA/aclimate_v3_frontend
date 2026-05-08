@@ -35,6 +35,7 @@ interface ClimateChartProps {
   period: string;
   chartType?: "line" | "bar" | "area";
   description?: string;
+  xAxisYearOnly?: boolean;
 }
 
 // Información de tooltip para cada variable climática
@@ -52,6 +53,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   period,
   chartType = "line",
   description,
+  xAxisYearOnly = false,
 }) => {
   const { t } = useI18n();
   const isClimatology = period === "climatology";
@@ -108,6 +110,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     const d = parseToDateUTC(dateValue);
     if (!d) return String(dateValue);
     const { yyyy, mm, dd } = formatUTC(d);
+    if (xAxisYearOnly) return yyyy; // YYYY only
     if (isMonthly) return `${mm}/${yyyy}`; // MM/YYYY
     if (isDaily) return `${dd}/${mm}`; // dd/MM (más compacto en eje)
     return `${dd}/${mm}/${yyyy}`;
@@ -117,6 +120,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
     const d = parseToDateUTC(dateValue);
     if (!d) return String(dateValue);
     const { yyyy, mm, dd } = formatUTC(d);
+    if (xAxisYearOnly) return yyyy; // YYYY only
     if (isMonthly) return `${mm}/${yyyy}`;
     if (isDaily) return `${dd}/${mm}/${yyyy}`; // completo en tooltip
     return `${dd}/${mm}/${yyyy}`;

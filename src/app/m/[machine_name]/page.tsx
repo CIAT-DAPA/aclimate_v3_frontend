@@ -119,6 +119,7 @@ export default function StationDetailPage() {
   const [selectedIndicatorCategory, setSelectedIndicatorCategory] = useState<IndicatorCategory | null>(null);
   const [loadingIndicatorCategories, setLoadingIndicatorCategories] = useState(false);
   const [categoryIndicatorShortNames, setCategoryIndicatorShortNames] = useState<Set<string>>(new Set());
+  const [categoryIndicatorDescriptions, setCategoryIndicatorDescriptions] = useState<Record<string, string>>({});
 
   // Estados para control de búsqueda manual
   const [searchTrigger, setSearchTrigger] = useState(0);
@@ -709,9 +710,13 @@ export default function StationDetailPage() {
           selectedIndicatorCategory.id,
         );
         setCategoryIndicatorShortNames(new Set(indicators.map((ind) => ind.short_name)));
+        const descMap: Record<string, string> = {};
+        indicators.forEach((ind) => { descMap[ind.short_name] = ind.description || ""; });
+        setCategoryIndicatorDescriptions(descMap);
       } catch (error) {
         console.error("Error cargando indicadores por categoría:", error);
         setCategoryIndicatorShortNames(new Set());
+        setCategoryIndicatorDescriptions({});
       }
     };
 
@@ -1724,11 +1729,12 @@ export default function StationDetailPage() {
                         Object.keys(filteredIndicatorsData).length > 0 ? (
                           Object.entries(filteredIndicatorsData)
                             .sort(([keyA], [keyB]) => {
-                              const isCalendarA = keyA === "IELL-decade" || keyA === "IELS-decade";
-                              const isCalendarB = keyB === "IELL-decade" || keyB === "IELS-decade";
-                              if (isCalendarA && !isCalendarB) return -1;
-                              if (!isCalendarA && isCalendarB) return 1;
-                              return 0;
+                              const getPriority = (key: string) => {
+                                if (key.endsWith("-decade")) return 0;
+                                if (key.includes("Anomal")) return 2;
+                                return 1;
+                              };
+                              return getPriority(keyA) - getPriority(keyB);
                             })
                             .map(
                             ([key, indicator]) => {
@@ -1752,6 +1758,7 @@ export default function StationDetailPage() {
                                     colorScheme={
                                       key === "IELL-decade" ? "rainy" : "dry"
                                     }
+                                    description={categoryIndicatorDescriptions[key] || ""}
                                     className="col-span-1 md:col-span-2"
                                   />
                                 );
@@ -1771,6 +1778,8 @@ export default function StationDetailPage() {
                                     },
                                   ]}
                                   period={timePeriodIndicators}
+                                  xAxisYearOnly={true}
+                                  description={categoryIndicatorDescriptions[key] || ""}
                                 />
                               );
                             },
