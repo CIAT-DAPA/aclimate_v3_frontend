@@ -296,6 +296,10 @@ export default function SpatialDataPage() {
   const [loadingAgroCategories, setLoadingAgroCategories] = useState(false);
   const [loadingAgroIndicators, setLoadingAgroIndicators] = useState(false);
 
+  // Estado para departamento seleccionado en escenarios
+  const [selectedScenarioDepartment, setSelectedScenarioDepartment] =
+    useState<string>("amazonas");
+
   // Estados para capas administrativas dinámicas
   const [adminLayers, setAdminLayers] = useState<
     Array<{ name: string; workspace: string; store: string; layer: string }>
@@ -1216,6 +1220,26 @@ export default function SpatialDataPage() {
                 >
                   <div className="p-5 border border-t-0 border-gray-200">
                     <div className="flex flex-col gap-8">
+                      {/* Department filter for scenarios */}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                        <label className="font-medium text-gray-700">
+                          {t("spatial.filters.department")}:
+                        </label>
+                        <select
+                          value={selectedScenarioDepartment}
+                          onChange={(e) =>
+                            setSelectedScenarioDepartment(e.target.value)
+                          }
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                        >
+                          {agroDepartmentOptions.map((dept) => (
+                            <option key={dept.value} value={dept.value}>
+                              {dept.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       {config.spatial?.showForecastPctChange && (
                         <div className="flex flex-col gap-3">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1244,9 +1268,8 @@ export default function SpatialDataPage() {
                               zoom={currentCountry.zoom}
                               wmsLayers={[
                                 {
-                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                                  layers:
-                                    "climate_forecast_st:climate_forecast_st_monthly_pct_change",
+                                  url: `${GEOSERVER_URL}/climate_forecast_monthly/wms`,
+                                  layers: `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_pct_change`,
                                   time: latestForecastPctTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,
@@ -1300,9 +1323,8 @@ export default function SpatialDataPage() {
                               zoom={currentCountry.zoom}
                               wmsLayers={[
                                 {
-                                  url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                                  layers:
-                                    "climate_forecast_st:climate_forecast_st_monthly",
+                                  url: `${GEOSERVER_URL}/climate_forecast_monthly/wms`,
+                                  layers: `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_spei`,
                                   time: latestScenarioTime || undefined,
                                   opacity: 1.0,
                                   transparent: true,

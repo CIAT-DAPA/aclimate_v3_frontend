@@ -22,8 +22,7 @@
     "dataSource": "Fuente: {{sources}}",
     "logoAlt": "Logo de AClimate",
     "sourcesEraChirps": "ERA5 y CHIRPS",
-    "sourcesIdeamChirps": "Generados a partir de IDEAM y CHIRPS"
-    ,
+    "sourcesIdeamChirps": "Generados a partir de IDEAM y CHIRPS",
     "sourcesChirpsAgera5": "Generados a partir de CHIRPS y AgERA5"
   },
   "home": {
@@ -261,6 +260,9 @@
       "tmin": "Consulta cómo desciende la temperatura en distintas zonas del país durante la fecha seleccionada. Usa el mapa para identificar áreas con noches más frías y compara cambios moviéndote a otras fechas.",
       "rad": "Este mapa muestra la cantidad de energía solar que recibe cada región. Explora los colores para reconocer zonas con mayor o menor radiación y ajusta la fecha para ver cómo varía a lo largo del tiempo.",
       "et0": "Observa cuánto vapor de agua se pierde del suelo y la vegetación en cada área. Recorre el mapa para identificar zonas con mayor demanda hídrica y usa la línea de tiempo para analizar patrones diarios."
+    },
+    "filters": {
+      "department": "Departamento"
     }
   },
   "scenarioPage": {
