@@ -272,9 +272,12 @@ processClimateData(data: DailyDataItem[], period: string): Record<string, { date
       
       if (!result[indicatorKey]) {
         // Inicializar estructura para este indicador
+        // Normalizar unidades conocidas
+        const rawUnit = item.indicator_unit;
+        const unit = rawUnit === "día" ? "días" : rawUnit;
         result[indicatorKey] = {
           name: item.indicator_name,
-          unit: item.indicator_unit,
+          unit,
           dates: [],
           values: []
         };

@@ -77,6 +77,13 @@ export const indicatorPeriodOptions = [
 // Función para obtener color de indicador
 export function getIndicatorColor(indicatorKey: string): string {
   const colorMap: Record<string, string> = {
+    // Época lluviosa (IELL) — azul (claro para base, oscuro para anomalía)
+    "IELL": "#64B5F6",           // azul claro — fecha estimada inicio época lluviosa
+    "IELL-Anomalie": "#1565C0",  // azul oscuro — anomalía época lluviosa
+    // Época seca (IELS) — naranja (coincide con colores del calendario dry)
+    "IELS": "#fb923c",           // naranja medio (calendar mid)
+    "IELS-Anomalie": "#9a3412",  // naranja oscuro (calendar accent)
+    // Otros indicadores genéricos
     "cold_stress": "#2196F3",
     "heat_stress": "#F44336",
     "precipitation": "#4CAF50",

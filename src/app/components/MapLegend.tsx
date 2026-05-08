@@ -53,7 +53,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
       params.set("TIME", time);
     }
 
-    const url = `${wmsUrl}?${params.toString()}`;
+    const url = `/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}&${params.toString()}`;
     setLegendUrl(url);
   }, [wmsUrl, layerName, time]);
 
@@ -76,9 +76,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
     <div className={`absolute ${positionClasses[position]} z-[1000]`}>
       <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
         <div className="flex justify-between items-center mb-2">
-          <h4 className="font-semibold text-sm text-gray-800">
-            {legendTitle}
-          </h4>
+          <h4 className="font-semibold text-sm text-gray-800">{legendTitle}</h4>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-gray-500 hover:text-gray-700"

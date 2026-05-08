@@ -557,7 +557,7 @@ const MapComponent = ({
             params.append("TIME", timeToUse);
           }
 
-          const url = `${layer.url}?${params.toString()}`;
+          const url = `/api/wms?proxyTo=${encodeURIComponent(layer.url)}&${params.toString()}`;
           const response = await fetch(url);
           const data = await response.json();
 
@@ -810,8 +810,9 @@ const MapComponent = ({
           !showTimeline &&
           wmsLayers.map((layer, index) => (
             <WMSTileLayer
-              key={`wms-${index}`}
-              url={layer.url}
+              key={`wms-${index}-${layer.layers}-${layer.time || "notime"}`}
+              // include layer and time in key so React re-mounts layer when they change
+              url={`/api/wms?proxyTo=${encodeURIComponent(layer.url)}`}
               layers={layer.layers}
               format={layer.format || "image/png"}
               transparent={layer.transparent !== false}
@@ -840,7 +841,9 @@ const MapComponent = ({
                   checked={true}
                 >
                   <WMSTileLayer
-                    url={`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`}
+                    url={`/api/wms?proxyTo=${encodeURIComponent(
+                      `https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`,
+                    )}`}
                     layers={adminLayer.layer}
                     format="image/png"
                     transparent={true}
