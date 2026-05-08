@@ -260,6 +260,9 @@
       "tmin": "See how temperatures drop across different areas during the selected date. Use the map to identify areas with colder nights and compare changes by moving through dates.",
       "rad": "This map shows how much solar energy each region receives. Explore the colors to identify areas with more or less radiation and adjust the date to see how it varies over time.",
       "et0": "Observe how much water vapor is lost from soil and vegetation in each area. Move across the map to identify areas with higher water demand and use the timeline to analyze daily patterns."
+    },
+    "filters": {
+      "department": "Department"
     }
   },
   "scenarioPage": {
@@ -352,7 +355,7 @@
       "description": "View the weather forecast for this station. Data is automatically updated from the numerical prediction service.",
       "tabs": {
         "climogram": "Climogram",
-        "climogramTooltip": "Climogram — daily precipitation (bars) and temperature (lines)"
+        "climogramTooltip": "Daily precipitation (bars) and temperature (lines)"
       }
     },
     "labels": {
