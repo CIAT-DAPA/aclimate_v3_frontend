@@ -96,7 +96,9 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
       tdInstanceRef.current = timeDimension;
 
       // Crear capa WMS con soporte de timeDimension local
-      const baseWms = (L.tileLayer as any).wms(wmsUrl, {
+      const proxiedWmsUrl = `/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}`;
+
+      const baseWms = (L.tileLayer as any).wms(proxiedWmsUrl, {
         layers: layer,
         format: "image/png",
         transparent: true,

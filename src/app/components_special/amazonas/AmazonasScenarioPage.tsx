@@ -10,7 +10,13 @@ import {
   Sprout,
   Calendar,
 } from "lucide-react";
-import React, { useRef, useCallback, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
@@ -76,7 +82,7 @@ const DEPARTMENTS = {
       },
     ],
   },
-  /* caqueta: {
+  caqueta: {
     name: "Caquetá",
     communities: [
       {
@@ -99,14 +105,18 @@ const DEPARTMENTS = {
         lon: -76.25037,
       },
     ],
-  }, */
+  },
+  putumayo: {
+    name: "Putumayo",
+    communities: [],
+  },
 };
 
 export default function AmazonasScenarioPage() {
   const contentRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
   const { idCountry } = useBranchConfig();
-  const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedDept, setSelectedDept] = useState<string>("amazonas");
   const [selectedCommunity, setSelectedCommunity] = useState<string>("");
   const [customLocation, setCustomLocation] = useState<{
     lat: number;
@@ -139,6 +149,21 @@ export default function AmazonasScenarioPage() {
   };
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
+  const getWmsLayerInfo = (dept: string) => {
+    const key = dept.toLowerCase();
+    // Validate that dept is one of the known departments to prevent caching issues
+    if (!dept || !Object.keys(DEPARTMENTS).includes(dept)) {
+      console.warn(`Invalid department: ${dept}, defaulting to amazonas`);
+    }
+    const workspace = "climate_forecast_monthly";
+    const layerShort = `climate_forecast_monthly_st_${key}_spei`;
+    return {
+      workspace,
+      layerShort,
+      full: `${workspace}:${layerShort}`,
+    };
+  };
+
   useEffect(() => {
     const loadAdminLayers = async () => {
       setLoadingAdminLayers(true);
@@ -162,9 +187,10 @@ export default function AmazonasScenarioPage() {
   useEffect(() => {
     const fetchDate = async () => {
       try {
+        const layerInfo = getWmsLayerInfo(selectedDept);
         const dates = await spatialService.getDatesFromGeoserver(
-          `${GEOSERVER_URL}/climate_forecast_st/wms`,
-          "climate_forecast_st:climate_forecast_st_monthly",
+          `${GEOSERVER_URL}/${layerInfo.workspace}/wms`,
+          layerInfo.full,
         );
         if (dates && dates.length > 0) {
           const dateStr = dates[dates.length - 1];
@@ -195,7 +221,7 @@ export default function AmazonasScenarioPage() {
       }
     };
     fetchDate();
-  }, []);
+  }, [selectedDept, locale]);
 
   const getIconForTitle = (title: string) => {
     const t = title.toLowerCase();
@@ -228,6 +254,10 @@ export default function AmazonasScenarioPage() {
     setSelectedDept(e.target.value);
     setSelectedCommunity("");
     setCustomLocation(null);
+    // Reset scenario data to force refetch with new department
+    setScenarioName(t("scenarioPage.states.noLocationSelected"));
+    setScenarioFeatures([]);
+    setScenarioRecommendations([]);
   };
 
   const handleCommunityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -253,8 +283,9 @@ export default function AmazonasScenarioPage() {
 
   const downloadRasterFile = async () => {
     try {
-      const layerName = "climate_forecast_st:climate_forecast_st_monthly";
-      const wmsUrl = `${GEOSERVER_URL}/${layerName.split(":")[0]}/wms`;
+      const layerInfo = getWmsLayerInfo(selectedDept);
+      const layerName = layerInfo.full;
+      const wmsUrl = `${GEOSERVER_URL}/${layerInfo.workspace}/wms`;
       const bbox = "-76.0,-5.5,-66.5,3.0";
 
       let timeValue = latestForecastTime;
@@ -271,7 +302,8 @@ export default function AmazonasScenarioPage() {
       const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff${timeValue ? `&time=${timeValue}` : ""}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
 
       const link = document.createElement("a");
-      link.href = url;
+      // Use proxy to avoid CORS / ORB blocking in browser
+      link.href = `/api/wms?url=${encodeURIComponent(url)}`;
       link.download = `Monthly_Climate_Forecast${timeValue ? `_${timeValue}` : ""}.tiff`;
       document.body.appendChild(link);
       link.click();
@@ -282,11 +314,36 @@ export default function AmazonasScenarioPage() {
     }
   };
 
+  const getDeptRepresentativeLatLon = (dept?: string) => {
+    if (!dept) return null;
+    const entry = (DEPARTMENTS as any)[dept];
+    if (!entry) return null;
+    const comms = entry.communities || [];
+    if (comms.length === 0) return null;
+    // Use first community as representative point
+    return { lat: comms[0].lat, lon: comms[0].lon };
+  };
+
   useEffect(() => {
-    if (!activeLocationLatLon) {
+    const locationForFetch =
+      activeLocationLatLon || getDeptRepresentativeLatLon(selectedDept);
+
+    if (!locationForFetch) {
       setScenarioName(t("scenarioPage.states.noLocationSelected"));
       setScenarioFeatures([]);
       setScenarioRecommendations([]);
+      return;
+    }
+
+    // If we don't yet have the latest forecast time for the department,
+    // avoid running GetFeatureInfo because the raster may not be ready
+    // and the request would return no data. Wait until `latestForecastTime`
+    // is populated (the other effect will set it) to perform the query.
+    if (!latestForecastTime) {
+      console.log(
+        "🧭 Waiting for latestForecastTime before fetching scenario for",
+        selectedDept,
+      );
       return;
     }
 
@@ -294,15 +351,27 @@ export default function AmazonasScenarioPage() {
       try {
         setScenarioName(t("scenarioPage.states.loading"));
         setLoadingContent(true);
-        const { lat, lon } = activeLocationLatLon;
+        const { lat, lon } = locationForFetch;
 
         const offset = 0.01;
         const bbox = `${lon - offset},${lat - offset},${lon + offset},${lat + offset}`;
-        const layer = "climate_forecast_st:climate_forecast_st_monthly";
+        // Use selectedDept directly to ensure we always get the current department
+        const layerInfo = getWmsLayerInfo(selectedDept);
 
-        const url = `${GEOSERVER_URL}/${layer.split(":")[0]}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image%2Fpng&TRANSPARENT=true&QUERY_LAYERS=${layer}&LAYERS=${layer}&INFO_FORMAT=application%2Fjson&X=50&Y=50&WIDTH=101&HEIGHT=101&SRS=EPSG%3A4326&BBOX=${bbox}${latestForecastTime ? `&TIME=${encodeURIComponent(latestForecastTime)}` : ""}`;
+        console.log("🔍 DEBUG fetchScenario:", {
+          selectedDept,
+          layerInfo,
+          lat,
+          lon,
+        });
 
-        const response = await fetch(url);
+        const layer = layerInfo.full;
+
+        const url = `${GEOSERVER_URL}/${layerInfo.workspace}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&FORMAT=image%2Fpng&TRANSPARENT=true&QUERY_LAYERS=${layer}&LAYERS=${layer}&INFO_FORMAT=application%2Fjson&X=50&Y=50&WIDTH=101&HEIGHT=101&SRS=EPSG%3A4326&BBOX=${bbox}${latestForecastTime ? `&TIME=${encodeURIComponent(latestForecastTime)}` : ""}`;
+
+        console.log("📍 WMS URL:", url);
+
+        const response = await fetch(`/api/wms?url=${encodeURIComponent(url)}`);
         const data = await response.json();
 
         if (data.features && data.features.length > 0) {
@@ -419,6 +488,7 @@ export default function AmazonasScenarioPage() {
     fetchScenario();
   }, [
     activeLocationLatLon,
+    selectedDept,
     selectedDeptData,
     selectedCommunityData,
     idCountry,
@@ -474,10 +544,27 @@ export default function AmazonasScenarioPage() {
   const mapZoom = activeLocationLatLon ? 8 : 6;
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
+    // Set a custom location (pin) but DO NOT clear the selected
+    // department or community — keep previous selection so the
+    // raster and scenario context remain intact.
     setCustomLocation({ lat, lon: lng });
-    setSelectedDept("");
-    setSelectedCommunity("");
   }, []);
+
+  // Memoize wmsLayers so its identity only changes when relevant props change
+  const wmsLayers = useMemo(() => {
+    const info = getWmsLayerInfo(selectedDept);
+    return [
+      {
+        url: `${GEOSERVER_URL}/${info.workspace}/wms`,
+        layers: info.full,
+        time: latestForecastTime || undefined,
+        opacity: 1.0,
+        transparent: true,
+        title: t("scenarioPage.map.monthlyForecastTitle"),
+        unit: "",
+      },
+    ];
+  }, [selectedDept, latestForecastTime, t]);
 
   const downloadPdf = useCallback(() => {
     if (contentRef.current === null) {
@@ -605,22 +692,17 @@ export default function AmazonasScenarioPage() {
                   </div>
                 ) : (
                   <>
+                    {console.log(
+                      "🧭 Render MapComponent with selectedDept:",
+                      selectedDept,
+                      getWmsLayerInfo(selectedDept),
+                    )}
+
                     <MapComponent
                       center={mapCenter}
                       zoom={mapZoom}
                       stations={mapStations as Station[]}
-                      wmsLayers={[
-                        {
-                          url: `${GEOSERVER_URL}/climate_forecast_st/wms`,
-                          layers:
-                            "climate_forecast_st:climate_forecast_st_monthly",
-                          time: latestForecastTime || undefined,
-                          opacity: 1.0,
-                          transparent: true,
-                          title: t("scenarioPage.map.monthlyForecastTitle"),
-                          unit: "",
-                        },
-                      ]}
+                      wmsLayers={wmsLayers}
                       adminLayers={adminLayers}
                       showMarkers={mapStations.length > 0}
                       showZoomControl={true}

@@ -17,17 +17,27 @@ const fetchCapabilities = async (wmsUrl: string): Promise<Document> => {
 
   if (!capabilitiesCache[cacheKey]) {
     // Si no está en cache, crear la promesa
-    capabilitiesCache[cacheKey] = axios
-      .get(cacheKey, { responseType: "text" })
-      .then((response) => {
+    capabilitiesCache[cacheKey] = (async () => {
+      try {
+        // En el navegador usamos la ruta proxy para evitar CORS
+        if (typeof window !== "undefined") {
+          const proxied = `/api/wms?url=${encodeURIComponent(cacheKey)}`;
+          const res = await fetch(proxied);
+          const text = await res.text();
+          const parser = new DOMParser();
+          return parser.parseFromString(text, "text/xml");
+        }
+
+        // En servidor (si aplica) usar axios directo
+        const response = await axios.get(cacheKey, { responseType: "text" });
         const parser = new DOMParser();
         return parser.parseFromString(response.data, "text/xml");
-      })
-      .catch((error) => {
+      } catch (error) {
         // En caso de error, eliminar del cache para permitir reintentos
         delete capabilitiesCache[cacheKey];
         throw error;
-      });
+      }
+    })();
   }
 
   return capabilitiesCache[cacheKey];

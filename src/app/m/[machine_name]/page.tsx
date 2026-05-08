@@ -6,7 +6,10 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { stationService } from "@/app/services/stationService";
 import { monitoryService } from "@/app/services/monitoryService";
-import { spatialService, IndicatorCategory } from "@/app/services/spatialService";
+import {
+  spatialService,
+  IndicatorCategory,
+} from "@/app/services/spatialService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
@@ -119,6 +122,7 @@ export default function StationDetailPage() {
   const [selectedIndicatorCategory, setSelectedIndicatorCategory] = useState<IndicatorCategory | null>(null);
   const [loadingIndicatorCategories, setLoadingIndicatorCategories] = useState(false);
   const [categoryIndicatorShortNames, setCategoryIndicatorShortNames] = useState<Set<string>>(new Set());
+  const [categoryIndicatorDescriptions, setCategoryIndicatorDescriptions] = useState<Record<string, string>>({});
 
   // Estados para control de búsqueda manual
   const [searchTrigger, setSearchTrigger] = useState(0);
@@ -676,7 +680,8 @@ export default function StationDetailPage() {
 
       setLoadingIndicatorCategories(true);
       try {
-        const categories = await spatialService.getIndicatorCategories(countryId);
+        const categories =
+          await spatialService.getIndicatorCategories(countryId);
         setIndicatorCategories(categories);
         if (categories.length > 0) {
           setSelectedIndicatorCategory(categories[0]);
@@ -709,9 +714,13 @@ export default function StationDetailPage() {
           selectedIndicatorCategory.id,
         );
         setCategoryIndicatorShortNames(new Set(indicators.map((ind) => ind.short_name)));
+        const descMap: Record<string, string> = {};
+        indicators.forEach((ind) => { descMap[ind.short_name] = ind.description || ""; });
+        setCategoryIndicatorDescriptions(descMap);
       } catch (error) {
         console.error("Error cargando indicadores por categoría:", error);
         setCategoryIndicatorShortNames(new Set());
+        setCategoryIndicatorDescriptions({});
       }
     };
 
@@ -1065,12 +1074,8 @@ export default function StationDetailPage() {
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    indicatorsDataFull,
-    searchTriggerIndicators,
-    filterIndicatorsData,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indicatorsDataFull, searchTriggerIndicators, filterIndicatorsData]);
 
   // Función para ejecutar búsqueda manual
   const handleSearch = useCallback(() => {
@@ -1237,7 +1242,10 @@ export default function StationDetailPage() {
           {station?.ext_id && (
             <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
               <FontAwesomeIcon icon={faFingerprint} className="text-sm" />
-              {t("stationPage.header.stationCode")}: <span className="font-medium text-gray-700">{station.ext_id}</span>
+              {t("stationPage.header.stationCode")}:{" "}
+              <span className="font-medium text-gray-700">
+                {station.ext_id}
+              </span>
             </p>
           )}
         </div>
@@ -1279,518 +1287,554 @@ export default function StationDetailPage() {
           <div className="bg-white rounded-lg shadow-sm">
             {/* Acordeones para selección de tipo de datos */}
             <div id="accordion-collapse" data-accordion="collapse">
-              {(branchConfig.station?.sectionOrder ?? ["climate", "indicators"]).map((section) => {
-                if (section === "climate") return (
-                  /* Acordeón para Datos climáticos */
-                  <div key="climate" id="climatic-accordion">
-                <h2 id="climatic-accordion-trigger">
-                  <button
-                    type="button"
-                    className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 hover:bg-gray-100"
-                    onClick={() => setIsClimaticOpen(!isClimaticOpen)}
-                    aria-expanded={isClimaticOpen}
-                  >
-                    <span className="text-xl font-semibold text-gray-800">
-                      {t("stationPage.sections.climateData")}
-                    </span>
-                    <svg
-                      className={`w-6 h-6 shrink-0 ${isClimaticOpen ? "rotate-180" : ""}`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      ></path>
-                    </svg>
-                  </button>
-                </h2>
-                <div
-                  id="climatic-accordion-content"
-                  className={isClimaticOpen ? "" : "hidden"}
-                  aria-labelledby="climatic-accordion-trigger"
-                >
-                  <div className="p-5 border border-b-0 border-gray-200">
-                    {/* Selector de período de tiempo para datos climáticos */}
-                    <div className="mb-6 border-b border-gray-200 pb-4">
-                      <p className="mb-4 text-gray-700">
-                        {t("stationPage.climate.description")}
-                      </p>
-
-                      {/* Controles en línea */}
-                      <div className="flex items-end gap-12">
-                        {/* Selector de período */}
-                        <div>
-                          <label
-                            htmlFor="period-climatic"
-                            className="block text-xs font-medium text-gray-700 mb-1"
+              {(
+                branchConfig.station?.sectionOrder ?? ["climate", "indicators"]
+              ).map((section) => {
+                if (section === "climate")
+                  return (
+                    /* Acordeón para Datos climáticos */
+                    <div key="climate" id="climatic-accordion">
+                      <h2 id="climatic-accordion-trigger">
+                        <button
+                          type="button"
+                          className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 hover:bg-gray-100"
+                          onClick={() => setIsClimaticOpen(!isClimaticOpen)}
+                          aria-expanded={isClimaticOpen}
+                        >
+                          <span className="text-xl font-semibold text-gray-800">
+                            {t("stationPage.sections.climateData")}
+                          </span>
+                          <svg
+                            className={`w-6 h-6 shrink-0 ${isClimaticOpen ? "rotate-180" : ""}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg"
                           >
-                            {t("stationPage.labels.period")}
-                          </label>
-                          <select
-                            id="period-climatic"
-                            value={timePeriod}
-                            onChange={(e) => setTimePeriod(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                          >
-                            <option value="daily">
-                              {t("stationPage.period.daily")}
-                            </option>
-                            <option value="monthly">
-                              {t("stationPage.period.monthly")}
-                            </option>
-                            <option value="climatology">
-                              {t("stationPage.period.climatology")}
-                            </option>
-                          </select>
-                        </div>
-
-                        {/* Selector de fechas */}
-                        {timePeriod === "climatology" ? (
-                          <>
-                            <div>
-                              <label
-                                htmlFor="start-month"
-                                className="block text-xs font-medium text-gray-700 mb-1"
-                              >
-                                {t("stationPage.labels.startMonth")}
-                              </label>
-                              <select
-                                id="start-month"
-                                value={filterDatesClimatic.start.split("-")[1]}
-                                onChange={(e) =>
-                                  setFilterDatesClimatic((prev) => ({
-                                    ...prev,
-                                    start: monthToDateFormat(e.target.value),
-                                  }))
-                                }
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                              >
-                                {MONTHS.map((month) => (
-                                  <option key={month.value} value={month.value}>
-                                    {month.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label
-                                htmlFor="end-month"
-                                className="block text-xs font-medium text-gray-700 mb-1"
-                              >
-                                {t("stationPage.labels.endMonth")}
-                              </label>
-                              <select
-                                id="end-month"
-                                value={filterDatesClimatic.end.split("-")[1]}
-                                onChange={(e) =>
-                                  setFilterDatesClimatic((prev) => ({
-                                    ...prev,
-                                    end: monthToDateFormat(e.target.value),
-                                  }))
-                                }
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                              >
-                                {MONTHS.map((month) => (
-                                  <option key={month.value} value={month.value}>
-                                    {month.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <UIButton
-                                onClick={handleSearch}
-                                disabled={
-                                  !filterDatesClimatic.start ||
-                                  !filterDatesClimatic.end
-                                }
-                              >
-                                {t("stationPage.actions.search")}
-                              </UIButton>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div>
-                              <label
-                                htmlFor="start-date"
-                                className="block text-xs font-medium text-gray-700 mb-1"
-                              >
-                                {t("stationPage.labels.startDate")}
-                              </label>
-                              <input
-                                type="date"
-                                id="start-date"
-                                value={filterDatesClimatic.start || ""}
-                                min={stationDates?.minDate || ""}
-                                max={stationDates?.maxDate || ""}
-                                onChange={(e) =>
-                                  setFilterDatesClimatic((prev) => ({
-                                    ...prev,
-                                    start: e.target.value,
-                                  }))
-                                }
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label
-                                htmlFor="end-date"
-                                className="block text-xs font-medium text-gray-700 mb-1"
-                              >
-                                {t("stationPage.labels.endDate")}
-                              </label>
-                              <input
-                                type="date"
-                                id="end-date"
-                                value={filterDatesClimatic.end}
-                                min={
-                                  filterDatesClimatic.start ||
-                                  stationDates?.minDate ||
-                                  ""
-                                }
-                                max={stationDates?.maxDate || ""}
-                                onChange={(e) =>
-                                  setFilterDatesClimatic((prev) => ({
-                                    ...prev,
-                                    end: e.target.value,
-                                  }))
-                                }
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                              />
-                            </div>
-                            <div>
-                              <UIButton
-                                onClick={handleSearch}
-                                disabled={
-                                  !filterDatesClimatic.start ||
-                                  !filterDatesClimatic.end ||
-                                  isDateRangeTooLarge(
-                                    filterDatesClimatic.start,
-                                    filterDatesClimatic.end,
-                                  )
-                                }
-                              >
-                                {t("stationPage.actions.search")}
-                              </UIButton>
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Mensaje de advertencia debajo de los rangos */}
-                      {timePeriod !== "climatology" &&
-                        isDateRangeTooLarge(
-                          filterDatesClimatic.start,
-                          filterDatesClimatic.end,
-                        ) && (
-                          <div className="mt-3">
-                            <span className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
-                              {t("stationPage.warnings.dateRangeTooLarge")}
-                            </span>
-                          </div>
-                        )}
-                    </div>
-
-                    {/* Gráficas de datos climáticos */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {loadingCharts ? (
-                        // Mostrar esqueletos de carga
-                        Array.from({ length: 4 }).map((_, index) => (
-                          <div
-                            key={index}
-                            className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center"
-                          >
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
-                          </div>
-                        ))
-                      ) : climateChartsData ? (
-                        // Renderizar gráficas dinámicamente
-                        Object.entries(climateChartsData).map(
-                          ([varKey, chartData]: [string, any]) => (
-                            <ClimateChart
-                              key={`climate-${varKey}-${timePeriod}`}
-                              title={chartData.title}
-                              unit={chartData.unit}
-                              datasets={chartData.datasets}
-                              period={timePeriod}
-                              chartType={chartData.chartType}
-                              description={t("stationPage.climate.totalRange", {
-                                minDate:
-                                  chartData.totalDateRange?.minDate ||
-                                  t("stationPage.common.na"),
-                                maxDate:
-                                  chartData.totalDateRange?.maxDate ||
-                                  t("stationPage.common.na"),
-                              })}
-                            />
-                          ),
-                        )
-                      ) : (
-                        // Mostrar mensaje cuando no hay datos
-                        <div className="col-span-full text-center text-gray-500 py-8">
-                          {t("stationPage.empty.noClimateData")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-                );
-                if (section === "indicators") return branchConfig.station?.showClimateIndicator ? (
-                  /* Acordeón para Indicadores climáticos */
-                  <div key="indicators" id="indicators-accordion">
-                  <h2 id="indicators-accordion-trigger">
-                    <button
-                      type="button"
-                      className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
-                      onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
-                      aria-expanded={isIndicatorsOpen}
-                    >
-                      <span className="text-xl font-semibold text-gray-800">
-                        {t("stationPage.sections.climateIndicators")}
-                      </span>
-                      <svg
-                        className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
+                            <path
+                              fillRule="evenodd"
+                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            ></path>
+                          </svg>
+                        </button>
+                      </h2>
+                      <div
+                        id="climatic-accordion-content"
+                        className={isClimaticOpen ? "" : "hidden"}
+                        aria-labelledby="climatic-accordion-trigger"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        ></path>
-                      </svg>
-                    </button>
-                  </h2>
-                  <div
-                    id="indicators-accordion-content"
-                    className={isIndicatorsOpen ? "" : "hidden"}
-                    aria-labelledby="indicators-accordion-trigger"
-                  >
-                    <div className="p-5 border border-t-0 border-gray-200">
-                      {/* Selector de período de tiempo para indicadores */}
-                      <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
-                        <p className="text-gray-700">
-                          {t("stationPage.indicators.description")}
-                        </p>
-                        <div className="flex items-center gap-6">
-                          {/* Selector de período */}
-                          <div>
-                            <label
-                              htmlFor="period-indicators"
-                              className="block text-xs font-medium text-gray-700 mb-1"
-                            >
-                              {t("stationPage.labels.period")}
-                            </label>
-                            <select
-                              id="period-indicators"
-                              value={timePeriodIndicators}
-                              onChange={(e) =>
-                                setTimePeriodIndicators(e.target.value)
-                              }
-                              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                              disabled={
-                                loadingPeriods ||
-                                availableIndicatorPeriods.length === 0
-                              }
-                            >
-                              {loadingPeriods ? (
-                                <option>
-                                  {t("stationPage.states.loading")}
-                                </option>
-                              ) : availableIndicatorPeriods.length > 0 ? (
-                                availableIndicatorPeriods.map((option) => (
-                                  <option
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </option>
-                                ))
-                              ) : (
-                                <option>{t("stationPage.empty.noData")}</option>
-                              )}
-                            </select>
-                          </div>
+                        <div className="p-5 border border-b-0 border-gray-200">
+                          {/* Selector de período de tiempo para datos climáticos */}
+                          <div className="mb-6 border-b border-gray-200 pb-4">
+                            <p className="mb-4 text-gray-700">
+                              {t("stationPage.climate.description")}
+                            </p>
 
-                          {/* Selector de categoría */}
-                          {indicatorCategories.length > 0 && (
-                            <div>
-                              <label
-                                htmlFor="category-indicators"
-                                className="block text-xs font-medium text-gray-700 mb-1"
-                              >
-                                {t("spatial.labels.category")}
-                              </label>
-                              {loadingIndicatorCategories ? (
-                                <div className="text-gray-500 text-sm">
-                                  {t("stationPage.states.loading")}
-                                </div>
-                              ) : (
+                            {/* Controles en línea */}
+                            <div className="flex items-end gap-12">
+                              {/* Selector de período */}
+                              <div>
+                                <label
+                                  htmlFor="period-climatic"
+                                  className="block text-xs font-medium text-gray-700 mb-1"
+                                >
+                                  {t("stationPage.labels.period")}
+                                </label>
                                 <select
-                                  id="category-indicators"
-                                  value={selectedIndicatorCategory?.id || ""}
-                                  onChange={(e) => {
-                                    const cat = indicatorCategories.find(
-                                      (c) => c.id === parseInt(e.target.value),
-                                    );
-                                    setSelectedIndicatorCategory(cat || null);
-                                  }}
+                                  id="period-climatic"
+                                  value={timePeriod}
+                                  onChange={(e) =>
+                                    setTimePeriod(e.target.value)
+                                  }
                                   className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                                 >
-                                  {indicatorCategories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                      {category.name}
-                                    </option>
-                                  ))}
+                                  <option value="daily">
+                                    {t("stationPage.period.daily")}
+                                  </option>
+                                  <option value="monthly">
+                                    {t("stationPage.period.monthly")}
+                                  </option>
+                                  <option value="climatology">
+                                    {t("stationPage.period.climatology")}
+                                  </option>
                                 </select>
+                              </div>
+
+                              {/* Selector de fechas */}
+                              {timePeriod === "climatology" ? (
+                                <>
+                                  <div>
+                                    <label
+                                      htmlFor="start-month"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.startMonth")}
+                                    </label>
+                                    <select
+                                      id="start-month"
+                                      value={
+                                        filterDatesClimatic.start.split("-")[1]
+                                      }
+                                      onChange={(e) =>
+                                        setFilterDatesClimatic((prev) => ({
+                                          ...prev,
+                                          start: monthToDateFormat(
+                                            e.target.value,
+                                          ),
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    >
+                                      {MONTHS.map((month) => (
+                                        <option
+                                          key={month.value}
+                                          value={month.value}
+                                        >
+                                          {month.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label
+                                      htmlFor="end-month"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.endMonth")}
+                                    </label>
+                                    <select
+                                      id="end-month"
+                                      value={
+                                        filterDatesClimatic.end.split("-")[1]
+                                      }
+                                      onChange={(e) =>
+                                        setFilterDatesClimatic((prev) => ({
+                                          ...prev,
+                                          end: monthToDateFormat(
+                                            e.target.value,
+                                          ),
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    >
+                                      {MONTHS.map((month) => (
+                                        <option
+                                          key={month.value}
+                                          value={month.value}
+                                        >
+                                          {month.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <UIButton
+                                      onClick={handleSearch}
+                                      disabled={
+                                        !filterDatesClimatic.start ||
+                                        !filterDatesClimatic.end
+                                      }
+                                    >
+                                      {t("stationPage.actions.search")}
+                                    </UIButton>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div>
+                                    <label
+                                      htmlFor="start-date"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.startDate")}
+                                    </label>
+                                    <input
+                                      type="date"
+                                      id="start-date"
+                                      value={filterDatesClimatic.start || ""}
+                                      min={stationDates?.minDate || ""}
+                                      max={stationDates?.maxDate || ""}
+                                      onChange={(e) =>
+                                        setFilterDatesClimatic((prev) => ({
+                                          ...prev,
+                                          start: e.target.value,
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label
+                                      htmlFor="end-date"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.endDate")}
+                                    </label>
+                                    <input
+                                      type="date"
+                                      id="end-date"
+                                      value={filterDatesClimatic.end}
+                                      min={
+                                        filterDatesClimatic.start ||
+                                        stationDates?.minDate ||
+                                        ""
+                                      }
+                                      max={stationDates?.maxDate || ""}
+                                      onChange={(e) =>
+                                        setFilterDatesClimatic((prev) => ({
+                                          ...prev,
+                                          end: e.target.value,
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <UIButton
+                                      onClick={handleSearch}
+                                      disabled={
+                                        !filterDatesClimatic.start ||
+                                        !filterDatesClimatic.end ||
+                                        isDateRangeTooLarge(
+                                          filterDatesClimatic.start,
+                                          filterDatesClimatic.end,
+                                        )
+                                      }
+                                    >
+                                      {t("stationPage.actions.search")}
+                                    </UIButton>
+                                  </div>
+                                </>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        {/* Selector de fechas alineado a la derecha */}
-                        <div className="flex gap-4 items-end">
-                          <div>
-                            <label
-                              htmlFor="start-date-indicators"
-                              className="block text-xs font-medium text-gray-700 mb-1"
-                            >
-                              {t("stationPage.labels.startDate")}
-                            </label>
-                            <input
-                              type="date"
-                              id="start-date-indicators"
-                              value={filterDatesIndicators.start}
-                              min={stationDates?.minDate || ""}
-                              max={stationDates?.maxDate || ""}
-                              onChange={(e) =>
-                                setFilterDatesIndicators((prev) => ({
-                                  ...prev,
-                                  start: e.target.value,
-                                }))
-                              }
-                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                            />
+                            {/* Mensaje de advertencia debajo de los rangos */}
+                            {timePeriod !== "climatology" &&
+                              isDateRangeTooLarge(
+                                filterDatesClimatic.start,
+                                filterDatesClimatic.end,
+                              ) && (
+                                <div className="mt-3">
+                                  <span className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                                    {t(
+                                      "stationPage.warnings.dateRangeTooLarge",
+                                    )}
+                                  </span>
+                                </div>
+                              )}
                           </div>
-                          <div>
-                            <label
-                              htmlFor="end-date-indicators"
-                              className="block text-xs font-medium text-gray-700 mb-1"
-                            >
-                              {t("stationPage.labels.endDate")}
-                            </label>
-                            <input
-                              type="date"
-                              id="end-date-indicators"
-                              value={filterDatesIndicators.end}
-                              min={
-                                filterDatesIndicators.start ||
-                                stationDates?.minDate ||
-                                ""
-                              }
-                              max={stationDates?.maxDate || ""}
-                              onChange={(e) =>
-                                setFilterDatesIndicators((prev) => ({
-                                  ...prev,
-                                  end: e.target.value,
-                                }))
-                              }
-                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
-                            />
-                          </div>
-                          <div>
-                            <UIButton
-                              onClick={handleSearchIndicators}
-                              disabled={
-                                !filterDatesIndicators.start ||
-                                !filterDatesIndicators.end
-                              }
-                            >
-                              {t("stationPage.actions.search")}
-                            </UIButton>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Gráficas de indicadores climáticos */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {filteredIndicatorsData &&
-                        Object.keys(filteredIndicatorsData).length > 0 ? (
-                          Object.entries(filteredIndicatorsData)
-                            .sort(([keyA], [keyB]) => {
-                              const isCalendarA = keyA === "IELL-decade" || keyA === "IELS-decade";
-                              const isCalendarB = keyB === "IELL-decade" || keyB === "IELS-decade";
-                              if (isCalendarA && !isCalendarB) return -1;
-                              if (!isCalendarA && isCalendarB) return 1;
-                              return 0;
-                            })
-                            .map(
-                            ([key, indicator]) => {
-                              const typedIndicator = indicator as {
-                                name: string;
-                                unit: string;
-                                dates: string[];
-                                values: number[];
-                              };
-
-                              // Decade-calendar indicators use a special visualizer
-                              if (
-                                key === "IELL-decade" ||
-                                key === "IELS-decade"
-                              ) {
-                                return (
-                                  <DecadeCalendarChart
-                                    key={key}
-                                    series={typedIndicator.values}
-                                    indicatorLabel={typedIndicator.name}
-                                    colorScheme={
-                                      key === "IELL-decade" ? "rainy" : "dry"
-                                    }
-                                    className="col-span-1 md:col-span-2"
+                          {/* Gráficas de datos climáticos */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {loadingCharts ? (
+                              Array.from({ length: 4 }).map((_, index) => (
+                                <div
+                                  key={index}
+                                  className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center"
+                                >
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                                </div>
+                              ))
+                            ) : climateChartsData ? (
+                              Object.entries(climateChartsData).map(
+                                ([varKey, chartData]: [string, any]) => (
+                                  <ClimateChart
+                                    key={`climate-${varKey}-${timePeriod}`}
+                                    title={chartData.title}
+                                    unit={chartData.unit}
+                                    datasets={chartData.datasets}
+                                    period={timePeriod}
+                                    chartType={chartData.chartType}
+                                    description={t("stationPage.climate.totalRange", {
+                                      minDate:
+                                        chartData.totalDateRange?.minDate ||
+                                        t("stationPage.common.na"),
+                                      maxDate:
+                                        chartData.totalDateRange?.maxDate ||
+                                        t("stationPage.common.na"),
+                                    })}
                                   />
-                                );
-                              }
-
-                              return (
-                                <ClimateChart
-                                  key={key}
-                                  title={typedIndicator.name}
-                                  unit={typedIndicator.unit}
-                                  datasets={[
-                                    {
-                                      label: t("stationPage.chart.stationData"),
-                                      color: getIndicatorColor(key),
-                                      data: typedIndicator.values,
-                                      dates: typedIndicator.dates,
-                                    },
-                                  ]}
-                                  period={timePeriodIndicators}
-                                />
-                              );
-                            },
-                          )
-                        ) : (
-                          <div className="col-span-2 flex items-center justify-center">
-                            <p className="text-gray-500">
-                              {t("stationPage.empty.noData")}
-                            </p>
+                                ),
+                              )
+                            ) : (
+                              <div className="col-span-full text-center text-gray-500 py-8">
+                                {t("stationPage.empty.noClimateData")}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-                ) : null;
-                if (section === "forecast") return branchConfig.station?.showForecast ? (
-                  /* Acordeón para Pronóstico */
-                  <ForecastSection key="forecast" extId={station.ext_id} />
-                ) : null;
+                  );
+                if (section === "indicators")
+                  return branchConfig.station?.showClimateIndicator ? (
+                    /* Acordeón para Indicadores climáticos */
+                    <div key="indicators" id="indicators-accordion">
+                      <h2 id="indicators-accordion-trigger">
+                        <button
+                          type="button"
+                          className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                          onClick={() => setIsIndicatorsOpen(!isIndicatorsOpen)}
+                          aria-expanded={isIndicatorsOpen}
+                        >
+                          <span className="text-xl font-semibold text-gray-800">
+                            {t("stationPage.sections.climateIndicators")}
+                          </span>
+                          <svg
+                            className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            ></path>
+                          </svg>
+                        </button>
+                      </h2>
+                      <div
+                        id="indicators-accordion-content"
+                        className={isIndicatorsOpen ? "" : "hidden"}
+                        aria-labelledby="indicators-accordion-trigger"
+                      >
+                        <div className="p-5 border border-t-0 border-gray-200">
+                          {/* Selector de período de tiempo para indicadores */}
+                          <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
+                            <p className="text-gray-700">
+                              {t("stationPage.indicators.description")}
+                            </p>
+                            <div className="flex items-center gap-6">
+                              {/* Selector de período */}
+                              <div>
+                                <label
+                                  htmlFor="period-indicators"
+                                  className="block text-xs font-medium text-gray-700 mb-1"
+                                >
+                                  {t("stationPage.labels.period")}
+                                </label>
+                                <select
+                                  id="period-indicators"
+                                  value={timePeriodIndicators}
+                                  onChange={(e) =>
+                                    setTimePeriodIndicators(e.target.value)
+                                  }
+                                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                  disabled={
+                                    loadingPeriods ||
+                                    availableIndicatorPeriods.length === 0
+                                  }
+                                >
+                                  {loadingPeriods ? (
+                                    <option>
+                                      {t("stationPage.states.loading")}
+                                    </option>
+                                  ) : availableIndicatorPeriods.length > 0 ? (
+                                    availableIndicatorPeriods.map((option) => (
+                                      <option
+                                        key={option.value}
+                                        value={option.value}
+                                      >
+                                        {option.label}
+                                      </option>
+                                    ))
+                                  ) : (
+                                    <option>
+                                      {t("stationPage.empty.noData")}
+                                    </option>
+                                  )}
+                                </select>
+                              </div>
+
+                              {/* Selector de categoría */}
+                              {indicatorCategories.length > 0 && (
+                                <div>
+                                  <label
+                                    htmlFor="category-indicators"
+                                    className="block text-xs font-medium text-gray-700 mb-1"
+                                  >
+                                    {t("spatial.labels.category")}
+                                  </label>
+                                  {loadingIndicatorCategories ? (
+                                    <div className="text-gray-500 text-sm">
+                                      {t("stationPage.states.loading")}
+                                    </div>
+                                  ) : (
+                                    <select
+                                      id="category-indicators"
+                                      value={
+                                        selectedIndicatorCategory?.id || ""
+                                      }
+                                      onChange={(e) => {
+                                        const cat = indicatorCategories.find(
+                                          (c) =>
+                                            c.id === parseInt(e.target.value),
+                                        );
+                                        setSelectedIndicatorCategory(
+                                          cat || null,
+                                        );
+                                      }}
+                                      className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    >
+                                      {indicatorCategories.map((category) => (
+                                        <option
+                                          key={category.id}
+                                          value={category.id}
+                                        >
+                                          {category.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Selector de fechas alineado a la derecha */}
+                            <div className="flex gap-4 items-end">
+                              <div>
+                                <label
+                                  htmlFor="start-date-indicators"
+                                  className="block text-xs font-medium text-gray-700 mb-1"
+                                >
+                                  {t("stationPage.labels.startDate")}
+                                </label>
+                                <input
+                                  type="date"
+                                  id="start-date-indicators"
+                                  value={filterDatesIndicators.start}
+                                  min={stationDates?.minDate || ""}
+                                  max={stationDates?.maxDate || ""}
+                                  onChange={(e) =>
+                                    setFilterDatesIndicators((prev) => ({
+                                      ...prev,
+                                      start: e.target.value,
+                                    }))
+                                  }
+                                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="end-date-indicators"
+                                  className="block text-xs font-medium text-gray-700 mb-1"
+                                >
+                                  {t("stationPage.labels.endDate")}
+                                </label>
+                                <input
+                                  type="date"
+                                  id="end-date-indicators"
+                                  value={filterDatesIndicators.end}
+                                  min={
+                                    filterDatesIndicators.start ||
+                                    stationDates?.minDate ||
+                                    ""
+                                  }
+                                  max={stationDates?.maxDate || ""}
+                                  onChange={(e) =>
+                                    setFilterDatesIndicators((prev) => ({
+                                      ...prev,
+                                      end: e.target.value,
+                                    }))
+                                  }
+                                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                />
+                              </div>
+                              <div>
+                                <UIButton
+                                  onClick={handleSearchIndicators}
+                                  disabled={
+                                    !filterDatesIndicators.start ||
+                                    !filterDatesIndicators.end
+                                  }
+                                >
+                                  {t("stationPage.actions.search")}
+                                </UIButton>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Gráficas de indicadores climáticos */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {filteredIndicatorsData &&
+                            Object.keys(filteredIndicatorsData).length > 0 ? (
+                              Object.entries(filteredIndicatorsData)
+                                .sort(([keyA], [keyB]) => {
+                                  const getPriority = (key: string) => {
+                                    if (key.endsWith("-decade")) return 0;
+                                    if (key.includes("Anomal")) return 2;
+                                    return 1;
+                                  };
+                                  return getPriority(keyA) - getPriority(keyB);
+                                })
+                                .map(([key, indicator]) => {
+                                  const typedIndicator = indicator as {
+                                    name: string;
+                                    unit: string;
+                                    dates: string[];
+                                    values: number[];
+                                  };
+
+                                  // Decade-calendar indicators use a special visualizer
+                                  if (
+                                    key === "IELL-decade" ||
+                                    key === "IELS-decade"
+                                  ) {
+                                    return (
+                                      <DecadeCalendarChart
+                                        key={key}
+                                        series={typedIndicator.values}
+                                        indicatorLabel={typedIndicator.name}
+                                        colorScheme={
+                                          key === "IELL-decade"
+                                            ? "rainy"
+                                            : "dry"
+                                        }
+                                        description={categoryIndicatorDescriptions[key] || ""}
+                                        className="col-span-1 md:col-span-2"
+                                      />
+                                    );
+                                  }
+
+                                  return (
+                                    <ClimateChart
+                                      key={key}
+                                      title={typedIndicator.name}
+                                      unit={typedIndicator.unit}
+                                      datasets={[
+                                        {
+                                          label: t(
+                                            "stationPage.chart.stationData",
+                                          ),
+                                          color: getIndicatorColor(key),
+                                          data: typedIndicator.values,
+                                          dates: typedIndicator.dates,
+                                        },
+                                      ]}
+                                      period={timePeriodIndicators}
+                                      xAxisYearOnly={true}
+                                      description={categoryIndicatorDescriptions[key] || ""}
+                                    />
+                                  );
+                                })
+                            ) : (
+                              <div className="col-span-2 flex items-center justify-center">
+                                <p className="text-gray-500">
+                                  {t("stationPage.empty.noData")}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                if (section === "forecast")
+                  return branchConfig.station?.showForecast ? (
+                    /* Acordeón para Pronóstico */
+                    <ForecastSection key="forecast" extId={station.ext_id} />
+                  ) : null;
                 return null;
               })}
             </div>
@@ -1830,7 +1874,7 @@ export default function StationDetailPage() {
         disabled={!authenticated || loadingFavorite}
         className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !authenticated
-            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
+            ? "bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-300 disabled:opacity-100"
             : isFavorite
               ? "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]"
               : "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]"
@@ -1858,11 +1902,11 @@ export default function StationDetailPage() {
         <button
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
-          className="fixed bottom-8 right-8 text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full p-4 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print z-[9999] transition-all hover:scale-110"
+          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border border-[#bc6c25] bg-white text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f] focus:outline-none focus:ring-2 focus:ring-[#bc6c25]/40 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
           title={t("stationPage.actions.downloadPdf")}
         >
           {pdfLoading ? (
-            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-current inline-block"></span>
           ) : (
             <FontAwesomeIcon icon={faFileArrowDown} className="h-6 w-6" />
           )}

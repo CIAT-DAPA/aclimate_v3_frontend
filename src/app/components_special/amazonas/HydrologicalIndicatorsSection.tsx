@@ -45,6 +45,7 @@ interface HydrologicalIndicatorsSectionProps {
 const departments = [
   { id: "amazonas", label: "Amazonas" },
   { id: "caqueta", label: "Caquetá" },
+  // { id: "putumayo", label: "Putumayo" },
 ];
 
 const departmentCommunities: Record<
