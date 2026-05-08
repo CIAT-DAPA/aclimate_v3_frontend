@@ -634,9 +634,12 @@ export default function SpatialDataPage() {
       // Crear URL para la capa específica usando formato GeoTIFF
       const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
 
+      // Guardar la URL proxificada para evitar CORS/ORB en el navegador
+      const proxiedUrl = `/api/wms?url=${encodeURIComponent(url)}`;
+
       // Actualizar la referencia sin causar rerender
       rasterFilesRef.current[layerName] = {
-        url,
+        url: proxiedUrl,
         layer: layerName,
         time,
         title: layerTitle,
@@ -658,7 +661,10 @@ export default function SpatialDataPage() {
         // Si no existe, obtener la primera fecha disponible de la capa
         const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
 
-        const response = await fetch(capabilitiesUrl);
+        // Usar el proxy para evitar bloqueos CORS al leer GetCapabilities
+        const response = await fetch(
+          `/api/wms?url=${encodeURIComponent(capabilitiesUrl)}`,
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -689,8 +695,9 @@ export default function SpatialDataPage() {
           // Usar image/geotiff para obtener los valores reales del raster
           // WMS 1.3.0 con EPSG:4326 requiere orden: miny,minx,maxy,maxx (lat,lon,lat,lon)
           const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${timeValue}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
+          const proxied = `/api/wms?url=${encodeURIComponent(url)}`;
           const fileInfo = {
-            url,
+            url: proxied,
             layer: layerName,
             time: timeValue,
             title: layerTitle,
