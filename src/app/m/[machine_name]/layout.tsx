@@ -74,9 +74,10 @@ const getStationByMachineName = async (machineName: string) => {
 export async function generateMetadata({
   params,
 }: {
-  params: { machine_name: string };
+  params: Promise<{ machine_name: string }>;
 }): Promise<Metadata> {
-  const station = await getStationByMachineName(params.machine_name);
+  const { machine_name } = await params;
+  const station = await getStationByMachineName(machine_name);
   const stationName = station?.name || "Estación climática";
   const locationLabel = buildLocationLabel(station);
 
@@ -85,7 +86,7 @@ export async function generateMetadata({
     ? `Datos históricos, indicadores y series de la estación ${stationName}${locationLabel ? ` en ${locationLabel}` : ""}.`
     : `Información detallada de la estación climática seleccionada en ${SITE_TITLE}.`;
 
-  const canonical = SITE_URL ? `/m/${params.machine_name}` : undefined;
+  const canonical = SITE_URL ? `/m/${machine_name}` : undefined;
 
   return {
     title,
