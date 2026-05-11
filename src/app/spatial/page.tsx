@@ -240,6 +240,30 @@ const AMAZONIA_COMMUNITY_MARKERS: CustomCommunityMarker[] = [
     lon: -76.25037,
     color: "#c27830",
   },
+  {
+    id: "resguardo_yarinal",
+    name: "Resguardo Yarinal",
+    department: "Putumayo",
+    lat: 0.26754,
+    lon: -76.82698,
+    color: "#28b117",
+  },
+  {
+    id: "resguardo_campoalegre_del_afilador",
+    name: "Resguardo Campoalegre del Afilador",
+    department: "Putumayo",
+    lat: 0.32105,
+    lon: -76.75931,
+    color: "#28b117",
+  },
+  {
+    id: "resguardo_paez_de_alto_lorenzo",
+    name: "Resguardo Páez de Alto Lorenzo",
+    department: "Putumayo",
+    lat: 0.33896,
+    lon: -76.54494,
+    color: "#28b117",
+  },
 ];
 
 export default function SpatialDataPage() {
