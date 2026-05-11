@@ -108,7 +108,26 @@ const DEPARTMENTS = {
   },
   putumayo: {
     name: "Putumayo",
-    communities: [],
+    communities: [
+      {
+        id: "resguardo_yarinal",
+        name: "Resguardo Yarinal",
+        lat: 0.26754,
+        lon: -76.82698,
+      },
+      {
+        id: "resguardo_campoalegre_del_afilador",
+        name: "Resguardo Campoalegre del Afilador",
+        lat: 0.32105,
+        lon: -76.75931,
+      },
+      {
+        id: "resguardo_paez_de_alto_lorenzo",
+        name: "Resguardo Páez de Alto Lorenzo",
+        lat: 0.33896,
+        lon: -76.54494,
+      },
+    ],
   },
 };
 
