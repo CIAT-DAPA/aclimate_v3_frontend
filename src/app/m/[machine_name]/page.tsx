@@ -1762,9 +1762,15 @@ export default function StationDetailPage() {
                               Object.entries(filteredIndicatorsData)
                                 .sort(([keyA], [keyB]) => {
                                   const getPriority = (key: string) => {
-                                    if (key.endsWith("-decade")) return 0;
-                                    if (key.includes("Anomal")) return 2;
-                                    return 1;
+                                    if (key === "IELL-decade") return 0;
+                                    if (key === "IELS-decade") return 1;
+                                    const isRainy = key.includes("IELL");
+                                    const isAnomal = key.includes("Anomal") || key.includes("anomal");
+                                    if (isRainy && !isAnomal) return 2;
+                                    if (isRainy && isAnomal) return 3;
+                                    if (!isRainy && !isAnomal) return 4;
+                                    if (!isRainy && isAnomal) return 5;
+                                    return 6;
                                   };
                                   return getPriority(keyA) - getPriority(keyB);
                                 })
