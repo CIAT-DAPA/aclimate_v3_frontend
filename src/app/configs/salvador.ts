@@ -17,7 +17,7 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
       {
         name: "Ministerio de Medio Ambiente y Recursos Naturales (MARN)",
         url: "https://www.marn.gob.sv/",
-        logo: "/assets/img/partners/MARN.PNG",
+        logo: "/assets/img/partners/MARN.png",
         alt: "MARN logo",
       },
       {
