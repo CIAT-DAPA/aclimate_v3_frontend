@@ -1331,7 +1331,7 @@ export default function StationDetailPage() {
                             </p>
 
                             {/* Controles en línea */}
-                            <div className="flex items-end gap-12">
+                            <div className="flex flex-wrap items-end gap-4">
                               {/* Selector de período */}
                               <div>
                                 <label
@@ -1692,7 +1692,7 @@ export default function StationDetailPage() {
                             </div>
 
                             {/* Selector de fechas alineado a la derecha */}
-                            <div className="flex gap-4 items-end">
+                            <div className="flex flex-wrap gap-4 items-end">
                               <div>
                                 <label
                                   htmlFor="start-date-indicators"
