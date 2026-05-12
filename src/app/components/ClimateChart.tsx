@@ -155,14 +155,6 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       width: 3,
       dashArray: datasets.map((dataset) => dataset.strokeDashArray ?? 0),
     },
-    title: {
-      text: title,
-      align: "left",
-      style: {
-        fontSize: "16px",
-        fontWeight: "bold",
-      },
-    },
     grid: {
       row: {
         colors: ["#f3f3f3", "transparent"],
