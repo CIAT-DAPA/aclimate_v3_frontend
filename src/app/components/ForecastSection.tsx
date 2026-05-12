@@ -567,10 +567,12 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
       >
         <div className="p-5 border border-t-0 border-gray-200 space-y-4">
           {/* Description + source attribution */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             <p className="text-gray-700 text-sm">{t("stationPage.forecast.description")}</p>
             {sourceText && (
-              <p className="text-xs text-gray-400 italic">{sourceText}</p>
+              <p className="text-sm text-gray-500 font-medium border-l-4 border-brand-green pl-3 py-0.5 italic">
+                {sourceText}
+              </p>
             )}
           </div>
 
