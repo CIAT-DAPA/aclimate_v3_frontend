@@ -36,6 +36,21 @@ interface ClimateChartProps {
   chartType?: "line" | "bar" | "area";
   description?: string;
   xAxisYearOnly?: boolean;
+  /** When provided, enables ApexCharts distributed bars and colors each bar by index. */
+  barDistributedColors?: string[];
+  /** When true, hides the manual color-swatch legend above the chart (useful when the parent renders its own legend). */
+  hideManualLegend?: boolean;
+  /**
+   * For climatology mode only: formats each x-axis tick label.
+   * Receives the raw category string; return "" to hide the tick.
+   */
+  xAxisLabelFormatter?: (label: string) => string;
+  /**
+   * For climatology mode only: formats the tooltip x-header.
+   * Receives (rawLabel, dataPointIndex). Use to add extra context such as
+   * relative anomaly.
+   */
+  tooltipXHeaderFormatter?: (label: string, index: number) => string;
 }
 
 // Información de tooltip para cada variable climática
@@ -54,6 +69,10 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
   chartType = "line",
   description,
   xAxisYearOnly = false,
+  barDistributedColors,
+  hideManualLegend = false,
+  xAxisLabelFormatter,
+  tooltipXHeaderFormatter,
 }) => {
   const { t } = useI18n();
   const isClimatology = period === "climatology";
@@ -128,6 +147,12 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
 
   // Configuración de ApexCharts
   const chartOptions: ApexOptions = {
+    ...(barDistributedColors
+      ? {
+          plotOptions: { bar: { distributed: true } },
+          colors: barDistributedColors,
+        }
+      : {}),
     chart: {
       height: "100%",
       type: chartType,
@@ -169,6 +194,9 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
         ? {
             type: "category" as const,
             categories: datasets[0]?.dates || [],
+            ...(xAxisLabelFormatter
+              ? { labels: { formatter: xAxisLabelFormatter } }
+              : {}),
           }
         : {
             type: "datetime" as const,
@@ -222,8 +250,12 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
           },
         ) {
           if (isClimatology) {
-            // Para climatología, mostrar directamente el nombre del mes
-            return context.w.globals.categoryLabels[context.dataPointIndex];
+            // Para climatología, mostrar directamente el nombre del mes/década
+            const label = context.w.globals.categoryLabels[context.dataPointIndex] ?? "";
+            if (tooltipXHeaderFormatter) {
+              return tooltipXHeaderFormatter(label, context.dataPointIndex);
+            }
+            return label;
           } else {
             // Para daily/monthly: tooltip en formato completo (dd/MM/YYYY o MM/YYYY)
             return formatTooltipForPeriod(value);
@@ -232,6 +264,7 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
       },
       y: {
         formatter: function (val: number) {
+          if (val == null || isNaN(Number(val))) return "—";
           return val.toFixed(2) + " " + unit;
         },
         title: {
@@ -307,25 +340,26 @@ const ClimateChart: React.FC<ClimateChartProps> = ({
         </div>
       ) : (
         <div className="flex-grow flex flex-col">
-          <div className="flex flex-wrap gap-4 mb-4">
-            {datasets.map((dataset, index) => (
-              <div key={index} className="flex items-center">
-                <div
-                  className="w-8 mr-2"
-                  style={{
-                    borderTopColor: dataset.color,
-                    borderTopWidth: "3px",
-                    borderTopStyle:
-                      dataset.strokeDashArray && dataset.strokeDashArray > 0
-                        ? "dashed"
-                        : "solid",
-                  }}
-                ></div>
-                <span className="text-sm text-gray-700">{dataset.label}</span>
-              </div>
-            ))}
-          </div>
-
+          {!hideManualLegend && (
+            <div className="flex flex-wrap gap-4 mb-4">
+              {datasets.map((dataset, index) => (
+                <div key={index} className="flex items-center">
+                  <div
+                    className="w-8 mr-2"
+                    style={{
+                      borderTopColor: dataset.color,
+                      borderTopWidth: "3px",
+                      borderTopStyle:
+                        dataset.strokeDashArray && dataset.strokeDashArray > 0
+                          ? "dashed"
+                          : "solid",
+                    }}
+                  ></div>
+                  <span className="text-sm text-gray-700">{dataset.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex-grow min-h-[300px]">
             <Chart
               options={chartOptions}
