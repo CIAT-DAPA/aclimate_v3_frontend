@@ -404,6 +404,55 @@
       "loadingDates": "Error loading dates"
     }
   },
+  "prcd": {
+    "title": "Decadal Accumulated Precipitation",
+    "chart": {
+      "title": "Decadal precipitation — {{year}}",
+      "legend": "Precipitation (mm)",
+      "relLabel": "Relative anomaly"
+    },
+    "category": {
+      "above": "Above Normal",
+      "normal": "Normal",
+      "below": "Below Normal"
+    },
+    "yearSelector": "Year",
+    "loading": "Loading decadal data...",
+    "empty": "No decadal data available for this station.",
+    "noStation": "Select a station to view decadal precipitation data."
+  },
+  "indicatorTable": {
+    "page": "Page {{current}} of {{total}}",
+    "prev": "‹ Previous",
+    "next": "Next ›"
+  },
+  "canic": {
+    "title": "Dry Spell — Start, Duration and Intensity",
+    "table": {
+      "year": "Year",
+      "startDate": "Dry Spell Start",
+      "duration": "Duration",
+      "intensity": "Intensity",
+      "category": "Category"
+    },
+    "category": {
+      "leve": "Mild",
+      "moderada": "Moderate",
+      "severa": "Severe"
+    },
+    "unit": {
+      "days": "days"
+    },
+    "loading": "Loading dry spell data...",
+    "empty": "No dry spell records found for this station.",
+    "maxDuration": "Longest on record",
+    "maxIntensity": "Highest intensity on record",
+    "chart": {
+      "title": "Dry Spell Intensity (%)",
+      "legend": "Intensity (%)"
+    },
+    "noStation": "Select a station to view dry spell data."
+  },
   "decadeCalendar": {
     "decade1": "D1",
     "decade2": "D2",

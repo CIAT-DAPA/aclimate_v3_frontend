@@ -404,6 +404,55 @@
       "loadingDates": "Error al cargar fechas"
     }
   },
+  "prcd": {
+    "title": "Precipitación Acumulada Decádica",
+    "chart": {
+      "title": "Precipitación decádica — {{year}}",
+      "legend": "Precipitación (mm)",
+      "relLabel": "Anomalía relativa"
+    },
+    "category": {
+      "above": "Arriba de lo Normal",
+      "normal": "Normal",
+      "below": "Debajo de lo Normal"
+    },
+    "yearSelector": "Año",
+    "loading": "Cargando datos decádicos...",
+    "empty": "No hay datos decádicos disponibles para esta estación.",
+    "noStation": "Selecciona una estación para ver los datos decádicos."
+  },
+  "indicatorTable": {
+    "page": "Página {{current}} de {{total}}",
+    "prev": "‹ Anterior",
+    "next": "Siguiente ›"
+  },
+  "canic": {
+    "title": "Canícula — Inicio, Duración e Intensidad",
+    "table": {
+      "year": "Año",
+      "startDate": "Inicio de Canícula",
+      "duration": "Duración",
+      "intensity": "Intensidad",
+      "category": "Categoría"
+    },
+    "category": {
+      "leve": "Leve",
+      "moderada": "Moderada",
+      "severa": "Severa"
+    },
+    "unit": {
+      "days": "días"
+    },
+    "loading": "Cargando datos de canícula...",
+    "empty": "No hay registros de canícula para esta estación.",
+    "maxDuration": "Mayor duración histórica",
+    "maxIntensity": "Mayor intensidad histórica",
+    "chart": {
+      "title": "Intensidad de la Canícula (%)",
+      "legend": "Intensidad (%)"
+    },
+    "noStation": "Selecciona una estación para ver los datos de canícula."
+  },
   "decadeCalendar": {
     "decade1": "D1",
     "decade2": "D2",
