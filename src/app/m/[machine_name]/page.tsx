@@ -14,6 +14,8 @@ import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
 import DecadeCalendarChart from "@/app/components/DecadeCalendarChart";
+import { CanicVisualizer } from "@/app/components/CanicVisualizer";
+import { PrcdVisualizer } from "@/app/components/PrcdVisualizer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMapMarkerAlt,
@@ -683,7 +685,13 @@ export default function StationDetailPage() {
         const categories =
           await spatialService.getIndicatorCategories(countryId);
         setIndicatorCategories(categories);
-        if (categories.length > 0) {
+        // TODO: remove the temp filter when temperature indicators are available
+        const visibleCategories = categories.filter(
+          (c) => !c.name.toLowerCase().includes("temp"),
+        );
+        if (visibleCategories.length > 0) {
+          setSelectedIndicatorCategory(visibleCategories[0]);
+        } else if (categories.length > 0) {
           setSelectedIndicatorCategory(categories[0]);
         } else {
           setSelectedIndicatorCategory(null);
@@ -1667,7 +1675,11 @@ export default function StationDetailPage() {
                                         selectedIndicatorCategory?.id || ""
                                       }
                                       onChange={(e) => {
-                                        const cat = indicatorCategories.find(
+                                        // TODO: remove the temp filter when temperature indicators are available
+                                        const visibleCats = indicatorCategories.filter(
+                                          (c) => !c.name.toLowerCase().includes("temp"),
+                                        );
+                                        const cat = visibleCats.find(
                                           (c) =>
                                             c.id === parseInt(e.target.value),
                                         );
@@ -1677,21 +1689,25 @@ export default function StationDetailPage() {
                                       }}
                                       className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
                                     >
-                                      {indicatorCategories.map((category) => (
-                                        <option
-                                          key={category.id}
-                                          value={category.id}
-                                        >
-                                          {category.name}
-                                        </option>
-                                      ))}
+                                      {indicatorCategories
+                                        // TODO: uncomment temperature category when indicators are available
+                                        .filter((c) => !c.name.toLowerCase().includes("temp"))
+                                        .map((category) => (
+                                          <option
+                                            key={category.id}
+                                            value={category.id}
+                                          >
+                                            {category.name}
+                                          </option>
+                                        ))}
                                     </select>
                                   )}
                                 </div>
                               )}
                             </div>
 
-                            {/* Selector de fechas alineado a la derecha */}
+                            {/* Selector de fechas alineado a la derecha — oculto en decadal porque el visualizador PRCD tiene su propio selector de año */}
+                            {timePeriodIndicators !== "decadal" && (
                             <div className="flex flex-wrap gap-4 items-end">
                               <div>
                                 <label
@@ -1753,85 +1769,133 @@ export default function StationDetailPage() {
                                 </UIButton>
                               </div>
                             </div>
+                            )}
                           </div>
 
                           {/* Gráficas de indicadores climáticos */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredIndicatorsData &&
-                            Object.keys(filteredIndicatorsData).length > 0 ? (
-                              Object.entries(filteredIndicatorsData)
-                                .sort(([keyA], [keyB]) => {
-                                  const getPriority = (key: string) => {
-                                    if (key === "IELL-decade") return 0;
-                                    if (key === "IELS-decade") return 1;
-                                    const isRainy = key.includes("IELL");
-                                    const isAnomal = key.includes("Anomal") || key.includes("anomal");
-                                    if (isRainy && !isAnomal) return 2;
-                                    if (isRainy && isAnomal) return 3;
-                                    if (!isRainy && !isAnomal) return 4;
-                                    if (!isRainy && isAnomal) return 5;
-                                    return 6;
-                                  };
-                                  return getPriority(keyA) - getPriority(keyB);
-                                })
-                                .map(([key, indicator]) => {
-                                  const typedIndicator = indicator as {
-                                    name: string;
-                                    unit: string;
-                                    dates: string[];
-                                    values: number[];
-                                  };
+                          {(() => {
+                            const CANIC_KEYS = ["CANIC", "CANIC-Dur", "CANIC-Int"];
+                            const PRCD_KEYS = ["PRCD", "PRCD-Abs", "PRCD-Rel", "PRCD-Cat"];
+                            const SPECIAL_KEYS = [...CANIC_KEYS, ...PRCD_KEYS];
+                            const hasAnyData =
+                              filteredIndicatorsData &&
+                              Object.keys(filteredIndicatorsData).length > 0;
+                            const hasCanicGroup =
+                              hasAnyData &&
+                              CANIC_KEYS.some((k) => k in filteredIndicatorsData!);
+                            const hasPrcdGroup =
+                              hasAnyData &&
+                              PRCD_KEYS.some((k) => k in filteredIndicatorsData!);
 
-                                  // Decade-calendar indicators use a special visualizer
-                                  if (
-                                    key === "IELL-decade" ||
-                                    key === "IELS-decade"
-                                  ) {
-                                    return (
-                                      <DecadeCalendarChart
-                                        key={key}
-                                        series={typedIndicator.values}
-                                        indicatorLabel={typedIndicator.name}
-                                        colorScheme={
-                                          key === "IELL-decade"
-                                            ? "rainy"
-                                            : "dry"
-                                        }
-                                        description={categoryIndicatorDescriptions[key] || ""}
-                                        className="col-span-1 md:col-span-2"
-                                      />
-                                    );
-                                  }
+                            const regularEntries = hasAnyData
+                              ? Object.entries(filteredIndicatorsData!)
+                                  .filter(([key]) => !SPECIAL_KEYS.includes(key))
+                                  .sort(([keyA], [keyB]) => {
+                                    const getPriority = (key: string) => {
+                                      if (key === "IELL-decade") return 0;
+                                      if (key === "IELS-decade") return 1;
+                                      const isRainy = key.includes("IELL");
+                                      const isAnomal =
+                                        key.includes("Anomal") ||
+                                        key.includes("anomal");
+                                      if (isRainy && !isAnomal) return 2;
+                                      if (isRainy && isAnomal) return 3;
+                                      if (!isRainy && !isAnomal) return 4;
+                                      if (!isRainy && isAnomal) return 5;
+                                      return 6;
+                                    };
+                                    return getPriority(keyA) - getPriority(keyB);
+                                  })
+                              : [];
 
-                                  return (
-                                    <ClimateChart
-                                      key={key}
-                                      title={typedIndicator.name}
-                                      unit={typedIndicator.unit}
-                                      datasets={[
-                                        {
-                                          label: t(
-                                            "stationPage.chart.stationData",
-                                          ),
-                                          color: getIndicatorColor(key),
-                                          data: typedIndicator.values,
-                                          dates: typedIndicator.dates,
-                                        },
-                                      ]}
-                                      period={timePeriodIndicators}
-                                      xAxisYearOnly={true}
-                                      description={categoryIndicatorDescriptions[key] || ""}
-                                    />
-                                  );
-                                })
-                            ) : (
-                              <div className="col-span-2 flex items-center justify-center">
-                                <p className="text-gray-500">
-                                  {t("stationPage.empty.noData")}
-                                </p>
-                              </div>
-                            )}
-                          </div>
+                            if (!hasAnyData) {
+                              return (
+                                <div className="flex items-center justify-center py-8">
+                                  <p className="text-gray-500">
+                                    {t("stationPage.empty.noData")}
+                                  </p>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <>
+                                {/* Regular indicators — sorted grid */}
+                                {regularEntries.length > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {regularEntries.map(([key, indicator]) => {
+                                      const typedIndicator = indicator as {
+                                        name: string;
+                                        unit: string;
+                                        dates: string[];
+                                        values: number[];
+                                      };
+
+                                      // Decade-calendar indicators use a special visualizer
+                                      if (
+                                        key === "IELL-decade" ||
+                                        key === "IELS-decade"
+                                      ) {
+                                        return (
+                                          <DecadeCalendarChart
+                                            key={key}
+                                            series={typedIndicator.values}
+                                            indicatorLabel={typedIndicator.name}
+                                            colorScheme={
+                                              key === "IELL-decade"
+                                                ? "rainy"
+                                                : "dry"
+                                            }
+                                            description={categoryIndicatorDescriptions[key] || ""}
+                                            className="col-span-1 md:col-span-2"
+                                          />
+                                        );
+                                      }
+
+                                      return (
+                                        <ClimateChart
+                                          key={key}
+                                          title={typedIndicator.name}
+                                          unit={typedIndicator.unit}
+                                          datasets={[
+                                            {
+                                              label: t(
+                                                "stationPage.chart.stationData",
+                                              ),
+                                              color: getIndicatorColor(key),
+                                              data: typedIndicator.values,
+                                              dates: typedIndicator.dates,
+                                            },
+                                          ]}
+                                          period={timePeriodIndicators}
+                                          xAxisYearOnly={true}
+                                          description={categoryIndicatorDescriptions[key] || ""}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* CANIC panel — always rendered after the regular grid */}
+                                {hasCanicGroup && (
+                                  <CanicVisualizer
+                                    locationId={station.id.toString()}
+                                    description={categoryIndicatorDescriptions["CANIC"] || ""}
+                                    className={regularEntries.length > 0 ? "mt-6" : ""}
+                                  />
+                                )}
+
+                                {/* PRCD panel — rendered after CANIC */}
+                                {hasPrcdGroup && (
+                                  <PrcdVisualizer
+                                    locationId={station.id.toString()}
+                                    description={categoryIndicatorDescriptions["PRCD"] || ""}
+                                    className={(regularEntries.length > 0 || hasCanicGroup) ? "mt-6" : ""}
+                                  />
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
