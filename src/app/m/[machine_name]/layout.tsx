@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import {
   API_URL,
-  COUNTRY_NAME,
   KEYCLOAK_CLIENT_ID,
   KEYCLOAK_REALM,
   KEYCLOAK_URL,
 } from "@/app/config";
-
-const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
-const SITE_TITLE = `AClimate ${COUNTRY_LABEL}`;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+import { buildPageMetadata, SITE_NAME } from "@/app/seo";
 
 const buildLocationLabel = (station: any) => {
   const parts = [station?.admin1_name, station?.admin2_name].filter(Boolean);
@@ -84,36 +80,17 @@ export async function generateMetadata({
   const title = station?.name ? stationName : "Estación climática";
   const description = station?.name
     ? `Datos históricos, indicadores y series de la estación ${stationName}${locationLabel ? ` en ${locationLabel}` : ""}.`
-    : `Información detallada de la estación climática seleccionada en ${SITE_TITLE}.`;
+    : `Información detallada de la estación climática seleccionada en ${SITE_NAME}.`;
 
-  const canonical = SITE_URL ? `/m/${machine_name}` : undefined;
-
-  return {
+  return buildPageMetadata({
     title,
     description,
-    keywords: ["estación", stationName, locationLabel, SITE_TITLE].filter(
+    pathname: `/m/${machine_name}`,
+    type: "article",
+    keywords: ["estación", stationName, locationLabel, SITE_NAME].filter(
       Boolean,
     ) as string[],
-    robots: {
-      index: true,
-      follow: true,
-    },
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      siteName: SITE_TITLE,
-      locale: "es",
-      images: ["/assets/img/bg.jpg"],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["/assets/img/bg.jpg"],
-    },
-    alternates: canonical ? { canonical } : undefined,
-  };
+  });
 }
 
 export default function StationLayout({
