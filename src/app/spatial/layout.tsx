@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getBranchConfig } from "@/app/configs";
 import { buildPageMetadata, COUNTRY_LABEL, SITE_NAME } from "@/app/seo";
 
+export const dynamic = "force-dynamic";
+
 const joinList = (items: string[]) => {
   if (items.length === 0) return "";
   if (items.length === 1) return items[0];
