@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { COUNTRY_NAME } from "@/app/config";
 import { getBranchConfig } from "@/app/configs";
+import { buildPageMetadata, COUNTRY_LABEL, SITE_NAME } from "@/app/seo";
 
-const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
-const SITE_TITLE = `AClimate ${COUNTRY_LABEL}`;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+export const dynamic = "force-dynamic";
 
 const joinList = (items: string[]) => {
   if (items.length === 0) return "";
@@ -33,45 +31,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = "Información espacial";
   const description = `Información espacial de ${COUNTRY_LABEL}. ${sectionsText} Explora mapas, leyendas y series temporales.`;
-  const canonical = SITE_URL ? "/spatial" : undefined;
-
-  return {
+  return buildPageMetadata({
     title,
     description,
+    pathname: "/spatial",
     keywords: [
       "mapas",
       "indicadores",
       "clima",
       "agroclimático",
       COUNTRY_LABEL,
-      SITE_TITLE,
+      SITE_NAME,
     ],
-    robots: {
-      index: true,
-      follow: true,
-    },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      siteName: SITE_TITLE,
-      locale: "es",
-      images: ["/assets/img/bg.jpg"],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["/assets/img/bg.jpg"],
-    },
-    alternates: canonical ? { canonical } : undefined,
-  };
-}
-
-export default function SpatialLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <>{children}</>;
+  });
 }
