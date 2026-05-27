@@ -45,3 +45,11 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
   });
 }
+
+export default function SpatialLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
+}
