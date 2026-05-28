@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
-import { buildPageMetadata, COUNTRY_LABEL, SITE_NAME } from "./seo";
+import {
+  buildPageMetadata,
+  COUNTRY_LABEL,
+  SITE_NAME,
+  getAbsoluteUrl,
+} from "./seo";
 
 const HOME_TITLE = `${SITE_NAME} | Información climática y agroclimática`;
 const HOME_DESCRIPTION = `AClimate ${COUNTRY_LABEL} es una plataforma de información climática, agroclimática e hidrometeorológica para consultar mapas, indicadores, estaciones y escenarios por región.`;
@@ -25,7 +30,7 @@ const organizationJsonLd = {
   "@type": ["Organization", "WebSite"],
   name: SITE_NAME,
   alternateName: `AClimate ${COUNTRY_LABEL}`,
-  url: "/",
+  url: getAbsoluteUrl("/"),
   description: HOME_DESCRIPTION,
 };
 
