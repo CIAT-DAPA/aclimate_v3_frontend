@@ -3,8 +3,26 @@ import { COUNTRY_NAME } from "@/app/config";
 import { getBranchConfig } from "@/app/configs";
 
 const DEFAULT_OG_IMAGE = "/assets/img/bg.jpg";
-const SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+
 const branchConfig = getBranchConfig();
+
+const BRANCH_SITE_URLS: Record<string, string> = {
+  honduras: "https://honduras.aclimate.org",
+  nicaragua: "https://nicaragua.aclimate.org",
+  salvador: "https://elsalvador.aclimate.org",
+  amazonia: "https://amazonia.aclimate.org",
+};
+
+function normalizeSiteUrl(value?: string) {
+  if (!value) return "";
+  return value.trim().replace(/\/$/, "");
+}
+
+const ENV_SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+const BRANCH_SITE_URL = normalizeSiteUrl(BRANCH_SITE_URLS[branchConfig.name]);
+
+const SITE_URL =
+  ENV_SITE_URL || BRANCH_SITE_URL || "https://amazonia.aclimate.org";
 
 export const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
 export const SITE_NAME = branchConfig.displayName;
@@ -22,11 +40,6 @@ const BASE_KEYWORDS = [
   "datos climáticos",
 ];
 
-function normalizeSiteUrl(value?: string) {
-  if (!value) return "";
-  return value.trim().replace(/\/$/, "");
-}
-
 function buildDescription(value: string, fallback: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (!normalized) return fallback;
@@ -38,12 +51,10 @@ function buildDescription(value: string, fallback: string) {
 }
 
 export function getMetadataBase() {
-  return SITE_URL ? new URL(SITE_URL) : undefined;
+  return new URL(SITE_URL);
 }
 
 export function getAbsoluteUrl(pathname: string) {
-  if (!SITE_URL) return pathname;
-
   const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return new URL(normalizedPath, `${SITE_URL}/`).toString();
 }
