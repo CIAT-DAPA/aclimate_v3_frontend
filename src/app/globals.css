@@ -126,3 +126,108 @@ iframe {
   max-width: 100%;
   height: auto;
 }
+
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .station-detail-page {
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+
+  .station-detail-page .no-print,
+  .station-detail-page .fixed,
+  .station-detail-page .leaflet-control-container,
+  .station-detail-page .leaflet-top,
+  .station-detail-page .leaflet-bottom,
+  .station-detail-page .leaflet-pane.leaflet-marker-pane,
+  .station-detail-page .leaflet-pane.leaflet-shadow-pane {
+    display: none !important;
+  }
+
+  .station-detail-page header,
+  .station-detail-page main > div,
+  .station-detail-page main > div > div {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 0 10mm 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .station-detail-page .h-80.rounded-lg.overflow-hidden.border.border-gray-200 {
+    display: block !important;
+    height: 72mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-top: 4mm !important;
+  }
+
+  .station-detail-page .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .station-detail-page main {
+    margin-top: 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-trigger > button,
+  .station-detail-page #indicators-accordion-trigger > button {
+    all: unset;
+    display: block !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    margin: 0 0 4mm 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-trigger svg,
+  .station-detail-page #indicators-accordion-trigger svg {
+    display: none !important;
+  }
+
+  .station-detail-page #climatic-accordion-content,
+  .station-detail-page #indicators-accordion-content {
+    display: block !important;
+  }
+
+  .station-detail-page #climatic-accordion-content > div,
+  .station-detail-page #indicators-accordion-content > div {
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-content .mb-6.border-b,
+  .station-detail-page #indicators-accordion-content .mb-6.border-b {
+    display: none !important;
+  }
+
+  .station-detail-page table,
+  .station-detail-page tbody tr,
+  .station-detail-page .rounded-lg,
+  .station-detail-page .rounded-xl,
+  .station-detail-page .apexcharts-canvas,
+  .station-detail-page .apexcharts-container,
+  .station-detail-page .apexcharts-svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
