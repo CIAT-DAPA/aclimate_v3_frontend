@@ -100,8 +100,10 @@ export default function StationDetailPage() {
   const [loadingSatellite, setLoadingSatellite] = useState(false);
   const [satelliteData, setSatelliteData] = useState<any>(null);
 
-  const { authenticated, userValidatedInfo } = useAuth();
+  const { authenticated, userValidatedInfo, loading: authLoading } = useAuth();
   const { t } = useI18n();
+
+  const resolvedUserId = userValidatedInfo?.user?.id ?? userValidatedInfo?.id;
 
   // Datos completos sin filtrar (cargados una sola vez)
   const [climateHistoricalDataFull, setClimateHistoricalDataFull] =
@@ -775,13 +777,12 @@ export default function StationDetailPage() {
   // Efecto para cargar estado de favorito
   useEffect(() => {
     const checkFavorite = async () => {
-      if (!authenticated || !userValidatedInfo || !station) {
+      if (authLoading || !authenticated || !resolvedUserId || !station) {
         return;
       }
 
       try {
-        const userId = userValidatedInfo.id;
-        const userStations = await getUserStations(userId);
+        const userStations = await getUserStations(resolvedUserId);
         // Usar el mismo ID que MapComponent: station.id (location_id en backend)
         const stationId = station.id?.toString() || "";
         const isFav = userStations.some(
@@ -796,11 +797,15 @@ export default function StationDetailPage() {
     };
 
     checkFavorite();
-  }, [authenticated, userValidatedInfo, station]);
+  }, [authLoading, authenticated, resolvedUserId, station]);
 
   // Handler para agregar/eliminar favorito
   const toggleFavorite = async () => {
-    if (!authenticated || !userValidatedInfo) {
+    if (authLoading) {
+      return;
+    }
+
+    if (!authenticated || !resolvedUserId) {
       return;
     }
 
@@ -811,7 +816,7 @@ export default function StationDetailPage() {
     setLoadingFavorite(true);
 
     try {
-      const userId = userValidatedInfo.id;
+      const userId = resolvedUserId;
       // Usar station.id igual que MapComponent
       const stationId = station.id?.toString() || "";
 
