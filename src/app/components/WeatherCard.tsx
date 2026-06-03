@@ -7,7 +7,6 @@ import { SHOW_USERS_MODULE } from "@/app/config";
 import { useEffect, useState } from "react";
 import { getUserStations } from "@/app/services/userService";
 import { stationService } from "@/app/services/stationService";
-import { monitoryService } from "@/app/services/monitoryService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import { useI18n } from "@/app/contexts/I18nContext";
@@ -54,8 +53,8 @@ const WeatherCard = () => {
           return;
         }
 
-        // Obtener información completa de cada estación
-        const allStations = await stationService.getAll(countryId);
+        // Obtener información completa de cada estación junto con sus últimos datos
+        const allStations = await stationService.getAllWithData(countryId);
         const favoriteStationIds = new Set(
           userStations.map((s) => s.ws_ext_id),
         );
@@ -66,49 +65,32 @@ const WeatherCard = () => {
               favoriteStationIds.has(station.id.toString()),
             )
             .slice(0, 3) // Mostrar máximo 3 estaciones
-            .map(async (station: Station) => {
-              try {
-                const latestData = await monitoryService.getLatestDailyData(
-                  station.id.toString(),
-                );
+            .map(async (station: any) => {
+              const latestData = station.latest_data?.measures || [];
+              const dataByMeasure: Record<string, number> = {};
 
-                const dataByMeasure: Record<string, number> = {};
-                latestData.forEach((item: any) => {
-                  dataByMeasure[item.measure_short_name] = item.value;
-                });
+              latestData.forEach((item: any) => {
+                dataByMeasure[item.measure_short_name] = item.value;
+              });
 
-                return {
-                  id: station.id.toString(),
-                  name: station.name,
-                  machine_name: station.machine_name,
-                  admin1_name: station.admin1_name,
-                  admin2_name: station.admin2_name,
-                  country_name: station.country_name,
-                  latestData:
-                    latestData.length > 0
-                      ? {
-                          date: latestData[0].date,
-                          tmin: dataByMeasure["Tmin"],
-                          tmax: dataByMeasure["Tmax"],
-                          prec: dataByMeasure["Prec"],
-                          rad: dataByMeasure["Rad"],
-                        }
-                      : undefined,
-                };
-              } catch (error) {
-                console.warn(
-                  `Error loading data for station ${station.id}:`,
-                  error,
-                );
-                return {
-                  id: station.id.toString(),
-                  name: station.name,
-                  machine_name: station.machine_name,
-                  admin1_name: station.admin1_name,
-                  admin2_name: station.admin2_name,
-                  country_name: station.country_name,
-                };
-              }
+              return {
+                id: station.id.toString(),
+                name: station.name,
+                machine_name: station.machine_name,
+                admin1_name: station.admin1_name,
+                admin2_name: station.admin2_name,
+                country_name: station.country_name,
+                latestData:
+                  latestData.length > 0
+                    ? {
+                        date: station.latest_data.date,
+                        tmin: dataByMeasure["Tmin"],
+                        tmax: dataByMeasure["Tmax"],
+                        prec: dataByMeasure["Prec"],
+                        rad: dataByMeasure["Rad"],
+                      }
+                    : undefined,
+              };
             }),
         );
 
@@ -146,9 +128,7 @@ const WeatherCard = () => {
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
-          <p className="text-lg font-medium">
-            {t("weather.signInPrompt")}
-          </p>
+          <p className="text-lg font-medium">{t("weather.signInPrompt")}</p>
         </div>
       </div>
     );
@@ -170,9 +150,7 @@ const WeatherCard = () => {
       <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4 text-amber-50" size={48} />
-          <p className="text-lg font-medium mb-2">
-            {t("weather.noFavorites")}
-          </p>
+          <p className="text-lg font-medium mb-2">{t("weather.noFavorites")}</p>
           <Link
             href="/locations"
             className="text-sm text-amber-200 hover:text-amber-100 underline"
