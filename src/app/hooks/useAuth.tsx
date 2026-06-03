@@ -8,8 +8,17 @@ import React, {
   createContext,
 } from "react";
 import Keycloak, { KeycloakTokenParsed } from "keycloak-js";
-import { validateToken, validateUser, UserValidationRequest } from "@/app/services/userService";
-import { APP_ID, KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from "@/app/config";
+import {
+  validateToken,
+  validateUser,
+  UserValidationRequest,
+} from "@/app/services/userService";
+import {
+  APP_ID,
+  KEYCLOAK_URL,
+  KEYCLOAK_REALM,
+  KEYCLOAK_CLIENT_ID,
+} from "@/app/config";
 
 interface ValidationPayload {
   valid: boolean;
@@ -36,20 +45,32 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Inicializar loading como false en el servidor para evitar problemas de hidratación
-  const [loading, setLoading] = useState<boolean>(() => 
-    typeof window === 'undefined' ? false : true
+  const [loading, setLoading] = useState<boolean>(() =>
+    typeof window === "undefined" ? false : true,
   );
   const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<any | null>(null);
   const [userValidatedInfo, setUserValidatedInfo] = useState<any | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [tokenParsed, setTokenParsed] = useState<KeycloakTokenParsed | null>(null);
+  const [tokenParsed, setTokenParsed] = useState<KeycloakTokenParsed | null>(
+    null,
+  );
   const isRun = useRef<boolean>(false);
   const keycloak = useRef<Keycloak | null>(null);
   const [validatedPayload, setValidatedPayload] = useState<any | null>(null);
+
+  const logAuthError = (message: string, error: unknown) => {
+    if (error instanceof Error) {
+      console.error(message, error);
+      return;
+    }
+
+    console.warn(message, error ?? "unknown error");
+  };
+
   useEffect(() => {
     // Solo ejecutar en el cliente
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     if (isRun.current) return;
     isRun.current = true;
@@ -59,7 +80,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const _keycloakTokenUrl = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`;
     const _originalXhrOpen = XMLHttpRequest.prototype.open;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (XMLHttpRequest.prototype as any).open = function (...args: any[]) {
+    (XMLHttpRequest.prototype as any).open = function (
+      ...args: Parameters<XMLHttpRequest["open"]>
+    ) {
       if (args[1] === _keycloakTokenUrl) {
         args[1] = "/api/auth/token";
       }
@@ -74,10 +97,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           clientId: KEYCLOAK_CLIENT_ID,
         });
 
-        const isAuthenticated = await keycloak.current.init({ 
+        const isAuthenticated = await keycloak.current.init({
           onLoad: "check-sso",
           checkLoginIframe: false,
-          pkceMethod: 'S256'
+          pkceMethod: "S256",
         });
 
         setAuthenticated(isAuthenticated);
@@ -91,20 +114,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Load user info from Keycloak
             const userInfo = await keycloak.current.loadUserInfo();
             setUserInfo(userInfo);
-            
+
             // Validar usuario con el backend usando los nombres correctos de campos
             const userValidationData: UserValidationRequest = {
               email: (userInfo as any).email || "",
               email_verified: Boolean((userInfo as any).email_verified),
               family_name: (userInfo as any).family_name || "",
               given_name: (userInfo as any).given_name || "",
-              name: (userInfo as any).name || (userInfo as any).preferred_username || "",
+              name:
+                (userInfo as any).name ||
+                (userInfo as any).preferred_username ||
+                "",
               preferred_username: (userInfo as any).preferred_username || "",
               sub: (userInfo as any).sub || "",
               app_id: APP_ID,
-              profile: (userInfo as any).profile || ""
+              profile: (userInfo as any).profile || "",
             };
-            
+
             const validatedUser = await validateUser(userValidationData);
             setUserValidatedInfo(validatedUser.user);
 
@@ -115,10 +141,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
           } catch (userError) {
-            console.error("Error loading user info:", userError);
+            logAuthError("Error loading user info:", userError);
             // Fallback to tokenParsed if loadUserInfo fails
             setUserInfo(keycloak.current.tokenParsed || null);
-            setAuthenticated(false);
           }
         }
       } catch (error) {
@@ -147,20 +172,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const currentToken = keycloak.current.token;
           setToken(currentToken || null);
           setTokenParsed(keycloak.current.tokenParsed || null);
-          
+
           // Reload user info after token refresh
           try {
             const userInfo = await keycloak.current.loadUserInfo();
             setUserInfo(userInfo);
           } catch (error) {
-            console.error("Error loading user info after refresh:", error);
+            logAuthError("Error loading user info after refresh:", error);
             setUserInfo(keycloak.current.tokenParsed || null);
           }
         }
       } catch (error) {
         // Si falla el refresh, no forzar logout/redirect cuando no corresponde.
         // Marcamos estado no autenticado y limpiamos token sin redirigir.
-        console.warn("Fallo al refrescar token (ignorado si no autenticado):", error);
+        console.warn(
+          "Fallo al refrescar token (ignorado si no autenticado):",
+          error,
+        );
         setToken(null);
         setTokenParsed(null);
         setAuthenticated(false);
@@ -198,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     validatedPayload,
     loading,
-    authenticated
+    authenticated,
   };
 
   return (
