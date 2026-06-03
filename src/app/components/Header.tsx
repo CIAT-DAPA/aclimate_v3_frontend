@@ -107,6 +107,16 @@ const Header = () => {
           >
             {t("nav.spatialData")}
           </Link>
+          {config.name === "amazonia" && (
+            <a
+              href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-50 hover:text-amber-100 transition-colors mt-2"
+            >
+              {t("nav.communityMonitoring")}
+            </a>
+          )}
 
           {/* <div className="flex items-center">
             <label htmlFor="language-select" className="sr-only">
@@ -249,6 +259,17 @@ const Header = () => {
               >
                 {t("nav.spatialData")}
               </Link>
+              {config.name === "amazonia" && (
+                <a
+                  href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  {t("nav.communityMonitoring")}
+                </a>
+              )}
               <Link
                 href="/about"
                 className="text-amber-50 hover:text-amber-100 transition-colors py-2 px-2"
