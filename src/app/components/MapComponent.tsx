@@ -271,7 +271,8 @@ const MapComponent = ({
 
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const { userValidatedInfo, authenticated } = useAuth();
+  const { userValidatedInfo, authenticated, loading: authLoading } = useAuth();
+  const resolvedUserId = userValidatedInfo?.user?.id ?? userValidatedInfo?.id;
 
   // Extraer valores primitivos para el useEffect
   const centerLat = Array.isArray(mapCenter)
@@ -358,15 +359,19 @@ const MapComponent = ({
   // Cargar favoritos del usuario autenticado
   useEffect(() => {
     const loadUserFavorites = async () => {
-      // Solo cargar una vez cuando el usuario esté autenticado
-      if (!authenticated || !userValidatedInfo || favoritesLoadedRef.current) {
+      // Solo cargar una vez cuando la autenticación ya terminó y el usuario está resuelto
+      if (
+        authLoading ||
+        !authenticated ||
+        !resolvedUserId ||
+        favoritesLoadedRef.current
+      ) {
         return;
       }
 
       try {
         favoritesLoadedRef.current = true;
-        const userId = userValidatedInfo.id;
-        const userStations = await getUserStations(userId);
+        const userStations = await getUserStations(resolvedUserId);
         const favoriteIds = new Set(
           userStations.map((station) => station.ws_ext_id?.toString() || ""),
         );
@@ -379,19 +384,28 @@ const MapComponent = ({
     };
 
     loadUserFavorites();
-  }, [authenticated]);
+  }, [authLoading, authenticated, resolvedUserId]);
 
   const toggleFavorite = async (stationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
 
-    if (!authenticated || !userValidatedInfo) {
+    if (authLoading) {
+      return;
+    }
+
+    if (!authenticated) {
       alert(t("map.alerts.loginRequired"));
       return;
     }
 
+    if (!resolvedUserId) {
+      alert(t("map.alerts.userMissing"));
+      return;
+    }
+
     // Encontrar userId de la misma manera que en loadUserFavorites
-    const userId = userValidatedInfo.user?.id ?? userValidatedInfo.id;
+    const userId = resolvedUserId;
     if (!userId) {
       console.error("No se pudo encontrar userId para toggleFavorite");
       alert(t("map.alerts.userMissing"));
@@ -952,7 +966,9 @@ const MapComponent = ({
                         }
                         disabled={
                           loadingFavorites.has(station.id.toString()) ||
-                          !authenticated
+                          authLoading ||
+                          !authenticated ||
+                          !resolvedUserId
                         }
                         className={`text-xs ${
                           favorites.has(station.id.toString())
