@@ -10,6 +10,7 @@ import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { useColors } from "@/app/contexts/ColorContext";
 
 interface StationData {
   id: string;
@@ -31,6 +32,7 @@ const WeatherCard = () => {
   const { authenticated, userValidatedInfo } = useAuth();
   const { countryId } = useCountry();
   const { t, locale } = useI18n();
+  const colors = useColors();
   const [favoriteStations, setFavoriteStations] = useState<StationData[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -125,9 +127,12 @@ const WeatherCard = () => {
 
   if (!authenticated) {
     return (
-      <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
+      <div 
+        className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
+        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+      >
         <div className="relative z-10 text-center py-8">
-          <Star className="mx-auto mb-4 text-amber-50" size={48} />
+          <Star className="mx-auto mb-4" size={48} style={{ color: "var(--color-text-light)" }} />
           <p className="text-lg font-medium">{t("weather.signInPrompt")}</p>
         </div>
       </div>
@@ -136,9 +141,15 @@ const WeatherCard = () => {
 
   if (loading) {
     return (
-      <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
+      <div 
+        className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
+        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+      >
         <div className="relative z-10 text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-50 mx-auto mb-4"></div>
+          <div 
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+            style={{ borderBottomColor: "var(--color-text-light)" }}
+          ></div>
           <p>{t("weather.loadingFavorites")}</p>
         </div>
       </div>
@@ -147,13 +158,17 @@ const WeatherCard = () => {
 
   if (favoriteStations.length === 0) {
     return (
-      <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-6 rounded-2xl shadow-lg max-w-sm">
+      <div 
+        className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
+        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+      >
         <div className="relative z-10 text-center py-8">
-          <Star className="mx-auto mb-4 text-amber-50" size={48} />
+          <Star className="mx-auto mb-4" size={48} style={{ color: "var(--color-text-light)" }} />
           <p className="text-lg font-medium mb-2">{t("weather.noFavorites")}</p>
           <Link
             href="/locations"
-            className="text-sm text-amber-200 hover:text-amber-100 underline"
+            className="text-sm underline"
+            style={{ color: "var(--color-text-light)" }}
           >
             {t("weather.exploreMap")}
           </Link>

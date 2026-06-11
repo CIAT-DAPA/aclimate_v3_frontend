@@ -5,9 +5,11 @@ import WeatherCard from "./components/WeatherCard";
 import { COUNTRY_NAME } from "./config";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButtonLink } from "@/app/components/ui/button";
+import { useColors } from "@/app/contexts/ColorContext";
 
 export default function HomeClient() {
   const { t } = useI18n();
+  const colors = useColors();
   const countryLabel = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
 
   return (
@@ -27,10 +29,16 @@ export default function HomeClient() {
           <div className="grid lg:grid-cols-4 gap-8 sm:gap-12 items-center">
             <div className="space-y-8 sm:space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
               <div className="space-y-3">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-amber-50 text-balance">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-balance"
+                  style={{ color: "var(--color-text-light)" }}
+                >
                   {t("home.hero.title", { country: countryLabel })}
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-amber-50 text-pretty">
+                <p 
+                  className="text-base sm:text-lg md:text-xl text-pretty"
+                  style={{ color: "var(--color-text-light)" }}
+                >
                   {t("home.hero.subtitle")}
                 </p>
                 <div className="flex flex-col md:flex-row gap-4 text-center">

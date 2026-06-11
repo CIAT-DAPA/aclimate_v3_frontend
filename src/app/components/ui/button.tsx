@@ -22,7 +22,7 @@ interface UIButtonLinkProps
     Omit<ComponentProps<typeof Link>, "className" | "children"> {}
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 border font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#bc6c25]/40 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg";
+  "inline-flex items-center justify-center gap-2 border font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg";
 
 const sizeClasses: Record<UIButtonSize, string> = {
   sm: "px-3 py-1.5 text-sm",
@@ -32,9 +32,9 @@ const sizeClasses: Record<UIButtonSize, string> = {
 
 const variantClasses: Record<UIButtonVariant, string> = {
   primary:
-    "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]",
+    "bg-[var(--color-tertiary)] border-[var(--color-tertiary)] text-[var(--color-text-light)] hover:opacity-90",
   secondary:
-    "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]",
+    "bg-white border-[var(--color-tertiary)] text-[var(--color-text-dark)] hover:bg-[var(--color-accent)]",
 };
 
 const cx = (...values: Array<string | undefined>) =>
@@ -68,6 +68,7 @@ export function UIButtonLink({
   return (
     <Link
       href={href}
+      style={{ color: "var(--color-text-light)" }}
       className={cx(baseClasses, sizeClasses[size], variantClasses[variant], className)}
       {...props}
     >

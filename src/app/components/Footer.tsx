@@ -8,10 +8,10 @@ const Footer = () => {
   const { t } = useI18n();
 
   return (
-    <footer className="bg-[#283618]">
+    <footer style={{ backgroundColor: "var(--color-primary)" }}>
       <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-amber-50 text-xs sm:text-sm">
+          <span className="text-xs sm:text-sm" style={{ color: "var(--color-text-light)" }}>
             {t("footer.developedBy")}
           </span>
           <a
@@ -32,14 +32,16 @@ const Footer = () => {
         <div className="flex gap-2 sm:gap-4">
           <Link
             href="https://www.aclimate.org/data-policy"
-            className="text-amber-50 hover:text-amber-100 transition-colors text-xs sm:text-sm"
+            className="transition-colors text-xs sm:text-sm"
             target="_blank"
+            style={{ color: "var(--color-text-light)" }}
           >
             {t("footer.privacyPolicy")}
           </Link>
           <Link
             href="/about"
-            className="text-amber-50 hover:text-amber-100 transition-colors text-xs sm:text-sm"
+            className="transition-colors text-xs sm:text-sm"
+            style={{ color: "var(--color-text-light)" }}
           >
             {t("footer.about")}
           </Link>

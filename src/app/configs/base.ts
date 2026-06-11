@@ -20,10 +20,28 @@ export interface BranchConfig {
     }>;
   };
   showScenario?: boolean;
+  /** Color scheme for the application. All colors are optional and will fall back to defaults if not provided */
   colors?: {
-    primary: string;
-    secondary: string;
-    accent: string;
+    /** Primary brand color - used for main buttons, links, and primary UI elements */
+    primary?: string;
+    /** Secondary brand color - used for secondary buttons and less prominent elements */
+    secondary?: string;
+    /** Accent color - used for highlights and special attention elements */
+    accent?: string;
+    /** Tertiary color - additional brand color */
+    tertiary?: string;
+    /** Quaternary color - additional brand color */
+    quaternary?: string;
+    /** Text color for light backgrounds - typically dark for contrast */
+    textLight?: string;
+    /** Text color for dark backgrounds - typically light for contrast */
+    textDark?: string;
+    /** Gradient start color - used in decorative gradients */
+    gradientStart?: string;
+    /** Gradient end color - used in decorative gradients */
+    gradientEnd?: string;
+    /** Green/success color for progress bars and success states */
+    success?: string;
   };
   station?: {
     showClimateIndicator: boolean;
@@ -68,6 +86,11 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
         alt: "Alliance Bioversity-CIAT logo",
       },
     ],
+  },
+  colors: {
+    primary: "#bc6c25",
+    secondary: "#dda15e",
+    accent: "#fefae0",
   },
   data: {
     center: [4.6097, -74.0817],

@@ -5,6 +5,28 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Default brand colors - will be overridden by ColorProvider */
+  --color-primary: #bc6c25;
+  --color-secondary: #dda15e;
+  --color-accent: #fefae0;
+  --color-tertiary: #8b4513;
+  --color-quaternary: #d2b48c;
+  --color-text-light: #171717;
+  --color-text-dark: #ffffff;
+  --color-gradient-start: #bc6c25;
+  --color-gradient-end: #dda15e;
+  --color-success: #16a34a;
+  
+  /* RGB versions for rgba() usage */
+  --color-primary-rgb: 188, 108, 37;
+  --color-secondary-rgb: 221, 161, 94;
+  --color-accent-rgb: 254, 250, 224;
+  --color-tertiary-rgb: 139, 69, 19;
+  --color-quaternary-rgb: 210, 180, 140;
+  --color-gradient-start-rgb: 188, 108, 37;
+  --color-gradient-end-rgb: 221, 161, 94;
+  --color-success-rgb: 22, 163, 74;
 }
 
 @theme inline {
@@ -96,6 +118,103 @@ body {
   background: #ffffff !important;
   border: 1px solid #e3e3e3 !important;
   color: #373d3f !important;
+}
+
+/* Mejorar legibilidad del menú de herramientas de ApexCharts */
+.apexcharts-menu {
+  background: #ffffff !important;
+  border: 1px solid #e3e3e3 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10000 !important;
+}
+
+.apexcharts-menu-item {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  color: #373d3f !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.apexcharts-menu-item:last-child {
+  border-bottom: none !important;
+}
+
+.apexcharts-menu-item:hover {
+  background-color: #f5f5f5 !important;
+  color: #000 !important;
+}
+
+/* Asegurar que el menú sea visible */
+.apexcharts-menu.apexcharts-menu-open {
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Mejorar la barra de herramientas de ApexCharts */
+.apexcharts-toolbar {
+  z-index: 999 !important;
+  gap: 8px !important;
+}
+
+.apexcharts-toolbar svg {
+  color: #373d3f !important;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.apexcharts-toolbar svg:hover {
+  color: #000 !important;
+}
+
+/* Dynamic color styles for links and buttons */
+a {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Button styles that use color variables */
+button {
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hover effects for links with color-accent */
+[style*="color: var(--color-accent)"]:hover {
+  opacity: 0.8;
+}
+
+/* Header and footer specific styles */
+header {
+  transition: background-color 0.2s ease;
+}
+
+footer {
+  transition: background-color 0.2s ease;
+}
+
+/* Button focus ring using dynamic colors */
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Progress bars using dynamic success color */
+.progress-bar {
+  background-color: var(--color-success);
+}
+
+/* Ensure buttons with CSS variables work correctly */
+button[style*="background"] {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+button[style*="background"]:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .apexcharts-tooltip-title {
