@@ -56,7 +56,7 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
   station: {
     showClimateIndicator: true,
     showForecast: true,
-    forecastSource: "Fuente: Dirección del Observatorio Ambiental (DOA) – MARN El Salvador. Modelo de pronóstico numérico operacional.",
+    forecastSource: "Fuente: Dirección general de observatorio de amenazas y recursos naturales (DOA) – MARN El Salvador.",
     sectionOrder: ["indicators", "forecast", "climate"],
   },
   data: {
