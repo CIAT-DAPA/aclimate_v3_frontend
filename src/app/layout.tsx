@@ -36,6 +36,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        {/* Color variables are set in globals.css as defaults */}
+        {/* ColorProvider will update them after hydration based on country config */}
+      </head>
       <body className={`${montserrat.variable} antialiased`}>
         <ColorProvider>
           <I18nProvider>

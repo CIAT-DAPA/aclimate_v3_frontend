@@ -129,7 +129,7 @@ const WeatherCard = () => {
     return (
       <div 
         className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
-        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+        style={{ backgroundColor: "var(--color-primary)", color: "var(--color-text-light)" }}
       >
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4" size={48} style={{ color: "var(--color-text-light)" }} />
@@ -143,7 +143,7 @@ const WeatherCard = () => {
     return (
       <div 
         className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
-        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+        style={{ backgroundColor: "var(--color-primary)", color: "var(--color-text-light)" }}
       >
         <div className="relative z-10 text-center py-8">
           <div 
@@ -160,7 +160,7 @@ const WeatherCard = () => {
     return (
       <div 
         className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
-        style={{ backgroundColor: colors.primary, color: "var(--color-text-light)" }}
+        style={{ backgroundColor: "var(--color-primary)", color: "var(--color-text-light)" }}
       >
         <div className="relative z-10 text-center py-8">
           <Star className="mx-auto mb-4" size={48} style={{ color: "var(--color-text-light)" }} />

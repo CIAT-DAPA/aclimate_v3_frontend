@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButtonLink } from "@/app/components/ui/button";
-import { useColors } from "@/app/contexts/ColorContext";
 
 export default function AboutPage() {
   const config = useBranchConfig();
-  const colors = useColors();
   const { t } = useI18n();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
@@ -28,7 +26,7 @@ export default function AboutPage() {
               <div className="text-center md:text-left">
                 <h2 
                   className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-8"
-                  style={{ color: colors.textDark }}
+                  style={{ color: "var(--color-text-dark)" }}
                 >
                   {config.displayName}
                 </h2>
@@ -39,18 +37,18 @@ export default function AboutPage() {
                       variant="secondary"
                       className="text-sm md:text-base md:px-6 md:py-3 transition-all duration-300"
                       style={{ 
-                        color: colors.tertiary,
-                        borderColor: colors.tertiary,
+                        color: "var(--color-tertiary)",
+                        borderColor: "var(--color-tertiary)",
                       }}
                       onMouseEnter={(e) => {
                         const element = e.currentTarget as HTMLElement;
-                        element.style.backgroundColor = colors.tertiary;
+                        element.style.backgroundColor = "var(--color-tertiary)";
                         element.style.color = '#ffffff';
                       }}
                       onMouseLeave={(e) => {
                         const element = e.currentTarget as HTMLElement;
                         element.style.backgroundColor = 'transparent';
-                        element.style.color = colors.tertiary;
+                        element.style.color = "var(--color-tertiary)";
                       }}
                     >
                       {t("about.projectLink")}
@@ -81,14 +79,14 @@ export default function AboutPage() {
                   <div className="text-center">
                     <div 
                       className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4"
-                      style={{ backgroundColor: colors.primary }}
+                      style={{ backgroundColor: "var(--color-primary)" }}
                     >
                       <svg
                         className="w-8 h-8 md:w-10 md:h-10"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
-                        style={{ color: colors.textLight }}
+                        style={{ color: "var(--color-text-light)" }}
                       >
                         <path
                           strokeLinecap="round"
@@ -100,13 +98,13 @@ export default function AboutPage() {
                     </div>
                     <h3 
                       className="text-lg md:text-xl font-semibold mb-2"
-                      style={{ color: colors.primary }}
+                      style={{ color: "var(--color-primary)" }}
                     >
                       {config.aboutUs.title}
                     </h3>
                     <p 
                       className="text-sm md:text-base px-2"
-                      style={{ color: colors.textDark }}
+                      style={{ color: "var(--color-text-dark)" }}
                     >
                       {config.aboutUs.description}
                     </p>
@@ -117,7 +115,7 @@ export default function AboutPage() {
             {config.aboutUs.projectDescription && (
               <h2 
                 className="text-2xl md:text-3xl font-bold mt-12 mb-6 text-center"
-                style={{ color: colors.primary }}
+                style={{ color: "var(--color-primary)" }}
               >
                 {config.aboutUs.projectTitle}
               </h2>
@@ -125,7 +123,7 @@ export default function AboutPage() {
             {config.aboutUs.projectDescription && (
               <p 
                 className="mt-6"
-                style={{ color: colors.textDark }}
+                style={{ color: "var(--color-text-dark)" }}
               >
                 {config.aboutUs.projectDescription}
               </p>
@@ -139,7 +137,7 @@ export default function AboutPage() {
           <div className="max-w-6xl mx-auto flex flex-col items-center">
             <h2 
               className="text-3xl md:text-4xl font-bold mb-8 md:mb-12 text-center"
-              style={{ color: colors.primary }}
+              style={{ color: "var(--color-primary)" }}
             >
               {config.aboutUs.partnersTitle}
             </h2>
@@ -204,7 +202,7 @@ export default function AboutPage() {
                     </div>
                     <p 
                       className="text-center text-xs md:text-sm mt-2 md:mt-3 font-medium"
-                      style={{ color: colors.textLight }}
+                      style={{ color: "var(--color-text-light)" }}
                     >
                       {partner.name}
                     </p>
@@ -223,7 +221,7 @@ export default function AboutPage() {
         }}
       >
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center" style={{ color: colors.textLight }}>
+          <div className="text-center" style={{ color: "var(--color-text-light)" }}>
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6">
               {t("about.ctaTitle")}
             </h2>

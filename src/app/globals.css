@@ -2,31 +2,37 @@
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
+/* Prevent flash of unstyled content during initial load */
+html {
+  /* Use default colors while waiting for ColorProvider to apply custom ones */
+  color-scheme: light;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
   
-  /* Default brand colors - will be overridden by ColorProvider */
-  --color-primary: #bc6c25;
-  --color-secondary: #dda15e;
-  --color-accent: #fefae0;
-  --color-tertiary: #8b4513;
-  --color-quaternary: #d2b48c;
-  --color-text-light: #171717;
-  --color-text-dark: #ffffff;
-  --color-gradient-start: #bc6c25;
-  --color-gradient-end: #dda15e;
-  --color-success: #16a34a;
+  /* Default brand colors - El Salvador as default */
+  --color-primary: #023e74;
+  --color-secondary: #0287d9;
+  --color-accent: #a3a749;
+  --color-tertiary: #f2a20e;
+  --color-quaternary: #a8a8a8;
+  --color-text-light: #ffffff;
+  --color-text-dark: #171717;
+  --color-gradient-start: #023e74;
+  --color-gradient-end: #0287d9;
+  --color-success: #a3a749;
   
   /* RGB versions for rgba() usage */
-  --color-primary-rgb: 188, 108, 37;
-  --color-secondary-rgb: 221, 161, 94;
-  --color-accent-rgb: 254, 250, 224;
-  --color-tertiary-rgb: 139, 69, 19;
-  --color-quaternary-rgb: 210, 180, 140;
-  --color-gradient-start-rgb: 188, 108, 37;
-  --color-gradient-end-rgb: 221, 161, 94;
-  --color-success-rgb: 22, 163, 74;
+  --color-primary-rgb: 2, 62, 116;
+  --color-secondary-rgb: 2, 135, 217;
+  --color-accent-rgb: 163, 167, 73;
+  --color-tertiary-rgb: 242, 162, 14;
+  --color-quaternary-rgb: 168, 168, 168;
+  --color-gradient-start-rgb: 2, 62, 116;
+  --color-gradient-end-rgb: 2, 135, 217;
+  --color-success-rgb: 163, 167, 73;
 }
 
 @theme inline {

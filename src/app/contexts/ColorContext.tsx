@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, ReactNode } from "react";
+import React, { createContext, useContext, useMemo, ReactNode, useState, useInsertionEffect } from "react";
 import { useBranchConfig } from "@/app/configs";
 import {
   resolveColors,
@@ -11,6 +11,7 @@ import {
 
 interface ColorContextType {
   colors: ResolvedColors;
+  isReady: boolean;
 }
 
 const ColorContext = createContext<ColorContextType | undefined>(undefined);
@@ -34,8 +35,9 @@ export function ColorProvider({ children }: { children: ReactNode }) {
     branchConfig.colors?.success,
   ]);
 
-  useEffect(() => {
-    // Apply colors as CSS variables on the root element
+  // useInsertionEffect runs BEFORE the browser paints, before useEffect
+  // This ensures colors are applied before any visual updates
+  useInsertionEffect(() => {
     const root = document.documentElement;
     const cssVariables = generateColorCSSVariables(colors);
     const rgbVariables = generateColorRGBVariables(colors);
@@ -48,7 +50,7 @@ export function ColorProvider({ children }: { children: ReactNode }) {
   }, [colors]);
 
   return (
-    <ColorContext.Provider value={{ colors }}>
+    <ColorContext.Provider value={{ colors, isReady: true }}>
       {children}
     </ColorContext.Provider>
   );
@@ -63,5 +65,16 @@ export function useColors(): ResolvedColors {
     throw new Error("useColors must be used within ColorProvider");
   }
   return context.colors;
+}
+
+/**
+ * Hook to check if colors are ready
+ */
+export function useColorsReady(): boolean {
+  const context = useContext(ColorContext);
+  if (!context) {
+    throw new Error("useColorsReady must be used within ColorProvider");
+  }
+  return context.isReady;
 }
 
