@@ -13,6 +13,7 @@ import { ColorProvider } from "@/app/contexts/ColorContext";
 import CookieBanner from "./components/CookieBanner";
 import AnalyticsByConsent from "./components/AnalyticsByConsent";
 import { buildRootMetadata } from "./seo";
+import { getThemeStyleTag } from "./utils/theme";
 import { getBranchConfig } from "./configs";
 
 config.autoAddCss = false;
@@ -34,11 +35,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeStyleTag = getThemeStyleTag();
+
   return (
     <html lang="es">
       <head>
-        {/* Color variables are set in globals.css as defaults */}
-        {/* ColorProvider will update them after hydration based on country config */}
+        {/* SSR-injected theme styles - no flash because these arrive with the HTML */}
+        <style id="theme-variables">{themeStyleTag}</style>
       </head>
       <body className={`${montserrat.variable} antialiased`}>
         <ColorProvider>

@@ -3,13 +3,11 @@
 import { useCookieConsent } from "@/app/contexts/CookieConsentContext";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButton } from "@/app/components/ui/button";
-import { useColors } from "@/app/contexts/ColorContext";
 
 const CookieBanner = () => {
   const { consent, isLoaded, acceptCookies, rejectCookies } =
     useCookieConsent();
   const { t } = useI18n();
-  const colors = useColors();
 
   if (!isLoaded || consent !== null) {
     return null;
@@ -17,12 +15,12 @@ const CookieBanner = () => {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-[1100] md:left-1/2 md:right-auto md:w-[760px] md:-translate-x-1/2">
-      <div 
+      <div
         className="rounded-xl border p-4 shadow-2xl md:p-5"
         style={{
-          borderColor: `rgba(var(--color-primary-rgb), 0.6)`,
-          backgroundColor: colors.primary,
-          color: colors.accent
+          backgroundColor: "var(--color-primary)",
+          color: "var(--color-text-light)",
+          borderColor: "rgba(var(--color-primary-rgb), 0.6)",
         }}
       >
         <p className="text-sm leading-relaxed md:text-base">
@@ -33,11 +31,10 @@ const CookieBanner = () => {
             onClick={rejectCookies}
             variant="secondary"
             style={{
-              color: colors.accent,
-              borderColor: `rgba(var(--color-accent-rgb), 0.6)`,
-              backgroundColor: "transparent"
+              color: "var(--color-text-light)",
+              borderColor: "rgba(var(--color-accent-rgb), 0.6)",
+              backgroundColor: "transparent",
             }}
-            className="hover:bg-opacity-10"
           >
             {t("cookies.reject")}
           </UIButton>

@@ -10,7 +10,6 @@ import { stationService } from "@/app/services/stationService";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
 import { useI18n } from "@/app/contexts/I18nContext";
-import { useColors } from "@/app/contexts/ColorContext";
 
 interface StationData {
   id: string;
@@ -32,7 +31,6 @@ const WeatherCard = () => {
   const { authenticated, userValidatedInfo } = useAuth();
   const { countryId } = useCountry();
   const { t, locale } = useI18n();
-  const colors = useColors();
   const [favoriteStations, setFavoriteStations] = useState<StationData[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -185,7 +183,10 @@ const WeatherCard = () => {
           href={`/m/${station.machine_name}`}
           className="block transition-transform hover:scale-105 flex-grow md:flex-grow-0 w-full md:w-auto"
         >
-          <div className="relative overflow-hidden bg-[#283618] text-amber-50 p-5 rounded-2xl shadow-lg min-w-full md:min-w-[300px] md:max-w-[400px] flex flex-col h-full">
+          <div 
+            className="relative overflow-hidden p-5 rounded-2xl shadow-lg min-w-full md:min-w-[300px] md:max-w-[400px] flex flex-col h-full"
+            style={{ backgroundColor: "var(--color-primary)", color: "var(--color-text-light)" }}
+          >
             <div className="absolute top-0 right-0 w-[200px] h-[120px] z-0">
               <svg
                 className="absolute -top-5 -right-4"
@@ -218,7 +219,10 @@ const WeatherCard = () => {
                 >
                   {station.name}
                 </h3>
-                <div className="text-right text-[10px] font-medium text-amber-200 shrink-0 whitespace-nowrap mt-1 bg-black/20 rounded-full px-2 py-0.5">
+                <div 
+                  className="text-right text-[10px] font-medium shrink-0 whitespace-nowrap mt-1 bg-black/20 rounded-full px-2 py-0.5"
+                  style={{ color: "var(--color-text-light)", opacity: 0.8 }}
+                >
                   {station.latestData
                     ? formatDate(station.latestData.date)
                     : t("weather.noData")}
@@ -233,20 +237,20 @@ const WeatherCard = () => {
                       <div className="col-span-2 flex items-center justify-between bg-white/10 p-2.5 rounded-lg">
                         <div className="flex items-center gap-2">
                           <Thermometer
-                            className="text-amber-300 shrink-0"
+                            style={{ color: "var(--color-secondary)" }}
                             size={18}
                           />
-                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                          <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             {t("weather.minMax")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
                           {station.latestData.tmin?.toFixed(1) || "--"}{" "}
-                          <span className="text-xs font-normal text-amber-200">
+                          <span className="text-xs font-normal" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             /
                           </span>{" "}
                           {station.latestData.tmax?.toFixed(1) || "--"}{" "}
-                          <span className="text-xs font-normal text-amber-200">
+                          <span className="text-xs font-normal" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             °C
                           </span>
                         </span>
@@ -257,13 +261,13 @@ const WeatherCard = () => {
                       <div className="flex flex-col items-center justify-center bg-white/10 p-2.5 rounded-lg text-center">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <CloudRain className="text-blue-300" size={16} />
-                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                          <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             {t("weather.precipShort")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
                           {station.latestData.prec.toFixed(1)}{" "}
-                          <span className="text-[10px] font-normal text-amber-200">
+                          <span className="text-[10px] font-normal" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             mm
                           </span>
                         </span>
@@ -274,13 +278,13 @@ const WeatherCard = () => {
                       <div className="flex flex-col items-center justify-center bg-white/10 p-2.5 rounded-lg text-center">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <Sun className="text-yellow-300" size={16} />
-                          <span className="text-[10px] text-amber-100 uppercase font-semibold">
+                          <span className="text-[10px] uppercase font-semibold" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             {t("weather.radShort")}
                           </span>
                         </div>
                         <span className="text-base font-bold whitespace-nowrap">
                           {station.latestData.rad.toFixed(1)}{" "}
-                          <span className="text-[10px] font-normal text-amber-200">
+                          <span className="text-[10px] font-normal" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
                             MJ/m²
                           </span>
                         </span>
@@ -290,16 +294,17 @@ const WeatherCard = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-20 bg-white/5 rounded-lg border border-white/10 mt-3">
-                  <div className="text-amber-200 italic text-sm flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500/50"></span>
+                  <div className="italic text-sm flex items-center gap-2" style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-tertiary)", opacity: 0.5 }}></span>
                     {t("weather.noRecentData")}
                   </div>
                 </div>
               )}
 
               <div className="mt-3 pt-3 border-t border-white/5 flex items-end">
-                <div className="flex items-center text-amber-100 text-xs gap-1.5 font-medium w-full truncate">
-                  <MapPin size={14} className="shrink-0 text-amber-300" />
+                <div className="flex items-center text-xs gap-1.5 font-medium w-full truncate"
+                  style={{ color: "var(--color-text-light)", opacity: 0.75 }}>
+                  <MapPin size={14} className="shrink-0" style={{ color: "var(--color-secondary)" }} />
                   <span
                     className="truncate"
                     title={`${station.admin2_name}, ${station.admin1_name}`}

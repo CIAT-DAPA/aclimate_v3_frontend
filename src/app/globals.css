@@ -2,26 +2,24 @@
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
-/* Prevent flash of unstyled content during initial load */
-html {
-  /* Use default colors while waiting for ColorProvider to apply custom ones */
-  color-scheme: light;
-}
-
+/* 
+ * DEFAULT color variables - these will be overridden by SSR inline style tag 
+ * in layout.tsx with the correct country-specific colors.
+ * Keeping these here prevents any flash while the style tag loads.
+ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
   
-  /* Default brand colors - all countries fall back to these */
   --color-primary: #283618;
   --color-secondary: #dda15e;
   --color-accent: #fefae0;
   --color-tertiary: #bc6c25;
-  --color-quaternary: #D2B48C;
-  --color-text-light: #a85a1f;
+  --color-quaternary: #dce1c8;
+  --color-text-light: #FFFBED;
   --color-text-dark: #1f2937;
-  --color-gradient-start: #283618;
-  --color-gradient-end: #bc6c25;
+  --color-gradient-start: #4b6d23;
+  --color-gradient-end: #283618;
   --color-success: #16A34A;
   
   /* RGB versions for rgba() usage */
@@ -29,11 +27,11 @@ html {
   --color-secondary-rgb: 221, 161, 94;
   --color-accent-rgb: 254, 250, 224;
   --color-tertiary-rgb: 188, 108, 37;
-  --color-quaternary-rgb: 210, 180, 140;
-  --color-text-light-rgb: 168, 90, 31;
+  --color-quaternary-rgb: 220, 225, 200;
+  --color-text-light-rgb: 255, 251, 237;
   --color-text-dark-rgb: 31, 41, 55;
-  --color-gradient-start-rgb: 40, 54, 24;
-  --color-gradient-end-rgb: 188, 108, 37;
+  --color-gradient-start-rgb: 75, 109, 35;
+  --color-gradient-end-rgb: 40, 54, 24;
   --color-success-rgb: 22, 163, 74;
 }
 
@@ -179,50 +177,6 @@ body {
 
 .apexcharts-toolbar svg:hover {
   color: #000 !important;
-}
-
-/* Dynamic color styles for links and buttons */
-a {
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-/* Button styles that use color variables */
-button {
-  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-}
-
-/* Hover effects for links with color-accent */
-[style*="color: var(--color-accent)"]:hover {
-  opacity: 0.8;
-}
-
-/* Header and footer specific styles */
-header {
-  transition: background-color 0.2s ease;
-}
-
-footer {
-  transition: background-color 0.2s ease;
-}
-
-/* Button focus ring using dynamic colors */
-button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Progress bars using dynamic success color */
-.progress-bar {
-  background-color: var(--color-success);
-}
-
-/* Ensure buttons with CSS variables work correctly */
-button[style*="background"] {
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-button[style*="background"]:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .apexcharts-tooltip-title {

@@ -1,16 +1,17 @@
 /**
- * Default color scheme used when colors are not specified in the branch config
+ * Default color scheme used when colors are not specified in the branch config.
+ * These colors match EXACTLY the visual appearance of the original main branch.
  */
 export const DEFAULT_COLORS = {
   primary: "#283618",
   secondary: "#dda15e",
   accent: "#fefae0",
   tertiary: "#bc6c25",
-  quaternary: "#D2B48C",
-  textLight: "#a85a1f",
+  quaternary: "#dce1c8",
+  textLight: "#FFFBED",
   textDark: "#1f2937",
-  gradientStart: "#283618",
-  gradientEnd: "#bc6c25",
+  gradientStart: "#4b6d23",
+  gradientEnd: "#283618",
   success: "#16A34A",
 };
 
@@ -63,7 +64,6 @@ export const resolveColors = (
 
 /**
  * Generates CSS variable declarations from resolved colors
- * Used to dynamically set CSS variables based on branch configuration
  */
 export const generateColorCSSVariables = (
   colors: ResolvedColors

@@ -89,7 +89,7 @@ const Header = () => {
           {config.showScenario && (
             <Link
               href="/scenario"
-              className="transition-opacity mt-2"
+              className="transition-colors mt-2"
               style={{ color: "var(--color-text-light)" }}
             >
               {t("nav.scenarios")}
@@ -98,7 +98,7 @@ const Header = () => {
           {SHOW_STATIONS_MODULE && (
             <Link
               href="/locations"
-              className="transition-opacity mt-2"
+              className="transition-colors mt-2"
               style={{ color: "var(--color-text-light)" }}
             >
               {t("nav.stations")}
@@ -106,7 +106,7 @@ const Header = () => {
           )}
           <Link
             href="/spatial"
-            className="transition-opacity mt-2"
+            className="transition-colors mt-2"
             style={{ color: "var(--color-text-light)" }}
           >
             {t("nav.spatialData")}
@@ -116,42 +116,22 @@ const Header = () => {
               href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
               target="_blank"
               rel="noreferrer"
-              className="transition-opacity mt-2"
+              className="transition-colors mt-2"
               style={{ color: "var(--color-text-light)" }}
             >
               {t("nav.communityMonitoring")}
             </a>
           )}
 
-          {/* <div className="flex items-center">
-            <label htmlFor="language-select" className="sr-only">
-              {t("nav.language")}
-            </label>
-            <select
-              id="language-select"
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as typeof locale)}
-              className="bg-transparent text-amber-50 border border-amber-50/40 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
-            >
-              <option value="es" className="text-gray-900">
-                ES
-              </option>
-              <option value="en" className="text-gray-900">
-                EN
-              </option>
-            </select>
-          </div> */}
-
           {/* Botón de login/usuario */}
           {SHOW_USERS_MODULE && (
             <div className="flex items-center min-w-[40px] min-h-[40px]">
               {!isMounted ? (
-                // Estado inicial para SSR
                 <div className="w-10 h-10"></div>
               ) : (
                 <>
                   {loading && (
-                    <div 
+                    <div
                       className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
                       style={{ borderColor: "var(--color-text-light)", borderTopColor: "transparent" }}
                     ></div>
@@ -172,9 +152,9 @@ const Header = () => {
                       <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center justify-center w-10 h-10 font-semibold rounded-full transition-colors cursor-pointer"
-                        style={{ 
-                          backgroundColor: "var(--color-secondary)",
-                          color: "var(--color-text-light)"
+                        style={{
+                          backgroundColor: "var(--color-tertiary)",
+                          color: "var(--color-text-light)",
                         }}
                         title={
                           userInfo?.preferred_username ||
@@ -245,7 +225,7 @@ const Header = () => {
 
         {/* Menú móvil */}
         {showMobileMenu && (
-          <div 
+          <div
             className="absolute top-full left-0 right-0 border-t md:hidden z-[1002]"
             style={{ backgroundColor: "var(--color-primary)", borderTopColor: "var(--color-secondary)" }}
           >
@@ -298,45 +278,27 @@ const Header = () => {
               >
                 {t("nav.about")}
               </Link>
-
-              {/* <div className="px-2 py-2">
-                <label
-                  htmlFor="language-select-mobile"
-                  className="block text-amber-50 text-xs mb-1"
-                >
-                  {t("nav.language")}
-                </label>
-                <select
-                  id="language-select-mobile"
-                  value={locale}
-                  onChange={(e) => setLocale(e.target.value as typeof locale)}
-                  className="w-full bg-transparent text-amber-50 border border-amber-50/40 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
-                >
-                  <option value="es" className="text-gray-900">
-                    ES
-                  </option>
-                  <option value="en" className="text-gray-900">
-                    EN
-                  </option>
-                </select>
-              </div> */}
               {SHOW_USERS_MODULE && (
-                <div className="py-2 px-2 border-t mt-2" style={{ borderTopColor: "var(--color-primary)" }}>
+                <div className="py-2 px-2 border-t mt-2" style={{ borderTopColor: "var(--color-secondary)" }}>
                   {!loading && !authenticated && (
                     <button
                       onClick={() => {
                         login();
                         setShowMobileMenu(false);
                       }}
-                      className="text-amber-50 hover:text-amber-100 transition-colors w-full text-left"
+                      className="transition-colors w-full text-left"
+                      style={{ color: "var(--color-text-light)" }}
                     >
                       {t("nav.login")}
                     </button>
                   )}
                   {!loading && authenticated && (
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-amber-50">
-                        <div className="w-8 h-8 text-[var(--color-text-light)] font-semibold rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: "var(--color-primary)" }}>
+                      <div className="flex items-center gap-2" style={{ color: "var(--color-text-light)" }}>
+                        <div
+                          className="w-8 h-8 font-semibold rounded-full flex items-center justify-center text-sm"
+                          style={{ backgroundColor: "var(--color-tertiary)", color: "var(--color-text-light)" }}
+                        >
                           {getInitials(
                             userInfo?.given_name || "",
                             userInfo?.family_name || "",
@@ -348,14 +310,16 @@ const Header = () => {
                       </div>
                       <Link
                         href="/user-profile"
-                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                        className="transition-colors text-sm"
+                        style={{ color: "var(--color-text-light)" }}
                         onClick={() => setShowMobileMenu(false)}
                       >
                         {t("nav.profile")}
                       </Link>
                       <Link
                         href="/favorites"
-                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                        className="transition-colors text-sm"
+                        style={{ color: "var(--color-text-light)" }}
                         onClick={() => setShowMobileMenu(false)}
                       >
                         {t("nav.favorites")}
@@ -365,7 +329,8 @@ const Header = () => {
                           logout();
                           setShowMobileMenu(false);
                         }}
-                        className="text-amber-50 hover:text-amber-100 transition-colors text-sm text-left"
+                        className="transition-colors text-sm text-left"
+                        style={{ color: "var(--color-text-light)" }}
                       >
                         {t("nav.logout")}
                       </button>

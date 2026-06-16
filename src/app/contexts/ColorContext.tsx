@@ -1,11 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, ReactNode, useState, useInsertionEffect } from "react";
+import React, { createContext, useContext, useMemo, ReactNode } from "react";
 import { useBranchConfig } from "@/app/configs";
 import {
   resolveColors,
-  generateColorCSSVariables,
-  generateColorRGBVariables,
   ResolvedColors,
 } from "@/app/utils/colorUtils";
 
@@ -18,7 +16,7 @@ const ColorContext = createContext<ColorContextType | undefined>(undefined);
 
 export function ColorProvider({ children }: { children: ReactNode }) {
   const branchConfig = useBranchConfig();
-  
+
   // Memoize colors to prevent unnecessary recalculations
   const colors = useMemo(() => {
     return resolveColors(branchConfig.colors);
@@ -34,20 +32,6 @@ export function ColorProvider({ children }: { children: ReactNode }) {
     branchConfig.colors?.gradientEnd,
     branchConfig.colors?.success,
   ]);
-
-  // useInsertionEffect runs BEFORE the browser paints, before useEffect
-  // This ensures colors are applied before any visual updates
-  useInsertionEffect(() => {
-    const root = document.documentElement;
-    const cssVariables = generateColorCSSVariables(colors);
-    const rgbVariables = generateColorRGBVariables(colors);
-
-    Object.entries({ ...cssVariables, ...rgbVariables }).forEach(
-      ([key, value]) => {
-        root.style.setProperty(key, value);
-      }
-    );
-  }, [colors]);
 
   return (
     <ColorContext.Provider value={{ colors, isReady: true }}>
@@ -77,4 +61,3 @@ export function useColorsReady(): boolean {
   }
   return context.isReady;
 }
-

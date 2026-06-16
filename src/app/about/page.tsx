@@ -16,7 +16,7 @@ export default function AboutPage() {
   };
 
   return (
-    <div style={{ 
+    <div style={{
       backgroundImage: `linear-gradient(to bottom right, rgba(var(--color-accent-rgb), 0.1), rgba(var(--color-gradient-end-rgb), 0.1))`
     }}>
       <section className="py-12 md:py-20 bg-white">
@@ -24,7 +24,7 @@ export default function AboutPage() {
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
               <div className="text-center md:text-left">
-                <h2 
+                <h2
                   className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-8"
                   style={{ color: "var(--color-text-dark)" }}
                 >
@@ -35,21 +35,7 @@ export default function AboutPage() {
                     <UIButtonLink
                       href={config.aboutUs.projectLink}
                       variant="secondary"
-                      className="text-sm md:text-base md:px-6 md:py-3 transition-all duration-300"
-                      style={{ 
-                        color: "var(--color-tertiary)",
-                        borderColor: "var(--color-tertiary)",
-                      }}
-                      onMouseEnter={(e) => {
-                        const element = e.currentTarget as HTMLElement;
-                        element.style.backgroundColor = "var(--color-tertiary)";
-                        element.style.color = '#ffffff';
-                      }}
-                      onMouseLeave={(e) => {
-                        const element = e.currentTarget as HTMLElement;
-                        element.style.backgroundColor = 'transparent';
-                        element.style.color = "var(--color-tertiary)";
-                      }}
+                      className="text-sm md:text-base md:px-6 md:py-3"
                     >
                       {t("about.projectLink")}
                       <svg
@@ -70,14 +56,14 @@ export default function AboutPage() {
                 )}
               </div>
               <div className="relative mt-8 md:mt-0">
-                <div 
+                <div
                   className="rounded-2xl p-6 md:p-8 min-h-64 md:min-h-80 flex items-center justify-center"
                   style={{
                     backgroundImage: `linear-gradient(to bottom right, rgba(var(--color-primary-rgb), 0.1), rgba(var(--color-secondary-rgb), 0.1))`
                   }}
                 >
                   <div className="text-center">
-                    <div 
+                    <div
                       className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4"
                       style={{ backgroundColor: "var(--color-primary)" }}
                     >
@@ -96,13 +82,13 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 
+                    <h3
                       className="text-lg md:text-xl font-semibold mb-2"
                       style={{ color: "var(--color-primary)" }}
                     >
                       {config.aboutUs.title}
                     </h3>
-                    <p 
+                    <p
                       className="text-sm md:text-base px-2"
                       style={{ color: "var(--color-text-dark)" }}
                     >
@@ -113,7 +99,7 @@ export default function AboutPage() {
               </div>
             </div>
             {config.aboutUs.projectDescription && (
-              <h2 
+              <h2
                 className="text-2xl md:text-3xl font-bold mt-12 mb-6 text-center"
                 style={{ color: "var(--color-primary)" }}
               >
@@ -121,7 +107,7 @@ export default function AboutPage() {
               </h2>
             )}
             {config.aboutUs.projectDescription && (
-              <p 
+              <p
                 className="mt-6"
                 style={{ color: "var(--color-text-dark)" }}
               >
@@ -135,7 +121,7 @@ export default function AboutPage() {
       <section className="py-12 md:py-20 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-6xl mx-auto flex flex-col items-center">
-            <h2 
+            <h2
               className="text-3xl md:text-4xl font-bold mb-8 md:mb-12 text-center"
               style={{ color: "var(--color-primary)" }}
             >
@@ -200,9 +186,9 @@ export default function AboutPage() {
                         )}
                       </div>
                     </div>
-                    <p 
+                    <p
                       className="text-center text-xs md:text-sm mt-2 md:mt-3 font-medium"
-                      style={{ color: "var(--color-text-light)" }}
+                      style={{ color: "var(--color-text-dark)" }}
                     >
                       {partner.name}
                     </p>
@@ -214,10 +200,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section 
+      <section
         className="py-12 md:py-20"
         style={{
-          backgroundImage: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`
+          backgroundImage: `linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end))`
         }}
       >
         <div className="container mx-auto px-4 md:px-6">
