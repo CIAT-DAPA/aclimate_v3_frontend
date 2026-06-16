@@ -208,6 +208,60 @@ iframe {
   height: auto;
 }
 
+/* === Button utility classes (SSR-safe - no Tailwind arbitrary values with CSS vars) === */
+.btn-ui {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  outline: none;
+}
+.btn-ui:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variances */
+.btn-primary {
+  background-color: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-text-light);
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-text-dark);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+.btn-floating {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-tertiary);
+}
+.btn-floating:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+/* Focus ring for buttons */
+.btn-ui:focus-visible {
+  outline: 2px solid var(--color-tertiary);
+  outline-offset: 2px;
+}
+
 @page {
   margin: 12mm;
 }

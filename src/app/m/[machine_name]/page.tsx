@@ -2051,8 +2051,8 @@ export default function StationDetailPage() {
       <UIButton
         onClick={toggleSatelliteComparison}
         disabled={!station || loadingSatellite}
-        className="fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
-        style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+        variant="floating"
+        className="fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
         title={
           !station
             ? t("stationPage.tooltips.stationUnavailable")
@@ -2070,15 +2070,13 @@ export default function StationDetailPage() {
 
       {/* Botón flotante de favoritos */}
       <UIButton
-        variant={isFavorite ? "primary" : "secondary"}
+        variant={isFavorite ? "primary" : "floating"}
         onClick={toggleFavorite}
         disabled={!authenticated || loadingFavorite}
         className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !authenticated
             ? "bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-300 disabled:opacity-100"
-            : isFavorite
-              ? "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]"
-              : "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]"
+            : ""
         }`}
         title={
           !authenticated
@@ -2103,8 +2101,8 @@ export default function StationDetailPage() {
         <UIButton
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
-          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
-          style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+          variant="floating"
+          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
           title={t("stationPage.actions.downloadPdf")}
         >
           {pdfLoading ? (

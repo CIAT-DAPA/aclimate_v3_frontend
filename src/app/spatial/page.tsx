@@ -12,13 +12,13 @@ import {
 } from "@/app/services/spatialService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useBranchConfig } from "@/app/configs/index";
+import { UIButton } from "@/app/components/ui/button";
 import {
   faDatabase,
   faFileArrowDown,
   faDownload,
   faFileText,
 } from "@fortawesome/free-solid-svg-icons";
-import { UIButton } from "@/app/components/ui/button";
 import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
 import type { CustomCommunityMarker } from "@/app/components/MapComponent";
 import { useI18n } from "@/app/contexts/I18nContext";
@@ -1881,9 +1881,8 @@ export default function SpatialDataPage() {
       <UIButton
         onClick={downloadAllData}
         disabled={!downloadReady || isPreparingDownload}
-        variant="secondary"
-        size="sm"
-        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 z-[9999] rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
+        variant="floating"
+        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
         title={
           !downloadReady
             ? t("spatial.actions.waitingLayers")
@@ -1895,7 +1894,7 @@ export default function SpatialDataPage() {
         }
       >
         {downloadProgress > 0 ? (
-          <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
         ) : (
           <FontAwesomeIcon
             icon={faDownload}
@@ -1929,13 +1928,12 @@ export default function SpatialDataPage() {
         <UIButton
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
-          variant="secondary"
-          size="sm"
-          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999] w-12 h-12 sm:w-14 sm:h-14 p-0 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed no-print transition-transform hover:scale-110"
+          variant="floating"
+          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
           title={t("spatial.actions.downloadPdf")}
         >
           {pdfLoading ? (
-            <span className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white inline-block"></span>
+            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
           ) : (
             <FontAwesomeIcon
               icon={faFileText}
