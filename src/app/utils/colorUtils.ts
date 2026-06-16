@@ -2,15 +2,15 @@
  * Default color scheme used when colors are not specified in the branch config
  */
 export const DEFAULT_COLORS = {
-  primary: "#bc6c25",
+  primary: "#283618",
   secondary: "#dda15e",
   accent: "#fefae0",
-  tertiary: "#8B4513",
+  tertiary: "#bc6c25",
   quaternary: "#D2B48C",
-  textLight: "#171717",
-  textDark: "#ffffff",
-  gradientStart: "#bc6c25",
-  gradientEnd: "#dda15e",
+  textLight: "#a85a1f",
+  textDark: "#1f2937",
+  gradientStart: "#283618",
+  gradientEnd: "#bc6c25",
   success: "#16A34A",
 };
 

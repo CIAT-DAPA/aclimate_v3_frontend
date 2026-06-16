@@ -88,9 +88,16 @@ Proporciona la capacidad de analizar datos climáticos y generar reportes detall
     ],
   },
   colors: {
-    primary: "#bc6c25",
+    primary: "#283618",
     secondary: "#dda15e",
     accent: "#fefae0",
+    tertiary: "#bc6c25",
+    quaternary: "#D2B48C",
+    textLight: "#a85a1f",
+    textDark: "#1f2937",
+    gradientStart: "#283618",
+    gradientEnd: "#bc6c25",
+    success: "#16A34A",
   },
   data: {
     center: [4.6097, -74.0817],

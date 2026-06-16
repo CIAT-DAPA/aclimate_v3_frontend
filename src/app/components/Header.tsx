@@ -336,7 +336,7 @@ const Header = () => {
                   {!loading && authenticated && (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 text-amber-50">
-                        <div className="w-8 h-8 bg-[#bc6c25] text-[#fefae0] font-semibold rounded-full flex items-center justify-center text-sm">
+                        <div className="w-8 h-8 text-[var(--color-text-light)] font-semibold rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: "var(--color-primary)" }}>
                           {getInitials(
                             userInfo?.given_name || "",
                             userInfo?.family_name || "",

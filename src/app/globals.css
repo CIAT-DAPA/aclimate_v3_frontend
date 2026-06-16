@@ -12,27 +12,29 @@ html {
   --background: #ffffff;
   --foreground: #171717;
   
-  /* Default brand colors - El Salvador as default */
-  --color-primary: #023e74;
-  --color-secondary: #0287d9;
-  --color-accent: #a3a749;
-  --color-tertiary: #f2a20e;
-  --color-quaternary: #a8a8a8;
-  --color-text-light: #ffffff;
-  --color-text-dark: #171717;
-  --color-gradient-start: #023e74;
-  --color-gradient-end: #0287d9;
-  --color-success: #a3a749;
+  /* Default brand colors - all countries fall back to these */
+  --color-primary: #283618;
+  --color-secondary: #dda15e;
+  --color-accent: #fefae0;
+  --color-tertiary: #bc6c25;
+  --color-quaternary: #D2B48C;
+  --color-text-light: #a85a1f;
+  --color-text-dark: #1f2937;
+  --color-gradient-start: #283618;
+  --color-gradient-end: #bc6c25;
+  --color-success: #16A34A;
   
   /* RGB versions for rgba() usage */
-  --color-primary-rgb: 2, 62, 116;
-  --color-secondary-rgb: 2, 135, 217;
-  --color-accent-rgb: 163, 167, 73;
-  --color-tertiary-rgb: 242, 162, 14;
-  --color-quaternary-rgb: 168, 168, 168;
-  --color-gradient-start-rgb: 2, 62, 116;
-  --color-gradient-end-rgb: 2, 135, 217;
-  --color-success-rgb: 163, 167, 73;
+  --color-primary-rgb: 40, 54, 24;
+  --color-secondary-rgb: 221, 161, 94;
+  --color-accent-rgb: 254, 250, 224;
+  --color-tertiary-rgb: 188, 108, 37;
+  --color-quaternary-rgb: 210, 180, 140;
+  --color-text-light-rgb: 168, 90, 31;
+  --color-text-dark-rgb: 31, 41, 55;
+  --color-gradient-start-rgb: 40, 54, 24;
+  --color-gradient-end-rgb: 188, 108, 37;
+  --color-success-rgb: 22, 163, 74;
 }
 
 @theme inline {
