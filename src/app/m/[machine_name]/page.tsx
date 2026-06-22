@@ -2049,14 +2049,10 @@ export default function StationDetailPage() {
 
       {/* Botón flotante para comparación satelital */}
       <UIButton
-        variant={isSatelliteActive ? "primary" : "secondary"}
         onClick={toggleSatelliteComparison}
         disabled={!station || loadingSatellite}
-        className={`fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
-          !station
-            ? "bg-gray-400 border-gray-400 text-white hover:bg-gray-400 hover:border-gray-400"
-            : ""
-        }`}
+        variant="floating"
+        className="fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
         title={
           !station
             ? t("stationPage.tooltips.stationUnavailable")
@@ -2066,23 +2062,21 @@ export default function StationDetailPage() {
         }
       >
         {loadingSatellite ? (
-          <span className="animate-spin rounded-full h-6 w-6 border-b-2 inline-block text-[#BC6C25]"></span>
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-current inline-block"></span>
         ) : (
-          <FontAwesomeIcon icon={faSatellite} className="h-6 w-6" />
+          <FontAwesomeIcon icon={faSatellite} className="h-6 w-6 text-current" />
         )}
       </UIButton>
 
       {/* Botón flotante de favoritos */}
       <UIButton
-        variant={isFavorite ? "primary" : "secondary"}
+        variant={isFavorite ? "primary" : "floating"}
         onClick={toggleFavorite}
         disabled={!authenticated || loadingFavorite}
         className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
           !authenticated
             ? "bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-300 disabled:opacity-100"
-            : isFavorite
-              ? "bg-[#bc6c25] border-[#bc6c25] text-[#fefae0] hover:bg-[#a85a1f] hover:border-[#a85a1f]"
-              : "bg-white border-[#bc6c25] text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f]"
+            : ""
         }`}
         title={
           !authenticated
@@ -2107,7 +2101,8 @@ export default function StationDetailPage() {
         <UIButton
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
-          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border border-[#bc6c25] bg-white text-[#bc6c25] hover:bg-[#f8f3ee] hover:text-[#a85a1f] focus:outline-none focus:ring-2 focus:ring-[#bc6c25]/40 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
+          variant="floating"
+          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
           title={t("stationPage.actions.downloadPdf")}
         >
           {pdfLoading ? (
@@ -2115,7 +2110,7 @@ export default function StationDetailPage() {
           ) : (
             <FontAwesomeIcon
               icon={faFileArrowDown}
-              className="h-6 w-6 text-[#bc6c25]"
+              className="h-6 w-6 text-current"
             />
           )}
         </UIButton>
