@@ -28,11 +28,6 @@ export const amazoniaConfig: BranchConfig = {
     ],
   },
   showScenario: true,
-  colors: {
-    primary: "#2563eb",
-    secondary: "#3b82f6",
-    accent: "#dbeafe",
-  },
   station: {
     showClimateIndicator: false,
   },

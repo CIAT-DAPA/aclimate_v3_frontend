@@ -2,9 +2,37 @@
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
+/* 
+ * DEFAULT color variables - these will be overridden by SSR inline style tag 
+ * in layout.tsx with the correct country-specific colors.
+ * Keeping these here prevents any flash while the style tag loads.
+ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  --color-primary: #283618;
+  --color-secondary: #dda15e;
+  --color-accent: #fefae0;
+  --color-tertiary: #bc6c25;
+  --color-quaternary: #dce1c8;
+  --color-text-light: #FFFBED;
+  --color-text-dark: #1f2937;
+  --color-gradient-start: #4b6d23;
+  --color-gradient-end: #283618;
+  --color-success: #16A34A;
+  
+  /* RGB versions for rgba() usage */
+  --color-primary-rgb: 40, 54, 24;
+  --color-secondary-rgb: 221, 161, 94;
+  --color-accent-rgb: 254, 250, 224;
+  --color-tertiary-rgb: 188, 108, 37;
+  --color-quaternary-rgb: 220, 225, 200;
+  --color-text-light-rgb: 255, 251, 237;
+  --color-text-dark-rgb: 31, 41, 55;
+  --color-gradient-start-rgb: 75, 109, 35;
+  --color-gradient-end-rgb: 40, 54, 24;
+  --color-success-rgb: 22, 163, 74;
 }
 
 @theme inline {
@@ -98,6 +126,59 @@ body {
   color: #373d3f !important;
 }
 
+/* Mejorar legibilidad del menú de herramientas de ApexCharts */
+.apexcharts-menu {
+  background: #ffffff !important;
+  border: 1px solid #e3e3e3 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10000 !important;
+}
+
+.apexcharts-menu-item {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  color: #373d3f !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.apexcharts-menu-item:last-child {
+  border-bottom: none !important;
+}
+
+.apexcharts-menu-item:hover {
+  background-color: #f5f5f5 !important;
+  color: #000 !important;
+}
+
+/* Asegurar que el menú sea visible */
+.apexcharts-menu.apexcharts-menu-open {
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Mejorar la barra de herramientas de ApexCharts */
+.apexcharts-toolbar {
+  z-index: 999 !important;
+  gap: 8px !important;
+}
+
+.apexcharts-toolbar svg {
+  color: #373d3f !important;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.apexcharts-toolbar svg:hover {
+  color: #000 !important;
+}
+
 .apexcharts-tooltip-title {
   background: #f3f4f5 !important;
   border-bottom: 1px solid #e3e3e3 !important;
@@ -125,6 +206,60 @@ canvas,
 iframe {
   max-width: 100%;
   height: auto;
+}
+
+/* === Button utility classes (SSR-safe - no Tailwind arbitrary values with CSS vars) === */
+.btn-ui {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  outline: none;
+}
+.btn-ui:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variances */
+.btn-primary {
+  background-color: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-text-light);
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-text-dark);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+.btn-floating {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-tertiary);
+}
+.btn-floating:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+/* Focus ring for buttons */
+.btn-ui:focus-visible {
+  outline: 2px solid var(--color-tertiary);
+  outline-offset: 2px;
 }
 
 @page {
