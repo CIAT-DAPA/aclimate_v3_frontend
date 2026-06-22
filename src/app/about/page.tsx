@@ -16,13 +16,18 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50">
+    <div style={{
+      backgroundImage: `linear-gradient(to bottom right, rgba(var(--color-accent-rgb), 0.1), rgba(var(--color-gradient-end-rgb), 0.1))`
+    }}>
       <section className="py-12 md:py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
               <div className="text-center md:text-left">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-6 md:mb-8">
+                <h2
+                  className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-8"
+                  style={{ color: "var(--color-text-dark)" }}
+                >
                   {config.displayName}
                 </h2>
                 {config.aboutUs.projectLink && (
@@ -51,14 +56,23 @@ export default function AboutPage() {
                 )}
               </div>
               <div className="relative mt-8 md:mt-0">
-                <div className="bg-gradient-to-br from-[#bc6c25]/10 to-[#dda15e]/10 rounded-2xl p-6 md:p-8 min-h-64 md:min-h-80 flex items-center justify-center">
+                <div
+                  className="rounded-2xl p-6 md:p-8 min-h-64 md:min-h-80 flex items-center justify-center"
+                  style={{
+                    backgroundImage: `linear-gradient(to bottom right, rgba(var(--color-primary-rgb), 0.1), rgba(var(--color-secondary-rgb), 0.1))`
+                  }}
+                >
                   <div className="text-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-[#bc6c25] rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                    <div
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                    >
                       <svg
-                        className="w-8 h-8 md:w-10 md:h-10 text-white"
+                        className="w-8 h-8 md:w-10 md:h-10"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
+                        style={{ color: "var(--color-text-light)" }}
                       >
                         <path
                           strokeLinecap="round"
@@ -68,10 +82,16 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">
+                    <h3
+                      className="text-lg md:text-xl font-semibold mb-2"
+                      style={{ color: "var(--color-primary)" }}
+                    >
                       {config.aboutUs.title}
                     </h3>
-                    <p className="text-sm md:text-base text-gray-600 px-2">
+                    <p
+                      className="text-sm md:text-base px-2"
+                      style={{ color: "var(--color-text-dark)" }}
+                    >
                       {config.aboutUs.description}
                     </p>
                   </div>
@@ -79,12 +99,18 @@ export default function AboutPage() {
               </div>
             </div>
             {config.aboutUs.projectDescription && (
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mt-12 mb-6 text-center">
+              <h2
+                className="text-2xl md:text-3xl font-bold mt-12 mb-6 text-center"
+                style={{ color: "var(--color-primary)" }}
+              >
                 {config.aboutUs.projectTitle}
               </h2>
             )}
             {config.aboutUs.projectDescription && (
-              <p className="text-gray-800 mt-6">
+              <p
+                className="mt-6"
+                style={{ color: "var(--color-text-dark)" }}
+              >
                 {config.aboutUs.projectDescription}
               </p>
             )}
@@ -95,7 +121,10 @@ export default function AboutPage() {
       <section className="py-12 md:py-20 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-6xl mx-auto flex flex-col items-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8 md:mb-12 text-center">
+            <h2
+              className="text-3xl md:text-4xl font-bold mb-8 md:mb-12 text-center"
+              style={{ color: "var(--color-primary)" }}
+            >
               {config.aboutUs.partnersTitle}
             </h2>
             <div className="flex flex-wrap justify-center gap-6 md:gap-8">
@@ -157,7 +186,10 @@ export default function AboutPage() {
                         )}
                       </div>
                     </div>
-                    <p className="text-center text-xs md:text-sm text-gray-600 mt-2 md:mt-3 font-medium">
+                    <p
+                      className="text-center text-xs md:text-sm mt-2 md:mt-3 font-medium"
+                      style={{ color: "var(--color-text-dark)" }}
+                    >
                       {partner.name}
                     </p>
                   </Link>
@@ -168,9 +200,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="py-12 md:py-20 bg-gradient-to-r from-[#4b6d23] to-[#283618]">
+      <section
+        className="py-12 md:py-20"
+        style={{
+          backgroundImage: `linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end))`
+        }}
+      >
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center text-white">
+          <div className="text-center" style={{ color: "var(--color-text-light)" }}>
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6">
               {t("about.ctaTitle")}
             </h2>

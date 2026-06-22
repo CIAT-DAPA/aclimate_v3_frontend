@@ -385,20 +385,26 @@ export const spatialService = {
     geoserverBaseUrl: string,
     countryCode: string,
   ): Promise<
-    Array<{ name: string; workspace: string; store: string; layer: string }>
+    Array<{ name: string; workspace: string; store: string; layer: string; level: number; styles: string[] }>
   > => {
     try {
       const workspace = "administrative";
       const wmsUrl = `${geoserverBaseUrl}/${workspace}/wms`;
 
-      const parsedLayers = await getParsedLayers(wmsUrl);
+      // Fetch capabilities XML directly (not through getParsedLayers) to access <Style> elements per layer
+      const baseUrl = wmsUrl.endsWith("/") ? wmsUrl.slice(0, -1) : wmsUrl;
+      const cacheKey = `${baseUrl}?service=WMS&version=1.3.0&request=GetCapabilities`;
 
-      const adminLayers: Array<{
-        name: string;
-        workspace: string;
-        store: string;
-        layer: string;
-      }> = [];
+      if (!capabilitiesCache[cacheKey]) {
+        capabilitiesCache[cacheKey] = (async () => {
+          const res = await fetch(`/api/wms?url=${encodeURIComponent(cacheKey)}`);
+          const text = await res.text();
+          const parser = new DOMParser();
+          return parser.parseFromString(text, "text/xml");
+        })();
+      }
+
+      const xmlDoc = await capabilitiesCache[cacheKey];
 
       // Mapeo de códigos de país a nombres usados en las capas
       const countryNames: Record<string, string> = {
@@ -412,36 +418,55 @@ export const spatialService = {
       const countryName = countryNames[countryCode] || countryCode;
       const pattern = new RegExp(`${countryName}_adm(\\d+)$`);
 
-      // Buscar capas que coincidan con el patrón del país
-      for (const layer of parsedLayers) {
-        const layerName = layer.name;
+      // Extract all Capability/Layer elements
+      const capabilityLayers = xmlDoc.getElementsByTagNameNS?.("*", "Layer") ?? xmlDoc.getElementsByTagName("Layer");
+
+      const adminEntries: Array<{
+        name: string;
+        workspace: string;
+        store: string;
+        layer: string;
+        level: number;
+        styles: string[];
+      }> = [];
+
+      for (let i = 0; i < capabilityLayers.length; i++) {
+        const capLayer = capabilityLayers[i];
+        const nameEl = capLayer.getElementsByTagNameNS?.("*", "Name")?.[0] ?? capLayer.getElementsByTagName("Name")[0];
+        if (!nameEl) continue;
+
+        const layerName = nameEl.textContent || "";
         const match = layerName.match(pattern);
+        if (!match) continue;
 
-        if (match) {
-          const level = match[1];
-          // Extraer el nombre de la capa (store) sin workspace
-          const storeName = `${countryName}_adm${level}`;
-          const fullLayerName = layerName.includes(":")
-            ? layerName
-            : `${workspace}:${storeName}`;
+        const level = parseInt(match[1], 10);
+        const storeName = `${countryName}_adm${level}`;
+        const fullLayerName = layerName.includes(":") ? layerName : `${workspace}:${storeName}`;
 
-          adminLayers.push({
-            name: `Nivel Administrativo ${level}`,
-            workspace: workspace,
-            store: storeName,
-            layer: fullLayerName,
-          });
+        // Extract styles from GetCapabilities for this layer
+        const styles: string[] = [];
+        const styleElements = capLayer.getElementsByTagNameNS?.("*", "Style") ?? capLayer.getElementsByTagName("Style");
+        for (let j = 0; j < styleElements.length; j++) {
+          const styleNameEl = styleElements[j].getElementsByTagNameNS?.("*", "Name")?.[0] ?? styleElements[j].getElementsByTagName("Name")[0];
+          if (styleNameEl && styleNameEl.textContent) {
+            styles.push(styleNameEl.textContent);
+          }
         }
+
+        adminEntries.push({
+          name: `Nivel Administrativo ${level}`,
+          workspace,
+          store: storeName,
+          layer: fullLayerName,
+          level,
+          styles,
+        });
       }
 
       // Ordenar por nivel administrativo
-      adminLayers.sort((a, b) => {
-        const levelA = parseInt(a.store.match(/adm(\d+)$/)?.[1] || "0");
-        const levelB = parseInt(b.store.match(/adm(\d+)$/)?.[1] || "0");
-        return levelA - levelB;
-      });
+      adminEntries.sort((a, b) => a.level - b.level);
 
-      return adminLayers;
+      return adminEntries;
     } catch (error) {
       console.error("Error fetching admin layers from GeoServer:", error);
       return [];

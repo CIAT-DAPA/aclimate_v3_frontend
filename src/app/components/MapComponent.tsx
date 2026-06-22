@@ -201,6 +201,8 @@ interface AdminLayer {
   workspace: string;
   store: string;
   layer: string;
+  level: number;
+  styles: string[];
 }
 
 export interface CustomCommunityMarker {
@@ -848,9 +850,9 @@ const MapComponent = ({
           showAdminLayer &&
           (adminLayers.length > 0 || customMarkers.length > 0) && (
             <LayersControl position="topright">
-              {adminLayers.map((adminLayer, index) => (
+              {adminLayers.map((adminLayer) => (
                 <LayersControl.Overlay
-                  key={`admin-${index}`}
+                  key={`admin-${adminLayer.level}-${adminLayer.layer}`}
                   name={adminLayer.name}
                   checked={true}
                 >
@@ -863,9 +865,13 @@ const MapComponent = ({
                     transparent={true}
                     version="1.1.1"
                     opacity={1}
-                    styles="line"
+                    styles={
+                      adminLayer.styles.length > 0
+                        ? adminLayer.styles[0]
+                        : undefined
+                    }
                     attribution=""
-                    zIndex={1000 + index}
+                    zIndex={1000 + adminLayer.level}
                   />
                 </LayersControl.Overlay>
               ))}
