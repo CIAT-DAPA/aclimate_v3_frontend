@@ -24,11 +24,6 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
     ],
   },
   showScenario: false,
-  colors: {
-    primary: "#bc6c25",
-    secondary: "#dda15e",
-    accent: "#fefae0",
-  },
   station: {
     showClimateIndicator: false,
   },
