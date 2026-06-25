@@ -865,11 +865,7 @@ const MapComponent = ({
                     transparent={true}
                     version="1.1.1"
                     opacity={1}
-                    styles={
-                      adminLayer.styles.length > 0
-                        ? adminLayer.styles[0]
-                        : undefined
-                    }
+                    styles={adminLayer.styles?.[0]}
                     attribution=""
                     zIndex={1000 + adminLayer.level}
                   />
