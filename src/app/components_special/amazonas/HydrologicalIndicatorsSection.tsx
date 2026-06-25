@@ -11,20 +11,16 @@ import {
   Indicator,
 } from "@/app/services/spatialService";
 import HydrologicalIndicatorCard from "./HydrologicalIndicatorCard";
-import type { CustomCommunityMarker } from "@/app/components/MapComponent";
+import type {
+  AdminLayer,
+  CustomCommunityMarker,
+} from "@/app/components/MapComponent";
 
 interface RasterFileInfo {
   url: string;
   layer: string;
   time: string;
   title: string;
-}
-
-interface AdminLayer {
-  name: string;
-  workspace: string;
-  store: string;
-  layer: string;
 }
 
 interface HydrologicalIndicatorsSectionProps {
@@ -45,7 +41,7 @@ interface HydrologicalIndicatorsSectionProps {
 const departments = [
   { id: "amazonas", label: "Amazonas" },
   { id: "caqueta", label: "Caquetá" },
-  // { id: "putumayo", label: "Putumayo" },
+  { id: "putumayo", label: "Putumayo" },
 ];
 
 const departmentCommunities: Record<
@@ -57,6 +53,11 @@ const departmentCommunities: Record<
     { id: "puerto_nariño", label: "Puerto Nariño" },
   ],
   caqueta: [{ id: "san_jose_del_fragua", label: "San José del Fragua" }],
+  putumayo: [
+    { id: "alto_lorenzo", label: "Alto Lorenzo" },
+    { id: "yarinal", label: "Yarinal" },
+    { id: "campo_alegre", label: "Campo Alegre" },
+  ],
 };
 
 const hydrologicalCommunityCoordinates: Record<

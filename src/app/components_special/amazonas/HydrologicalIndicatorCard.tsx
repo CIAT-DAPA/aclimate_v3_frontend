@@ -4,7 +4,10 @@ import dynamic from "next/dynamic";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { Indicator } from "@/app/services/spatialService";
-import type { CustomCommunityMarker } from "@/app/components/MapComponent";
+import type {
+  AdminLayer,
+  CustomCommunityMarker,
+} from "@/app/components/MapComponent";
 
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -20,13 +23,6 @@ const normalizeText = (text: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-
-interface AdminLayer {
-  name: string;
-  workspace: string;
-  store: string;
-  layer: string;
-}
 
 interface HydrologicalIndicatorCardProps {
   indicator: Indicator;
@@ -75,6 +71,8 @@ export default function HydrologicalIndicatorCard({
             workspace: "administrative",
             store: "",
             layer: "administrative:areas_drenaje",
+            level: 99,
+            styles: [],
           },
         ]
       : adminLayers;
