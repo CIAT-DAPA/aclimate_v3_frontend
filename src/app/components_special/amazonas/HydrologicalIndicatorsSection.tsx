@@ -45,7 +45,7 @@ interface HydrologicalIndicatorsSectionProps {
 const departments = [
   { id: "amazonas", label: "Amazonas" },
   { id: "caqueta", label: "Caquetá" },
-  // { id: "putumayo", label: "Putumayo" },
+  { id: "putumayo", label: "Putumayo" },
 ];
 
 const departmentCommunities: Record<
@@ -57,6 +57,11 @@ const departmentCommunities: Record<
     { id: "puerto_nariño", label: "Puerto Nariño" },
   ],
   caqueta: [{ id: "san_jose_del_fragua", label: "San José del Fragua" }],
+  putumayo: [
+    { id: "alto_lorenzo", label: "Alto Lorenzo" },
+    { id: "yarinal", label: "Yarinal" },
+    { id: "campo_alegre", label: "Campo Alegre" },
+  ],
 };
 
 const hydrologicalCommunityCoordinates: Record<
