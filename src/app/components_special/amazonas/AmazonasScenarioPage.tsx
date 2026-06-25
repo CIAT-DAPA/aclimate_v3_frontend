@@ -32,6 +32,7 @@ import { spatialService } from "@/app/services/spatialService";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButton } from "@/app/components/ui/button";
+import type { AdminLayer } from "@/app/components/MapComponent";
 import {
   faFileText,
   faFileArrowDown,
@@ -152,9 +153,7 @@ export default function AmazonasScenarioPage() {
   >([]);
   const [loadingContent, setLoadingContent] = useState<boolean>(false);
 
-  const [adminLayers, setAdminLayers] = useState<
-    Array<{ name: string; workspace: string; store: string; layer: string }>
-  >([]);
+  const [adminLayers, setAdminLayers] = useState<AdminLayer[]>([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState<boolean>(true);
   const [layerDate, setLayerDate] = useState<string>("");
   const [latestForecastTime, setLatestForecastTime] = useState<string>("");

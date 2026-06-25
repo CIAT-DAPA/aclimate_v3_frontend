@@ -11,20 +11,16 @@ import {
   Indicator,
 } from "@/app/services/spatialService";
 import HydrologicalIndicatorCard from "./HydrologicalIndicatorCard";
-import type { CustomCommunityMarker } from "@/app/components/MapComponent";
+import type {
+  AdminLayer,
+  CustomCommunityMarker,
+} from "@/app/components/MapComponent";
 
 interface RasterFileInfo {
   url: string;
   layer: string;
   time: string;
   title: string;
-}
-
-interface AdminLayer {
-  name: string;
-  workspace: string;
-  store: string;
-  layer: string;
 }
 
 interface HydrologicalIndicatorsSectionProps {
