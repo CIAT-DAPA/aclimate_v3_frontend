@@ -196,7 +196,7 @@ interface WMSLayer {
   unit?: string;
 }
 
-interface AdminLayer {
+export interface AdminLayer {
   name: string;
   workspace: string;
   store: string;
