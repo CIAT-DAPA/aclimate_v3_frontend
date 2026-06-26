@@ -73,9 +73,14 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
   const tdControlRef = useRef<any>(null);
   const tdLayerRef = useRef<any>(null);
   const tdInstanceRef = useRef<any>(null);
+  const onTimeChangeRef = useRef(onTimeChange);
   const { locale: i18nLocale, t } = useI18n();
   const localeTag = locale || (i18nLocale === "es" ? "es-ES" : "en-US");
   const invalidLabel = invalidDateLabel || t("timeline.invalidDate");
+
+  useEffect(() => {
+    onTimeChangeRef.current = onTimeChange;
+  }, [onTimeChange]);
 
   useEffect(() => {
     let isMounted = true;
@@ -137,13 +142,13 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
       const initialTime = new Date(timeDimension.getCurrentTime())
         .toISOString()
         .split("T")[0];
-      onTimeChange(initialTime);
+      onTimeChangeRef.current(initialTime);
 
-      timeDimension.on("timechange", () => {
+      timeDimension.on("timeload", () => {
         const currentTime = new Date(timeDimension.getCurrentTime())
           .toISOString()
           .split("T")[0];
-        onTimeChange(currentTime);
+        onTimeChangeRef.current(currentTime);
       });
     };
 
@@ -164,7 +169,6 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
     dimensionName,
     layer,
     wmsUrl,
-    onTimeChange,
     displayFormat,
     opacity,
     localeTag,
