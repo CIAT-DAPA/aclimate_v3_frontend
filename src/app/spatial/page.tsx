@@ -20,7 +20,10 @@ import {
   faFileText,
 } from "@fortawesome/free-solid-svg-icons";
 import HydrologicalIndicatorsSection from "@/app/components_special/amazonas/HydrologicalIndicatorsSection";
-import type { CustomCommunityMarker } from "@/app/components/MapComponent";
+import type {
+  AdminLayer,
+  CustomCommunityMarker,
+} from "@/app/components/MapComponent";
 import { useI18n } from "@/app/contexts/I18nContext";
 import type { Locale } from "@/app/i18n/i18n";
 
@@ -325,9 +328,7 @@ export default function SpatialDataPage() {
     useState<string>("amazonas");
 
   // Estados para capas administrativas dinámicas
-  const [adminLayers, setAdminLayers] = useState<
-    Array<{ name: string; workspace: string; store: string; layer: string }>
-  >([]);
+  const [adminLayers, setAdminLayers] = useState<AdminLayer[]>([]);
   const [loadingAdminLayers, setLoadingAdminLayers] = useState(false);
 
   const timePeriodLabelMap: Record<string, string> = {
