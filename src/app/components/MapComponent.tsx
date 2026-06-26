@@ -316,6 +316,7 @@ const MapComponent = ({
 
   // Estado para guardar el tiempo actual de la capa
   const [currentTime, setCurrentTime] = useState<string>("");
+  const currentTimeRef = useRef<string>("");
 
   // Usar ref para evitar múltiples cargas de favoritos
   const favoritesLoadedRef = useRef(false);
@@ -469,6 +470,7 @@ const MapComponent = ({
 
   // Wrapper para onTimeChange que también actualiza el estado local
   const handleTimeChange = (time: string) => {
+    currentTimeRef.current = time;
     setCurrentTime(time);
     onTimeChange(time);
   };
@@ -547,7 +549,7 @@ const MapComponent = ({
           const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
 
           // Verificar que tengamos el tiempo (desde el estado o desde la capa)
-          const timeToUse = currentTime || layer.time;
+          const timeToUse = currentTimeRef.current || currentTime || layer.time;
 
           const params = new URLSearchParams({
             SERVICE: "WMS",
