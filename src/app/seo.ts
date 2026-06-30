@@ -4,6 +4,7 @@ import { getBranchConfig } from "@/app/configs";
 const DEFAULT_OG_IMAGE = "/assets/img/bg.jpg";
 
 const branchConfig = getBranchConfig();
+const DEFAULT_ACLIMATE_APP_ID = "2";
 
 type AclimateAppSeoConfig = {
   countryName: string;
@@ -11,16 +12,17 @@ type AclimateAppSeoConfig = {
   siteUrl: string;
   siteName: string;
   locale: string;
+  apiCountryId: string;
 };
 
 const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
-  // TODO: confirmar IDs reales
   "1": {
     countryName: "Honduras",
     countryLabel: "Honduras",
     siteUrl: "https://honduras.aclimate.org",
     siteName: "AClimate Honduras",
     locale: "es_HN",
+    apiCountryId: "1",
   },
 
   "2": {
@@ -29,6 +31,7 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     siteUrl: "https://amazonia.aclimate.org",
     siteName: "AClimate Amazonía",
     locale: "es",
+    apiCountryId: "2",
   },
 
   "3": {
@@ -37,6 +40,7 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     siteUrl: "https://nicaragua.aclimate.org",
     siteName: "AClimate Nicaragua",
     locale: "es_NI",
+    apiCountryId: "3",
   },
 
   "4": {
@@ -45,31 +49,40 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     siteUrl: "https://elsalvador.aclimate.org",
     siteName: "AClimate El Salvador",
     locale: "es_SV",
+    apiCountryId: "4",
   },
 };
 
-function normalizeSiteUrl(value?: string) {
-  if (!value) return "";
-  return value.trim().replace(/\/$/, "");
-}
-
-const ACLIMATE_APP_ID = process.env.NEXT_PUBLIC_ACLIMATE_APP_ID?.trim();
-
-if (!ACLIMATE_APP_ID) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_ACLIMATE_APP_ID. Define it in the environment file.",
+export function getAclimateAppId() {
+  return (
+    process.env.NEXT_PUBLIC_ACLIMATE_APP_ID?.trim() ||
+    process.env.ACLIMATE_APP_ID?.trim() ||
+    DEFAULT_ACLIMATE_APP_ID
   );
 }
 
-const appSeoConfig = ACLIMATE_APP_SEO_CONFIGS[ACLIMATE_APP_ID];
+export function getSeoConfig() {
+  const appId = getAclimateAppId();
+  const config = ACLIMATE_APP_SEO_CONFIGS[appId];
 
-if (!appSeoConfig) {
-  throw new Error(
-    `Unknown NEXT_PUBLIC_ACLIMATE_APP_ID "${ACLIMATE_APP_ID}". Add it to ACLIMATE_APP_SEO_CONFIGS.`,
-  );
+  if (!config) {
+    console.warn(
+      `[seo] Unknown AClimate app id "${appId}". Falling back to "${DEFAULT_ACLIMATE_APP_ID}".`,
+    );
+
+    return ACLIMATE_APP_SEO_CONFIGS[DEFAULT_ACLIMATE_APP_ID];
+  }
+
+  return config;
 }
 
-const SITE_URL = normalizeSiteUrl(appSeoConfig.siteUrl);
+export function getApiCountryId() {
+  return getSeoConfig().apiCountryId;
+}
+
+const appSeoConfig = getSeoConfig();
+
+const SITE_URL = appSeoConfig.siteUrl;
 
 export const COUNTRY_NAME = appSeoConfig.countryName;
 export const COUNTRY_LABEL = appSeoConfig.countryLabel;
