@@ -1,16 +1,51 @@
 import type { Metadata } from "next";
-import { COUNTRY_NAME } from "@/app/config";
 import { getBranchConfig } from "@/app/configs";
 
 const DEFAULT_OG_IMAGE = "/assets/img/bg.jpg";
 
 const branchConfig = getBranchConfig();
 
-const BRANCH_SITE_URLS: Record<string, string> = {
-  honduras: "https://honduras.aclimate.org",
-  nicaragua: "https://nicaragua.aclimate.org",
-  salvador: "https://elsalvador.aclimate.org",
-  amazonia: "https://amazonia.aclimate.org",
+type AclimateAppSeoConfig = {
+  countryName: string;
+  countryLabel: string;
+  siteUrl: string;
+  siteName: string;
+  locale: string;
+};
+
+const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
+  // TODO: confirmar IDs reales
+  "1": {
+    countryName: "Honduras",
+    countryLabel: "Honduras",
+    siteUrl: "https://honduras.aclimate.org",
+    siteName: "AClimate Honduras",
+    locale: "es_HN",
+  },
+
+  "2": {
+    countryName: "Amazonia",
+    countryLabel: "Amazonía",
+    siteUrl: "https://amazonia.aclimate.org",
+    siteName: "AClimate Amazonía",
+    locale: "es",
+  },
+
+  "3": {
+    countryName: "Nicaragua",
+    countryLabel: "Nicaragua",
+    siteUrl: "https://nicaragua.aclimate.org",
+    siteName: "AClimate Nicaragua",
+    locale: "es_NI",
+  },
+
+  "4": {
+    countryName: "Salvador",
+    countryLabel: "El Salvador",
+    siteUrl: "https://elsalvador.aclimate.org",
+    siteName: "AClimate El Salvador",
+    locale: "es_SV",
+  },
 };
 
 function normalizeSiteUrl(value?: string) {
@@ -18,23 +53,39 @@ function normalizeSiteUrl(value?: string) {
   return value.trim().replace(/\/$/, "");
 }
 
-const ENV_SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
-const BRANCH_SITE_URL = normalizeSiteUrl(BRANCH_SITE_URLS[branchConfig.name]);
+const ACLIMATE_APP_ID = process.env.NEXT_PUBLIC_ACLIMATE_APP_ID?.trim();
 
-const SITE_URL =
-  ENV_SITE_URL || BRANCH_SITE_URL || "https://amazonia.aclimate.org";
+if (!ACLIMATE_APP_ID) {
+  throw new Error(
+    "Missing NEXT_PUBLIC_ACLIMATE_APP_ID. Define it in the environment file.",
+  );
+}
 
-export const COUNTRY_LABEL = COUNTRY_NAME.replace(/Amazonia/gi, "Amazonía");
-export const SITE_NAME = branchConfig.displayName;
+const appSeoConfig = ACLIMATE_APP_SEO_CONFIGS[ACLIMATE_APP_ID];
+
+if (!appSeoConfig) {
+  throw new Error(
+    `Unknown NEXT_PUBLIC_ACLIMATE_APP_ID "${ACLIMATE_APP_ID}". Add it to ACLIMATE_APP_SEO_CONFIGS.`,
+  );
+}
+
+const SITE_URL = normalizeSiteUrl(appSeoConfig.siteUrl);
+
+export const COUNTRY_NAME = appSeoConfig.countryName;
+export const COUNTRY_LABEL = appSeoConfig.countryLabel;
+export const SITE_NAME = appSeoConfig.siteName;
+export const SITE_LOCALE = appSeoConfig.locale;
+
 export const SITE_DESCRIPTION = buildDescription(
   branchConfig.aboutUs.description,
-  `AClimate ${COUNTRY_LABEL} concentra información climática, agroclimática e hidrometeorológica para la toma de decisiones en la región.`,
+  `${SITE_NAME} concentra información climática, agroclimática e hidrometeorológica para la toma de decisiones en ${COUNTRY_LABEL}.`,
 );
 
 const BASE_KEYWORDS = [
   "AClimate",
   SITE_NAME,
   COUNTRY_LABEL,
+  `AClimate ${COUNTRY_LABEL}`,
   "clima",
   "agroclimático",
   "datos climáticos",
@@ -45,6 +96,7 @@ function buildDescription(value: string, fallback: string) {
   if (!normalized) return fallback;
 
   const firstSentence = normalized.split(/(?<=[.!?])\s+/)[0] || normalized;
+
   return firstSentence.length <= 180
     ? firstSentence
     : `${normalized.slice(0, 177).trimEnd()}...`;
@@ -80,7 +132,7 @@ export function buildRootMetadata(): Metadata {
       description: SITE_DESCRIPTION,
       type: "website",
       siteName: title,
-      locale: "es",
+      locale: SITE_LOCALE,
       url: getAbsoluteUrl("/"),
       images: [DEFAULT_OG_IMAGE],
     },
@@ -89,9 +141,6 @@ export function buildRootMetadata(): Metadata {
       title,
       description: SITE_DESCRIPTION,
       images: [DEFAULT_OG_IMAGE],
-    },
-    alternates: {
-      canonical: getAbsoluteUrl("/"),
     },
   };
 }
@@ -111,9 +160,13 @@ export function buildPageMetadata({
 }): Metadata {
   const canonical = getAbsoluteUrl(pathname);
 
+  const fullTitle = title.includes("AClimate")
+    ? title
+    : `${title} | ${SITE_NAME}`;
+
   return {
     metadataBase: getMetadataBase(),
-    title,
+    title: fullTitle,
     description,
     keywords: [...BASE_KEYWORDS, ...keywords],
     robots: {
@@ -121,17 +174,17 @@ export function buildPageMetadata({
       follow: true,
     },
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       type,
       siteName: SITE_NAME,
-      locale: "es",
+      locale: SITE_LOCALE,
       url: canonical,
       images: [DEFAULT_OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: fullTitle,
       description,
       images: [DEFAULT_OG_IMAGE],
     },
