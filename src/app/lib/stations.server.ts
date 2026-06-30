@@ -4,6 +4,7 @@ import {
   KEYCLOAK_REALM,
   KEYCLOAK_URL,
 } from "@/app/config";
+import { getApiCountryId } from "@/app/seo";
 
 export type SeoStation = {
   id?: number | string;
@@ -37,7 +38,7 @@ export type SeoStation = {
   };
 };
 
-const COUNTRY_ID = process.env.NEXT_PUBLIC_ACLIMATE_APP_ID;
+const getCountryId = () => getApiCountryId();
 
 export const buildLocationLabel = (station: SeoStation | null) => {
   const parts = [station?.admin1_name, station?.admin2_name].filter(Boolean);
@@ -93,18 +94,13 @@ export const getClientToken = async (): Promise<string | null> => {
 
 export const getStationsForSitemap = async (): Promise<SeoStation[]> => {
   try {
-    if (!COUNTRY_ID) {
-      console.error(
-        "[sitemap] Missing NEXT_PUBLIC_ACLIMATE_APP_ID. Cannot load stations.",
-      );
-      return [];
-    }
+    const countryId = getCountryId();
 
     const token = await getClientToken();
     if (!token) return [];
 
     const url = `${API_URL}/locations/by-country-ids-with-data?country_ids=${encodeURIComponent(
-      COUNTRY_ID,
+      countryId,
     )}&days=0`;
 
     const response = await fetch(url, {
@@ -140,6 +136,8 @@ export const getStationByMachineName = async (
   machineName: string,
 ): Promise<SeoStation | null> => {
   try {
+    const countryId = getCountryId();
+
     const token = await getClientToken();
     if (!token) return null;
 
@@ -161,13 +159,9 @@ export const getStationByMachineName = async (
     const data = await response.json();
     const stations = normalizeStationsResponse(data);
 
-    if (!COUNTRY_ID) {
-      return stations[0] ?? null;
-    }
-
     return (
       stations.find(
-        (station) => station.country_id?.toString() === COUNTRY_ID.toString(),
+        (station) => station.country_id?.toString() === countryId.toString(),
       ) ??
       stations[0] ??
       null
