@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { buildPageMetadata, COUNTRY_LABEL, SITE_NAME } from "@/app/seo";
 
-export async function generateMetadata(): Promise<Metadata> {
+export function generateMetadata(): Metadata {
   const title = "Escenarios climáticos";
   const description = `Escenarios climáticos mensuales para ${COUNTRY_LABEL}. Consulta características y recomendaciones por comunidad.`;
 
