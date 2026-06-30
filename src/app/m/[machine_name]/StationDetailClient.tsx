@@ -1,0 +1,2130 @@
+// app/m/[machine_name]/page.tsx
+"use client";
+
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRef } from "react";
+import dynamic from "next/dynamic";
+import { stationService } from "@/app/services/stationService";
+import { monitoryService } from "@/app/services/monitoryService";
+import {
+  spatialService,
+  IndicatorCategory,
+} from "@/app/services/spatialService";
+import { Station } from "@/app/types/Station";
+import Link from "next/link";
+import ClimateChart from "@/app/components/ClimateChart";
+import DecadeCalendarChart from "@/app/components/DecadeCalendarChart";
+import { CanicVisualizer } from "@/app/components/CanicVisualizer";
+import { PrcdVisualizer } from "@/app/components/PrcdVisualizer";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faMapMarkerAlt,
+  faMapPin,
+  faStar as faStarSolid,
+  faFileArrowDown,
+  faSatellite,
+  faDatabase,
+  faFingerprint,
+} from "@fortawesome/free-solid-svg-icons";
+import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
+import { useAuth } from "@/app/hooks/useAuth";
+import { useCountry } from "@/app/contexts/CountryContext";
+import { useBranchConfig } from "@/app/configs";
+import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton, UIButtonLink } from "@/app/components/ui/button";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
+import {
+  addUserStation,
+  deleteUserStation,
+  getUserStations,
+} from "@/app/services/userService";
+import {
+  VARIABLE_CONFIG,
+  countryCodeMap,
+  MONTHS,
+  indicatorPeriodOptions,
+  getIndicatorColor,
+} from "./config";
+
+// Cargar ForecastSection dinámicamente sin SSR (se carga en background)
+const ForecastSection = dynamic(
+  () => import("@/app/components/ForecastSection"),
+  { ssr: false },
+);
+
+// Cargar el mapa dinámicamente sin SSR
+const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 w-full flex items-center justify-center bg-gray-100 rounded-lg">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+    </div>
+  ),
+});
+
+type StationDetailClientProps = {
+  machineName: string;
+  initialStation: Station;
+};
+
+export default function StationDetailClient({
+  machineName,
+  initialStation,
+}: StationDetailClientProps) {
+  const machine_name = machineName;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { countryId } = useCountry();
+  const branchConfig = useBranchConfig();
+  const [isClimaticOpen, setIsClimaticOpen] = useState(true);
+  const [isIndicatorsOpen, setIsIndicatorsOpen] = useState(true);
+  const [timePeriod, setTimePeriod] = useState<string>("daily");
+  const [timePeriodIndicators, setTimePeriodIndicators] =
+    useState<string>("monthly");
+
+  // Estados independientes para cada acordeón
+  const [filterDatesClimatic, setFilterDatesClimatic] = useState<{
+    start: string;
+    end: string;
+  }>({ start: "", end: "" });
+  const [filterDatesIndicators, setFilterDatesIndicators] = useState<{
+    start: string;
+    end: string;
+  }>({ start: "", end: "" });
+
+  const [station, setStation] = useState<Station | null>(initialStation);
+  const [loading, setLoading] = useState(false);
+  const [stationDates, setStationDates] = useState<any>(null);
+  const [DataClimaticDates, setDataClimaticDates] = useState<any>(null);
+  const [IndicatorsDates, setIndicatorsDates] = useState<any>(null);
+
+  // Estados para favoritos
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
+
+  // Estados para comparación satelital
+  const [isSatelliteActive, setIsSatelliteActive] = useState(false);
+  const [loadingSatellite, setLoadingSatellite] = useState(false);
+  const [satelliteData, setSatelliteData] = useState<any>(null);
+
+  const { authenticated, userValidatedInfo, loading: authLoading } = useAuth();
+  const { t } = useI18n();
+
+  const resolvedUserId = userValidatedInfo?.user?.id ?? userValidatedInfo?.id;
+
+  // Datos completos sin filtrar (cargados una sola vez)
+  const [climateHistoricalDataFull, setClimateHistoricalDataFull] =
+    useState<any>(null);
+  const [indicatorsDataFull, setIndicatorsDataFull] = useState<any>(null);
+
+  // Datos filtrados para visualización
+  const [climateHistoricalData, setClimateHistoricalData] = useState<any>(null);
+  const [indicatorsData, setIndicatorsData] = useState<any>(null);
+
+  const [loadingCharts, setLoadingCharts] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Estados para períodos disponibles de indicadores
+  const [availableIndicatorPeriods, setAvailableIndicatorPeriods] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [loadingPeriods, setLoadingPeriods] = useState(true);
+
+  // Estados para categorías de indicadores
+  const [indicatorCategories, setIndicatorCategories] = useState<
+    IndicatorCategory[]
+  >([]);
+  const [selectedIndicatorCategory, setSelectedIndicatorCategory] =
+    useState<IndicatorCategory | null>(null);
+  const [loadingIndicatorCategories, setLoadingIndicatorCategories] =
+    useState(false);
+  const [categoryIndicatorShortNames, setCategoryIndicatorShortNames] =
+    useState<Set<string>>(new Set());
+  const [categoryIndicatorDescriptions, setCategoryIndicatorDescriptions] =
+    useState<Record<string, string>>({});
+
+  // Estados para control de búsqueda manual
+  const [searchTrigger, setSearchTrigger] = useState(0);
+  const [searchTriggerIndicators, setSearchTriggerIndicators] = useState(0);
+
+  // Convertir fecha a formato de mes (para climatología)
+  const dateToMonthFormat = useCallback((date: string) => {
+    if (!date) return "2000-01-01";
+    const month = date.split("-")[1];
+    return `2000-${month}-01`;
+  }, []);
+
+  const monthToDateFormat = useCallback((monthValue: string) => {
+    return `2000-${monthValue}-01`;
+  }, []);
+
+  // Función para limitar el rango de fechas a máximo 3 años
+  const limitDateRangeToYears = useCallback(
+    (startDate: string, endDate: string, maxYears: number = 3) => {
+      if (!startDate || !endDate) return { start: startDate, end: endDate };
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const yearsDiff = end.getFullYear() - start.getFullYear();
+
+      if (yearsDiff <= maxYears) {
+        return { start: startDate, end: endDate };
+      }
+
+      // Limitar a los últimos 3 años
+      const limitedStart = new Date(end);
+      limitedStart.setFullYear(end.getFullYear() - maxYears);
+
+      return {
+        start: limitedStart.toISOString().split("T")[0],
+        end: endDate,
+      };
+    },
+    [],
+  );
+
+  const getLast30Days = useCallback((endDate: string) => {
+    if (!endDate) return { start: "", end: "" };
+
+    const end = new Date(endDate);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 30);
+
+    return {
+      start: start.toISOString().split("T")[0],
+      end: endDate,
+    };
+  }, []);
+
+  // Función para verificar si el rango de fechas es mayor a 3 años
+  const isDateRangeTooLarge = useCallback(
+    (startDate: string, endDate: string) => {
+      if (!startDate || !endDate) return false;
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const yearsDiff = end.getFullYear() - start.getFullYear();
+
+      return yearsDiff > 3;
+    },
+    [],
+  );
+
+  // Función para filtrar datos climáticos en el cliente
+  const filterClimateData = useCallback(
+    (data: any, startDate: string, endDate: string, period: string) => {
+      if (!data) return null;
+
+      const filtered: any = {};
+      // Para climatología, filtrar por mes (formato 2000-MM-01)
+      if (period === "climatology") {
+        const startMonth = parseInt(startDate.split("-")[1]);
+        const endMonth = parseInt(endDate.split("-")[1]);
+
+        Object.keys(data).forEach((key) => {
+          const dates = data[key].dates;
+          const values = data[key].values;
+
+          if (!Array.isArray(dates) || !Array.isArray(values)) return;
+
+          // Para climatología, las fechas son nombres de mes abreviados (ej: "Ene", "Feb", ...)
+          const climMonthNames = [
+            "Ene",
+            "Feb",
+            "Mar",
+            "Abr",
+            "May",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dic",
+          ];
+          const filteredIndices = dates
+            .map((date: string, index: number) => {
+              // Obtener número de mes (1-12) a partir del nombre abreviado
+              const monthIndex = climMonthNames.indexOf(date) + 1;
+              return { date, index, monthIndex };
+            })
+            .filter(({ monthIndex }: { monthIndex: number }) => {
+              if (monthIndex === 0) return false; // nombre de mes no reconocido
+              // Manejar casos donde el rango puede cruzar el año (ej: Oct-Feb)
+              if (startMonth <= endMonth) {
+                return monthIndex >= startMonth && monthIndex <= endMonth;
+              } else {
+                return monthIndex >= startMonth || monthIndex <= endMonth;
+              }
+            });
+
+          filtered[key] = {
+            dates: filteredIndices.map(({ date }: { date: string }) => date),
+            values: filteredIndices.map(
+              ({ index }: { index: number }) => values[index],
+            ),
+          };
+        });
+      } else {
+        // Para daily y monthly, filtrar por fecha
+        Object.keys(data).forEach((key) => {
+          const dates = data[key].dates;
+          const values = data[key].values;
+
+          if (!Array.isArray(dates) || !Array.isArray(values)) return;
+
+          const filteredIndices = dates
+            .map((date: string, index: number) => ({ date, index }))
+            .filter(
+              ({ date }: { date: string }) =>
+                date >= startDate && date <= endDate,
+            );
+
+          filtered[key] = {
+            dates: filteredIndices.map(({ date }: { date: string }) => date),
+            values: filteredIndices.map(
+              ({ index }: { index: number }) => values[index],
+            ),
+          };
+        });
+      }
+
+      return filtered;
+    },
+    [],
+  );
+
+  // Función para filtrar datos de indicadores en el cliente
+  const filterIndicatorsData = useCallback(
+    (data: any, startDate: string, endDate: string) => {
+      if (!data) return null;
+
+      const filtered: any = {};
+      Object.keys(data).forEach((key) => {
+        const indicator = data[key];
+        const dates = indicator.dates;
+        const values = indicator.values;
+
+        const filteredIndices = dates
+          .map((date: string, index: number) => ({ date, index }))
+          .filter(
+            ({ date }: { date: string }) =>
+              date >= startDate && date <= endDate,
+          );
+
+        filtered[key] = {
+          name: indicator.name,
+          unit: indicator.unit,
+          dates: filteredIndices.map(({ date }: { date: string }) => date),
+          values: filteredIndices.map(
+            ({ index }: { index: number }) => values[index],
+          ),
+        };
+      });
+
+      return filtered;
+    },
+    [],
+  );
+
+  // Función para obtener datos satelitales
+  const toggleSatelliteComparison = useCallback(async () => {
+    if (!station || !filterDatesClimatic.start || !filterDatesClimatic.end) {
+      return;
+    }
+
+    setLoadingSatellite(true);
+
+    try {
+      if (isSatelliteActive) {
+        // Desactivar comparación
+        setIsSatelliteActive(false);
+        setSatelliteData(null);
+      } else {
+        // Al activar comparación satelital, limitar a máximo 3 años
+        const limitedDates = limitDateRangeToYears(
+          filterDatesClimatic.start,
+          filterDatesClimatic.end,
+          3,
+        );
+
+        // Actualizar las fechas del filtro climático a este rango limitado
+        setFilterDatesClimatic({
+          start: limitedDates.start,
+          end: limitedDates.end,
+        });
+
+        // Obtener código de país dinámicamente
+        const countryCode = countryCodeMap[countryId || "2"] || "hn";
+
+        // Construir workspace dinámico basado en el período
+        const workspace = `climate_historical_${timePeriod}`;
+
+        // Obtener datos satelitales para todas las variables disponibles EN PARALELO
+        const satelliteDataByVariable: any = {};
+
+        // Mapeo de variables a sufijos espaciales
+        const variableMapping: { [key: string]: string } = {
+          prec: "prec",
+          Prec: "prec",
+          precipitation: "prec",
+          t_max: "tmax",
+          tmax: "tmax",
+          T_Max: "tmax",
+          t_min: "tmin",
+          tmin: "tmin",
+          T_Min: "tmin",
+          sol_rad: "srad",
+          srad: "srad",
+          Solar_Rad: "srad",
+        };
+
+        // Obtener las variables que actualmente tienen datos climáticos
+        const availableVariables = climateHistoricalDataFull
+          ? Object.keys(climateHistoricalDataFull)
+          : [];
+
+        // Crear todas las promesas para llamadas en paralelo
+        const satellitePromises = availableVariables
+          .map((varKey) => {
+            const spatialVar = variableMapping[varKey];
+            if (spatialVar) {
+              // Construir store dinámico para esta variable
+              const store = `climate_historical_${timePeriod}_${countryCode}_${spatialVar}`;
+
+              return spatialService
+                .getPointData({
+                  coordinates: [[station.longitude, station.latitude]],
+                  start_date: limitedDates.start,
+                  end_date: limitedDates.end,
+                  workspace: workspace,
+                  store: store,
+                  temporality:
+                    timePeriod === "climatology" ? "monthly" : timePeriod,
+                })
+                .then((response) => ({
+                  varKey,
+                  data: response.data,
+                }))
+                .catch((error) => {
+                  console.warn(
+                    `No hay datos satelitales disponibles para ${varKey}:`,
+                    error,
+                  );
+                  return { varKey, data: null };
+                });
+            }
+            return Promise.resolve({ varKey, data: null });
+          })
+          .filter(Boolean); // Filtrar nulls
+
+        // Ejecutar todas las llamadas en paralelo
+        const results = await Promise.all(satellitePromises);
+
+        // Procesar resultados
+        results.forEach((result) => {
+          if (result.data && result.data.length > 0) {
+            satelliteDataByVariable[result.varKey] = result.data;
+          }
+        });
+
+        setSatelliteData(satelliteDataByVariable);
+        setIsSatelliteActive(true);
+      }
+    } catch (error) {
+      console.error("Error en comparación satelital:", error);
+      setIsSatelliteActive(false);
+      setSatelliteData(null);
+    } finally {
+      setLoadingSatellite(false);
+    }
+  }, [
+    station,
+    filterDatesClimatic.start,
+    filterDatesClimatic.end,
+    timePeriod,
+    isSatelliteActive,
+    countryId,
+    limitDateRangeToYears,
+    climateHistoricalDataFull,
+  ]);
+
+  // Datos de gráficos climáticos procesados y limitados
+  const climateChartsData = useMemo(() => {
+    if (!climateHistoricalData) return null;
+
+    const maxPoints = 1000; // Limitar a 1000 puntos para rendimiento
+    const charts: any = {};
+
+    // Procesar todas las variables que existen en los datos
+    Object.keys(climateHistoricalData).forEach((varKey) => {
+      const varData = climateHistoricalData[varKey];
+      const config = VARIABLE_CONFIG[varKey];
+
+      if (varData && varData.dates && varData.values && config) {
+        let { dates, values } = varData;
+
+        // Obtener el rango total de fechas de los datos completos (no filtrados)
+        const fullVarData = climateHistoricalDataFull?.[varKey];
+        const totalMinDate =
+          fullVarData?.dates?.length > 0 ? fullVarData.dates[0] : null;
+        const totalMaxDate =
+          fullVarData?.dates?.length > 0
+            ? fullVarData.dates[fullVarData.dates.length - 1]
+            : null;
+
+        // Si hay demasiados datos, hacer muestreo uniforme
+        if (dates.length > maxPoints) {
+          const step = Math.floor(dates.length / maxPoints);
+          const sampledDates = [];
+          const sampledValues = [];
+
+          for (let i = 0; i < dates.length; i += step) {
+            sampledDates.push(dates[i]);
+            sampledValues.push(values[i]);
+          }
+
+          // Asegurar que se incluya el último punto
+          if (
+            sampledDates[sampledDates.length - 1] !== dates[dates.length - 1]
+          ) {
+            sampledDates.push(dates[dates.length - 1]);
+            sampledValues.push(values[values.length - 1]);
+          }
+
+          dates = sampledDates;
+          values = sampledValues;
+        }
+
+        // Preparar datasets base
+        const datasets: Array<{
+          label: string;
+          color: string;
+          data: any;
+          dates: any;
+          strokeDashArray?: number;
+        }> = [
+          {
+            label: "Datos estación",
+            color: config.color,
+            data: values,
+            dates: dates,
+          },
+        ];
+
+        // Agregar datos satelitales si están disponibles para esta variable
+        if (isSatelliteActive && satelliteData && satelliteData[varKey]) {
+          // Crear un mapa de fechas de la estación para matching rápido
+          const stationDateMap = new Set(dates);
+
+          // Obtener el rango de valores de la estación para referencia
+          const stationValues = values.filter(
+            (v: any) => v != null && isFinite(v),
+          );
+          const maxStationValue = Math.max(...stationValues, 0);
+          const minStationValue = Math.min(...stationValues, 0);
+          const avgStationValue =
+            stationValues.length > 0
+              ? stationValues.reduce((a: any, b: any) => a + b, 0) /
+                stationValues.length
+              : 0;
+
+          // Filtrar y mapear datos satelitales que coincidan con las fechas de la estación
+          const matchedSatelliteData = satelliteData[varKey]
+            .filter((item: any) => {
+              if (
+                !stationDateMap.has(item.date) ||
+                typeof item.value !== "number" ||
+                !isFinite(item.value)
+              ) {
+                return false;
+              }
+
+              let value = Number(item.value);
+
+              // Filtros específicos por tipo de variable
+              if (
+                varKey === "prec" ||
+                varKey === "Prec" ||
+                varKey === "precipitation"
+              ) {
+                // Para precipitación: valores no negativos y razonables
+                return value >= 0 && value < 1000;
+              } else if (
+                varKey.includes("temp") ||
+                varKey.includes("t_max") ||
+                varKey.includes("t_min") ||
+                varKey.includes("T_Max") ||
+                varKey.includes("T_Min")
+              ) {
+                // Para temperatura: rango razonable (-50°C a 60°C)
+                return value >= -50 && value <= 60;
+              } else if (
+                varKey.includes("sol_rad") ||
+                varKey.includes("srad") ||
+                varKey.includes("Solar_Rad")
+              ) {
+                // Para radiación solar: valores no negativos y razonables
+                return value >= 0 && value <= 50;
+              } else {
+                // Para otras variables: filtro general
+                return isFinite(value);
+              }
+            })
+            .sort(
+              (a: any, b: any) =>
+                new Date(a.date).getTime() - new Date(b.date).getTime(),
+            );
+
+          if (matchedSatelliteData.length > 0) {
+            // Crear arrays paralelos para fechas y valores satelitales
+            const satelliteDates = matchedSatelliteData.map(
+              (item: any) => item.date,
+            );
+            const satelliteValues = matchedSatelliteData.map((item: any) => {
+              let value = Number(item.value);
+
+              // Procesamiento específico por tipo de variable
+              if (
+                varKey === "prec" ||
+                varKey === "Prec" ||
+                varKey === "precipitation"
+              ) {
+                // Para precipitación: conversión de unidades si es necesario
+                while (value > 1000 && value > maxStationValue * 10) {
+                  value = value / 1000;
+                }
+                // Si después de la conversión el valor sigue siendo muy alto
+                if (value > maxStationValue * 5) {
+                  value = value / 1000;
+                }
+                value = Math.max(0, value);
+              }
+
+              // Redondear para evitar decimales excesivos
+              return Math.round(value * 100) / 100;
+            });
+
+            // Solo agregar si hay valores válidos después del procesamiento
+            if (satelliteValues.length > 0) {
+              datasets.push({
+                label: "Datos satelitales",
+                color: "#FF6B6B",
+                strokeDashArray: 6,
+                data: satelliteValues,
+                dates: satelliteDates,
+              });
+            }
+          }
+        }
+
+        charts[varKey] = {
+          title: config.title,
+          unit: config.unit,
+          color: config.color,
+          chartType: config.chartType || "line",
+          totalDateRange: { minDate: totalMinDate, maxDate: totalMaxDate }, // Rango total disponible
+          datasets: datasets,
+        };
+      }
+    });
+
+    return Object.keys(charts).length > 0 ? charts : null;
+  }, [
+    climateHistoricalData,
+    climateHistoricalDataFull,
+    isSatelliteActive,
+    satelliteData,
+  ]);
+
+  // Efecto para cargar períodos disponibles de indicadores
+  useEffect(() => {
+    const fetchAvailablePeriods = async () => {
+      if (!machine_name) return;
+
+      try {
+        setLoadingPeriods(true);
+        // Primero obtener el station id desde machine_name
+        const stationData = await stationService.getByMachineName(machine_name);
+        if (!stationData || stationData.length === 0) return;
+
+        const stationId = stationData[0].id.toString();
+        const periods = await monitoryService.getAvailablePeriods(stationId);
+
+        // Mapeo de labels en inglés a español
+        const labelMap: Record<string, string> = {
+          Daily: t("stationPage.period.daily"),
+          Monthly: t("stationPage.period.monthly"),
+          Annual: t("stationPage.period.annual"),
+          Seasonal: t("stationPage.period.seasonal"),
+          Decadal: t("stationPage.period.decadal"),
+          Other: t("stationPage.period.other"),
+        };
+
+        // Filtrar solo los períodos que tienen datos y traducir labels
+        const periodsWithData = periods
+          .filter((period) => period.has_data)
+          .map((period) => ({
+            value: period.value,
+            label: labelMap[period.label] || period.label,
+          }));
+        setAvailableIndicatorPeriods(periodsWithData);
+
+        // Si el período actual no está disponible, seleccionar el primero disponible
+        if (
+          periodsWithData.length > 0 &&
+          !periodsWithData.some((p) => p.value === timePeriodIndicators)
+        ) {
+          setTimePeriodIndicators(periodsWithData[0].value);
+        }
+      } catch (error) {
+        console.error("Error cargando períodos disponibles:", error);
+        // En caso de error, mantener las opciones por defecto
+        setAvailableIndicatorPeriods([
+          { value: "monthly", label: t("stationPage.period.monthly") },
+          { value: "annual", label: t("stationPage.period.annual") },
+        ]);
+      } finally {
+        setLoadingPeriods(false);
+      }
+    };
+
+    fetchAvailablePeriods();
+  }, [machine_name, t]);
+
+  // Efecto para cargar categorías de indicadores
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!countryId) return;
+
+      setLoadingIndicatorCategories(true);
+      try {
+        const categories =
+          await spatialService.getIndicatorCategories(countryId);
+        setIndicatorCategories(categories);
+        // TODO: remove the temp filter when temperature indicators are available
+        const visibleCategories = categories.filter(
+          (c) => !c.name.toLowerCase().includes("temp"),
+        );
+        if (visibleCategories.length > 0) {
+          setSelectedIndicatorCategory(visibleCategories[0]);
+        } else if (categories.length > 0) {
+          setSelectedIndicatorCategory(categories[0]);
+        } else {
+          setSelectedIndicatorCategory(null);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías de indicadores:", error);
+        setIndicatorCategories([]);
+        setSelectedIndicatorCategory(null);
+      } finally {
+        setLoadingIndicatorCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [countryId]);
+
+  // Efecto para cargar los short_names de indicadores de la categoría seleccionada
+  useEffect(() => {
+    const loadCategoryIndicators = async () => {
+      if (!countryId || !selectedIndicatorCategory) {
+        setCategoryIndicatorShortNames(new Set());
+        return;
+      }
+      try {
+        const indicators = await spatialService.getIndicators(
+          countryId,
+          timePeriodIndicators,
+          selectedIndicatorCategory.id,
+        );
+        setCategoryIndicatorShortNames(
+          new Set(indicators.map((ind) => ind.short_name)),
+        );
+        const descMap: Record<string, string> = {};
+        indicators.forEach((ind) => {
+          descMap[ind.short_name] = ind.description || "";
+        });
+        setCategoryIndicatorDescriptions(descMap);
+      } catch (error) {
+        console.error("Error cargando indicadores por categoría:", error);
+        setCategoryIndicatorShortNames(new Set());
+        setCategoryIndicatorDescriptions({});
+      }
+    };
+
+    loadCategoryIndicators();
+  }, [countryId, selectedIndicatorCategory, timePeriodIndicators]);
+
+  // Efecto para cargar datos de la estación (solo una vez al montar)
+  useEffect(() => {
+    const fetchStation = async () => {
+      try {
+        setLoading(true);
+        const stationData = await stationService.getByMachineName(machine_name);
+        setStation(stationData[0]);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("stationPage.errors.loadingStation"),
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (machine_name && !initialStation) {
+      fetchStation();
+    }
+  }, [machine_name, t, initialStation]);
+
+  // Efecto para cargar estado de favorito
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (authLoading || !authenticated || !resolvedUserId || !station) {
+        return;
+      }
+
+      try {
+        const userStations = await getUserStations(resolvedUserId);
+        // Usar el mismo ID que MapComponent: station.id (location_id en backend)
+        const stationId = station.id?.toString() || "";
+        const isFav = userStations.some(
+          (s: any) =>
+            (s.location_id?.toString() || s.ws_ext_id?.toString() || "") ===
+            stationId,
+        );
+        setIsFavorite(isFav);
+      } catch (error) {
+        console.error("Error al verificar favorito:", error);
+      }
+    };
+
+    checkFavorite();
+  }, [authLoading, authenticated, resolvedUserId, station]);
+
+  // Handler para agregar/eliminar favorito
+  const toggleFavorite = async () => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!authenticated || !resolvedUserId) {
+      return;
+    }
+
+    if (!station) {
+      return;
+    }
+
+    setLoadingFavorite(true);
+
+    try {
+      const userId = resolvedUserId;
+      // Usar station.id igual que MapComponent
+      const stationId = station.id?.toString() || "";
+
+      if (isFavorite) {
+        await deleteUserStation(userId, stationId);
+        setIsFavorite(false);
+      } else {
+        await addUserStation(userId, {
+          ws_ext_id: stationId,
+          notification: {
+            email: true,
+            push: false,
+          },
+        });
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Error al gestionar favorito:", error);
+      // Si el error es porque ya existe, actualizar el estado
+      if (error instanceof Error && error.message.includes("favoritos")) {
+        setIsFavorite(true);
+      }
+    } finally {
+      setLoadingFavorite(false);
+    }
+  };
+
+  // Efecto para cargar rangos de fechas cuando cambia el período
+  useEffect(() => {
+    if (station) {
+      const fetchDates = async () => {
+        try {
+          const dates = await monitoryService.getStationDates(
+            station.id.toString(),
+            timePeriod,
+            false,
+          );
+          setDataClimaticDates({ ...dates, _period: timePeriod });
+
+          const datesIndicators = await monitoryService.getStationDates(
+            station.id.toString(),
+            timePeriodIndicators,
+            true,
+          );
+          setIndicatorsDates({
+            ...datesIndicators,
+            _period: timePeriodIndicators,
+          });
+
+          // Obtener la fecha mínima y máxima entre ambos objetos
+          // Si alguno tiene datos, usamos esos. Si ambos tienen, comparamos.
+          let minDate = "";
+          let maxDate = "";
+
+          if (dates.minDate && dates.maxDate) {
+            minDate = dates.minDate;
+            maxDate = dates.maxDate;
+          }
+
+          if (datesIndicators.minDate && datesIndicators.maxDate) {
+            if (
+              !minDate ||
+              new Date(datesIndicators.minDate) < new Date(minDate)
+            ) {
+              minDate = datesIndicators.minDate;
+            }
+            if (
+              !maxDate ||
+              new Date(datesIndicators.maxDate) > new Date(maxDate)
+            ) {
+              maxDate = datesIndicators.maxDate;
+            }
+          }
+
+          if (minDate && maxDate) {
+            setStationDates({ minDate, maxDate });
+          }
+
+          // SIEMPRE resetear filtros cuando cambia el período
+          if (timePeriod === "climatology") {
+            const start = dateToMonthFormat(dates.minDate || "2000-01-01");
+            const end = dateToMonthFormat("2000-12-01");
+            setFilterDatesClimatic({ start, end });
+          } else {
+            // Cargar inicialmente los últimos 30 días del dato disponible
+            const last30Days = getLast30Days(dates.maxDate || "");
+            setFilterDatesClimatic({
+              start: last30Days.start,
+              end: last30Days.end,
+            });
+          }
+
+          // Resetear filtros de indicadores según el período
+          // Para 'monthly', 'annual' o 'seasonal', usar todo el rango disponible
+          // Para otros períodos, usar los últimos 30 días
+          if (
+            timePeriodIndicators === "monthly" ||
+            timePeriodIndicators === "annual" ||
+            timePeriodIndicators === "seasonal"
+          ) {
+            setFilterDatesIndicators({
+              start: datesIndicators.minDate || "",
+              end: datesIndicators.maxDate || "",
+            });
+          } else {
+            const last30DaysIndicators = getLast30Days(
+              datesIndicators.maxDate || "",
+            );
+            setFilterDatesIndicators({
+              start: last30DaysIndicators.start,
+              end: last30DaysIndicators.end,
+            });
+          }
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : t("stationPage.errors.loadingDates"),
+          );
+        }
+      };
+
+      fetchDates();
+    }
+  }, [
+    station,
+    timePeriod,
+    timePeriodIndicators,
+    dateToMonthFormat,
+    getLast30Days,
+    t,
+  ]);
+
+  // Al cambiar el período climático, limpiar de inmediato los datos para evitar parpadeo de gráficos anteriores
+  useEffect(() => {
+    setLoadingCharts(true);
+    setClimateHistoricalData(null);
+    setClimateHistoricalDataFull(null);
+  }, [timePeriod]);
+
+  // Al cambiar el período de indicadores, limpiar de inmediato los datos mostrados para evitar parpadeo
+  useEffect(() => {
+    setIndicatorsData(null);
+    setIndicatorsDataFull(null);
+  }, [timePeriodIndicators]);
+
+  // Efecto para cargar datos climáticos COMPLETOS cuando cambian las fechas calculadas para el período actual
+  useEffect(() => {
+    if (station) {
+      const fetchClimateData = async () => {
+        try {
+          if (!DataClimaticDates?.minDate || !DataClimaticDates?.maxDate) {
+            return;
+          }
+          // Evitar llamadas con fechas de un período distinto al seleccionado
+          if (DataClimaticDates?._period !== timePeriod) {
+            return;
+          }
+
+          setLoadingCharts(true);
+
+          const climateHistorical = await monitoryService.getClimateHistorical(
+            station.id.toString(),
+            timePeriod,
+            DataClimaticDates.minDate,
+            DataClimaticDates.maxDate,
+          );
+
+          setClimateHistoricalDataFull(climateHistorical);
+        } catch (err) {
+          console.error("Error loading climate data:", err);
+          setClimateHistoricalDataFull(null);
+        } finally {
+          setLoadingCharts(false);
+        }
+      };
+      fetchClimateData();
+    }
+  }, [
+    station,
+    DataClimaticDates?.minDate,
+    DataClimaticDates?.maxDate,
+    DataClimaticDates?._period,
+    timePeriod,
+  ]);
+
+  // Efecto para filtrar datos climáticos cuando se hace búsqueda manual O cuando hay datos completos iniciales
+  useEffect(() => {
+    if (
+      !climateHistoricalDataFull ||
+      !filterDatesClimatic.start ||
+      !filterDatesClimatic.end
+    ) {
+      setClimateHistoricalData(null);
+      return;
+    }
+
+    // Para búsquedas manuales (no carga inicial), aplicar límite de 3 años
+    if (searchTrigger > 0) {
+      const limitedDates = limitDateRangeToYears(
+        filterDatesClimatic.start,
+        filterDatesClimatic.end,
+      );
+      if (
+        limitedDates.start !== filterDatesClimatic.start ||
+        limitedDates.end !== filterDatesClimatic.end
+      ) {
+        setFilterDatesClimatic(limitedDates);
+        return;
+      }
+    }
+
+    // Añadir un pequeño delay para evitar actualizaciones muy rápidas
+    const timeoutId = setTimeout(() => {
+      const filtered = filterClimateData(
+        climateHistoricalDataFull,
+        filterDatesClimatic.start,
+        filterDatesClimatic.end,
+        timePeriod,
+      );
+      setClimateHistoricalData(filtered);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    climateHistoricalDataFull,
+    searchTrigger,
+    timePeriod,
+    filterClimateData,
+    limitDateRangeToYears,
+  ]);
+
+  // Efecto para cargar datos de indicadores COMPLETOS cuando cambian las fechas calculadas para el período actual
+  useEffect(() => {
+    const fetchIndicatorsData = async () => {
+      try {
+        if (!station) return;
+        if (!IndicatorsDates?.minDate || !IndicatorsDates?.maxDate) return;
+        if (IndicatorsDates?._period !== timePeriodIndicators) return;
+
+        const indicators = await monitoryService.getIndicatorsHistorical(
+          station.id.toString(),
+          timePeriodIndicators,
+          IndicatorsDates.minDate,
+          IndicatorsDates.maxDate,
+        );
+        setIndicatorsDataFull(indicators);
+      } catch (err) {
+        console.error("Error loading indicators data:", err);
+        setIndicatorsDataFull(null);
+      }
+    };
+
+    fetchIndicatorsData();
+  }, [
+    station,
+    IndicatorsDates?.minDate,
+    IndicatorsDates?.maxDate,
+    IndicatorsDates?._period,
+    timePeriodIndicators,
+  ]);
+
+  // Efecto para filtrar datos de indicadores cuando cambian los filtros (requiere búsqueda manual)
+  useEffect(() => {
+    if (
+      !indicatorsDataFull ||
+      !filterDatesIndicators.start ||
+      !filterDatesIndicators.end
+    ) {
+      setIndicatorsData(null);
+      return;
+    }
+
+    // Añadir un pequeño delay para evitar actualizaciones muy rápidas
+    const timeoutId = setTimeout(() => {
+      const filtered = filterIndicatorsData(
+        indicatorsDataFull,
+        filterDatesIndicators.start,
+        filterDatesIndicators.end,
+      );
+      setIndicatorsData(filtered);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indicatorsDataFull, searchTriggerIndicators, filterIndicatorsData]);
+
+  // Función para ejecutar búsqueda manual
+  const handleSearch = useCallback(() => {
+    setSearchTrigger((prev) => prev + 1);
+  }, []);
+
+  // Función para ejecutar búsqueda manual de indicadores
+  const handleSearchIndicators = useCallback(() => {
+    setSearchTriggerIndicators((prev) => prev + 1);
+  }, []);
+
+  // Formatear fechas (calcular antes de useEffect/useMemo)
+  const startDate = stationDates?.minDate;
+  const endDate = stationDates?.maxDate;
+
+  // Generar y descargar PDF bajo demanda cuando el usuario hace clic
+  const handleDownloadPDF = async () => {
+    if (!station || !hasDataForPDF || pdfLoading || !contentRef.current) {
+      return;
+    }
+
+    try {
+      setPdfLoading(true);
+
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve());
+        });
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const captureWidth = 960;
+      const dataUrl = await toPng(contentRef.current, {
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+        style: {
+          width: `${captureWidth}px`,
+          maxWidth: `${captureWidth}px`,
+        },
+      });
+
+      const image = new Image();
+      image.src = dataUrl;
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = reject;
+      });
+
+      const margin = 10;
+      const pdfWidth = 210 - margin * 2;
+      const pdfHeight = (image.height * pdfWidth) / image.width;
+      const pageHeight = 297 - margin * 2;
+
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+      });
+
+      let remainingHeight = pdfHeight;
+      let position = margin;
+
+      pdf.addImage(dataUrl, "PNG", margin, position, pdfWidth, pdfHeight);
+      remainingHeight -= pageHeight;
+
+      while (remainingHeight > 0) {
+        pdf.addPage();
+        position = remainingHeight - pdfHeight + margin;
+        pdf.addImage(dataUrl, "PNG", margin, position, pdfWidth, pdfHeight);
+        remainingHeight -= pageHeight;
+      }
+
+      pdf.save("station_report.pdf");
+    } catch (e) {
+      console.error("Error al abrir el diálogo de impresión:", e);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  // Indicadores filtrados por categoría seleccionada
+  const filteredIndicatorsData = useMemo(() => {
+    if (!indicatorsData) return null;
+    if (categoryIndicatorShortNames.size === 0) return indicatorsData;
+
+    const filtered: any = {};
+    Object.entries(indicatorsData).forEach(([key, value]) => {
+      if (categoryIndicatorShortNames.has(key)) {
+        filtered[key] = value;
+      }
+    });
+    return Object.keys(filtered).length > 0 ? filtered : null;
+  }, [indicatorsData, categoryIndicatorShortNames]);
+
+  // Verificar si hay al menos un bloque de datos para mostrar el botón PDF
+  const hasDataForPDF = useMemo(() => {
+    if (!station) return false;
+
+    const hasClimateData =
+      climateHistoricalData &&
+      typeof climateHistoricalData === "object" &&
+      Object.values(climateHistoricalData).some((item: any) => {
+        return (
+          item &&
+          Array.isArray(item.dates) &&
+          Array.isArray(item.values) &&
+          item.dates.length > 0
+        );
+      });
+
+    const hasIndicatorData =
+      indicatorsData &&
+      typeof indicatorsData === "object" &&
+      Object.values(indicatorsData).some((item: any) => {
+        return (
+          item &&
+          Array.isArray(item.dates) &&
+          Array.isArray(item.values) &&
+          item.dates.length > 0
+        );
+      });
+
+    return Boolean(hasClimateData || hasIndicatorData);
+  }, [station, climateHistoricalData, indicatorsData]);
+
+  // Early returns DESPUÉS de todos los hooks
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {t("stationPage.states.loadingStation")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">
+            {t("stationPage.states.errorPrefix")}: {error}
+          </p>
+          <UIButton onClick={() => window.location.reload()}>
+            {t("stationPage.actions.retry")}
+          </UIButton>
+        </div>
+      </div>
+    );
+  }
+
+  if (!station) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">
+            {t("stationPage.states.notFound")}
+          </p>
+          <UIButtonLink href="/">
+            {t("stationPage.actions.backHome")}
+          </UIButtonLink>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="station-detail-page min-h-screen bg-gray-50 pt-4 px-2 sm:px-4">
+      <div ref={contentRef} className="station-detail-report">
+        {/* Encabezado */}
+        <header className="bg-white rounded-lg shadow-sm max-w-6xl mx-auto p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+              {t("stationPage.header.stationTitle", {
+                name: station?.name || t("stationPage.common.unknown"),
+              })}
+            </h1>
+
+            <p className="text-xl sm:text-2xl font-semibold text-gray-700 mt-1">
+              {t("stationPage.header.monitoring")}
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-2">
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="text-sm" />
+              {station?.admin1_name || t("stationPage.common.na")},{" "}
+              {station?.admin2_name || t("stationPage.common.na")}
+            </p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+              <FontAwesomeIcon icon={faMapPin} className="text-sm" />
+              {station?.latitude?.toFixed(6) ||
+                t("stationPage.common.na")},{" "}
+              {station?.longitude?.toFixed(6) || t("stationPage.common.na")}
+            </p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+              <FontAwesomeIcon icon={faDatabase} className="text-sm" />
+              {t("common.sourceWith", {
+                source: station?.source || t("stationPage.common.na"),
+              })}
+            </p>
+            {station?.ext_id && (
+              <p className="text-gray-500 text-xs sm:text-sm mt-1 flex items-center gap-2">
+                <FontAwesomeIcon icon={faFingerprint} className="text-sm" />
+                {t("stationPage.header.stationCode")}:{" "}
+                <span className="font-medium text-gray-700">
+                  {station.ext_id}
+                </span>
+              </p>
+            )}
+          </div>
+
+          {/* Línea divisora */}
+          <div className="border-t border-gray-200"></div>
+
+          {/* Descripción de la estación */}
+          <div className="mt-4 mb-4 text-sm sm:text-base text-gray-700">
+            <p>
+              {t("stationPage.header.descriptionPrefix")}{" "}
+              <strong>
+                {station?.name || t("stationPage.common.unknown")}
+              </strong>
+              , {t("stationPage.header.descriptionLocated")}{" "}
+              <strong>
+                {station?.admin2_name || t("stationPage.common.na")},{" "}
+                {station?.country_name || t("stationPage.common.na")}
+              </strong>
+              , {t("stationPage.header.descriptionRangeFrom")}{" "}
+              <strong>{startDate || "..."}</strong>{" "}
+              {t("stationPage.header.descriptionRangeTo")}{" "}
+              <strong>{endDate || "..."}</strong>,{" "}
+              {t("stationPage.header.descriptionSuffix")}
+            </p>
+          </div>
+
+          {/* Mapa */}
+          <div className="h-80 rounded-lg overflow-hidden border border-gray-200">
+            <MapComponent
+              center={[station.latitude, station.longitude]}
+              zoom={13}
+              stations={[station]}
+            />
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto mt-4">
+          {/* Segunda card - Gráficas y datos */}
+          <div>
+            <div className="bg-white rounded-lg shadow-sm">
+              {/* Acordeones para selección de tipo de datos */}
+              <div id="accordion-collapse" data-accordion="collapse">
+                {(
+                  branchConfig.station?.sectionOrder ?? [
+                    "climate",
+                    "indicators",
+                  ]
+                ).map((section) => {
+                  if (section === "climate")
+                    return (
+                      /* Acordeón para Datos climáticos */
+                      <div key="climate" id="climatic-accordion">
+                        <h2 id="climatic-accordion-trigger">
+                          <button
+                            type="button"
+                            className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 hover:bg-gray-100"
+                            onClick={() => setIsClimaticOpen(!isClimaticOpen)}
+                            aria-expanded={isClimaticOpen}
+                          >
+                            <span className="text-xl font-semibold text-gray-800">
+                              {t("stationPage.sections.climateData")}
+                            </span>
+                            <svg
+                              className={`w-6 h-6 shrink-0 ${isClimaticOpen ? "rotate-180" : ""}`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              ></path>
+                            </svg>
+                          </button>
+                        </h2>
+                        <div
+                          id="climatic-accordion-content"
+                          className={isClimaticOpen ? "" : "hidden"}
+                          aria-labelledby="climatic-accordion-trigger"
+                        >
+                          <div className="p-5 border border-b-0 border-gray-200">
+                            {/* Selector de período de tiempo para datos climáticos */}
+                            <div className="mb-6 border-b border-gray-200 pb-4">
+                              <p className="mb-4 text-gray-700">
+                                {t("stationPage.climate.description")}
+                              </p>
+
+                              {/* Controles en línea */}
+                              <div className="flex flex-wrap items-end gap-4">
+                                {/* Selector de período */}
+                                <div>
+                                  <label
+                                    htmlFor="period-climatic"
+                                    className="block text-xs font-medium text-gray-700 mb-1"
+                                  >
+                                    {t("stationPage.labels.period")}
+                                  </label>
+                                  <select
+                                    id="period-climatic"
+                                    value={timePeriod}
+                                    onChange={(e) =>
+                                      setTimePeriod(e.target.value)
+                                    }
+                                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                  >
+                                    <option value="daily">
+                                      {t("stationPage.period.daily")}
+                                    </option>
+                                    <option value="monthly">
+                                      {t("stationPage.period.monthly")}
+                                    </option>
+                                    <option value="climatology">
+                                      {t("stationPage.period.climatology")}
+                                    </option>
+                                  </select>
+                                </div>
+
+                                {/* Selector de fechas */}
+                                {timePeriod === "climatology" ? (
+                                  <>
+                                    <div>
+                                      <label
+                                        htmlFor="start-month"
+                                        className="block text-xs font-medium text-gray-700 mb-1"
+                                      >
+                                        {t("stationPage.labels.startMonth")}
+                                      </label>
+                                      <select
+                                        id="start-month"
+                                        value={
+                                          filterDatesClimatic.start.split(
+                                            "-",
+                                          )[1]
+                                        }
+                                        onChange={(e) =>
+                                          setFilterDatesClimatic((prev) => ({
+                                            ...prev,
+                                            start: monthToDateFormat(
+                                              e.target.value,
+                                            ),
+                                          }))
+                                        }
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                      >
+                                        {MONTHS.map((month) => (
+                                          <option
+                                            key={month.value}
+                                            value={month.value}
+                                          >
+                                            {month.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label
+                                        htmlFor="end-month"
+                                        className="block text-xs font-medium text-gray-700 mb-1"
+                                      >
+                                        {t("stationPage.labels.endMonth")}
+                                      </label>
+                                      <select
+                                        id="end-month"
+                                        value={
+                                          filterDatesClimatic.end.split("-")[1]
+                                        }
+                                        onChange={(e) =>
+                                          setFilterDatesClimatic((prev) => ({
+                                            ...prev,
+                                            end: monthToDateFormat(
+                                              e.target.value,
+                                            ),
+                                          }))
+                                        }
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                      >
+                                        {MONTHS.map((month) => (
+                                          <option
+                                            key={month.value}
+                                            value={month.value}
+                                          >
+                                            {month.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <UIButton
+                                        onClick={handleSearch}
+                                        disabled={
+                                          !filterDatesClimatic.start ||
+                                          !filterDatesClimatic.end
+                                        }
+                                      >
+                                        {t("stationPage.actions.search")}
+                                      </UIButton>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div>
+                                      <label
+                                        htmlFor="start-date"
+                                        className="block text-xs font-medium text-gray-700 mb-1"
+                                      >
+                                        {t("stationPage.labels.startDate")}
+                                      </label>
+                                      <input
+                                        type="date"
+                                        id="start-date"
+                                        value={filterDatesClimatic.start || ""}
+                                        min={stationDates?.minDate || ""}
+                                        max={stationDates?.maxDate || ""}
+                                        onChange={(e) =>
+                                          setFilterDatesClimatic((prev) => ({
+                                            ...prev,
+                                            start: e.target.value,
+                                          }))
+                                        }
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label
+                                        htmlFor="end-date"
+                                        className="block text-xs font-medium text-gray-700 mb-1"
+                                      >
+                                        {t("stationPage.labels.endDate")}
+                                      </label>
+                                      <input
+                                        type="date"
+                                        id="end-date"
+                                        value={filterDatesClimatic.end}
+                                        min={
+                                          filterDatesClimatic.start ||
+                                          stationDates?.minDate ||
+                                          ""
+                                        }
+                                        max={stationDates?.maxDate || ""}
+                                        onChange={(e) =>
+                                          setFilterDatesClimatic((prev) => ({
+                                            ...prev,
+                                            end: e.target.value,
+                                          }))
+                                        }
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                      />
+                                    </div>
+                                    <div>
+                                      <UIButton
+                                        onClick={handleSearch}
+                                        disabled={
+                                          !filterDatesClimatic.start ||
+                                          !filterDatesClimatic.end ||
+                                          isDateRangeTooLarge(
+                                            filterDatesClimatic.start,
+                                            filterDatesClimatic.end,
+                                          )
+                                        }
+                                      >
+                                        {t("stationPage.actions.search")}
+                                      </UIButton>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Mensaje de advertencia debajo de los rangos */}
+                              {timePeriod !== "climatology" &&
+                                isDateRangeTooLarge(
+                                  filterDatesClimatic.start,
+                                  filterDatesClimatic.end,
+                                ) && (
+                                  <div className="mt-3">
+                                    <span className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                                      {t(
+                                        "stationPage.warnings.dateRangeTooLarge",
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                            </div>
+
+                            {/* Gráficas de datos climáticos */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {loadingCharts ? (
+                                Array.from({ length: 4 }).map((_, index) => (
+                                  <div
+                                    key={index}
+                                    className="border border-gray-200 rounded-lg p-4 h-80 flex items-center justify-center"
+                                  >
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
+                                  </div>
+                                ))
+                              ) : climateChartsData ? (
+                                Object.entries(climateChartsData).map(
+                                  ([varKey, chartData]: [string, any]) => (
+                                    <ClimateChart
+                                      key={`climate-${varKey}-${timePeriod}`}
+                                      title={chartData.title}
+                                      unit={chartData.unit}
+                                      datasets={chartData.datasets}
+                                      period={timePeriod}
+                                      chartType={chartData.chartType}
+                                      description={t(
+                                        "stationPage.climate.totalRange",
+                                        {
+                                          minDate:
+                                            chartData.totalDateRange?.minDate ||
+                                            t("stationPage.common.na"),
+                                          maxDate:
+                                            chartData.totalDateRange?.maxDate ||
+                                            t("stationPage.common.na"),
+                                        },
+                                      )}
+                                    />
+                                  ),
+                                )
+                              ) : (
+                                <div className="col-span-full text-center text-gray-500 py-8">
+                                  {t("stationPage.empty.noClimateData")}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  if (section === "indicators")
+                    return branchConfig.station?.showClimateIndicator ? (
+                      /* Acordeón para Indicadores climáticos */
+                      <div key="indicators" id="indicators-accordion">
+                        <h2 id="indicators-accordion-trigger">
+                          <button
+                            type="button"
+                            className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+                            onClick={() =>
+                              setIsIndicatorsOpen(!isIndicatorsOpen)
+                            }
+                            aria-expanded={isIndicatorsOpen}
+                          >
+                            <span className="text-xl font-semibold text-gray-800">
+                              {t("stationPage.sections.climateIndicators")}
+                            </span>
+                            <svg
+                              className={`w-6 h-6 shrink-0 ${isIndicatorsOpen ? "rotate-180" : ""}`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              ></path>
+                            </svg>
+                          </button>
+                        </h2>
+                        <div
+                          id="indicators-accordion-content"
+                          className={isIndicatorsOpen ? "" : "hidden"}
+                          aria-labelledby="indicators-accordion-trigger"
+                        >
+                          <div className="p-5 border border-t-0 border-gray-200">
+                            {/* Selector de período de tiempo para indicadores */}
+                            <div className="flex flex-wrap items-center gap-6 mb-6 border-b border-gray-200 pb-4 justify-between">
+                              <p className="text-gray-700">
+                                {t("stationPage.indicators.description")}
+                              </p>
+                              <div className="flex items-center gap-6">
+                                {/* Selector de período */}
+                                <div>
+                                  <label
+                                    htmlFor="period-indicators"
+                                    className="block text-xs font-medium text-gray-700 mb-1"
+                                  >
+                                    {t("stationPage.labels.period")}
+                                  </label>
+                                  <select
+                                    id="period-indicators"
+                                    value={timePeriodIndicators}
+                                    onChange={(e) =>
+                                      setTimePeriodIndicators(e.target.value)
+                                    }
+                                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    disabled={
+                                      loadingPeriods ||
+                                      availableIndicatorPeriods.length === 0
+                                    }
+                                  >
+                                    {loadingPeriods ? (
+                                      <option>
+                                        {t("stationPage.states.loading")}
+                                      </option>
+                                    ) : availableIndicatorPeriods.length > 0 ? (
+                                      availableIndicatorPeriods.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        ),
+                                      )
+                                    ) : (
+                                      <option>
+                                        {t("stationPage.empty.noData")}
+                                      </option>
+                                    )}
+                                  </select>
+                                </div>
+
+                                {/* Selector de categoría */}
+                                {indicatorCategories.length > 0 && (
+                                  <div>
+                                    <label
+                                      htmlFor="category-indicators"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("spatial.labels.category")}
+                                    </label>
+                                    {loadingIndicatorCategories ? (
+                                      <div className="text-gray-500 text-sm">
+                                        {t("stationPage.states.loading")}
+                                      </div>
+                                    ) : (
+                                      <select
+                                        id="category-indicators"
+                                        value={
+                                          selectedIndicatorCategory?.id || ""
+                                        }
+                                        onChange={(e) => {
+                                          // TODO: remove the temp filter when temperature indicators are available
+                                          const visibleCats =
+                                            indicatorCategories.filter(
+                                              (c) =>
+                                                !c.name
+                                                  .toLowerCase()
+                                                  .includes("temp"),
+                                            );
+                                          const cat = visibleCats.find(
+                                            (c) =>
+                                              c.id === parseInt(e.target.value),
+                                          );
+                                          setSelectedIndicatorCategory(
+                                            cat || null,
+                                          );
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                      >
+                                        {indicatorCategories
+                                          // TODO: uncomment temperature category when indicators are available
+                                          .filter(
+                                            (c) =>
+                                              !c.name
+                                                .toLowerCase()
+                                                .includes("temp"),
+                                          )
+                                          .map((category) => (
+                                            <option
+                                              key={category.id}
+                                              value={category.id}
+                                            >
+                                              {category.name}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Selector de fechas alineado a la derecha — oculto en decadal porque el visualizador PRCD tiene su propio selector de año */}
+                              {timePeriodIndicators !== "decadal" && (
+                                <div className="flex flex-wrap gap-4 items-end">
+                                  <div>
+                                    <label
+                                      htmlFor="start-date-indicators"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.startDate")}
+                                    </label>
+                                    <input
+                                      type="date"
+                                      id="start-date-indicators"
+                                      value={filterDatesIndicators.start}
+                                      min={stationDates?.minDate || ""}
+                                      max={stationDates?.maxDate || ""}
+                                      onChange={(e) =>
+                                        setFilterDatesIndicators((prev) => ({
+                                          ...prev,
+                                          start: e.target.value,
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label
+                                      htmlFor="end-date-indicators"
+                                      className="block text-xs font-medium text-gray-700 mb-1"
+                                    >
+                                      {t("stationPage.labels.endDate")}
+                                    </label>
+                                    <input
+                                      type="date"
+                                      id="end-date-indicators"
+                                      value={filterDatesIndicators.end}
+                                      min={
+                                        filterDatesIndicators.start ||
+                                        stationDates?.minDate ||
+                                        ""
+                                      }
+                                      max={stationDates?.maxDate || ""}
+                                      onChange={(e) =>
+                                        setFilterDatesIndicators((prev) => ({
+                                          ...prev,
+                                          end: e.target.value,
+                                        }))
+                                      }
+                                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-green text-gray-900 bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <UIButton
+                                      onClick={handleSearchIndicators}
+                                      disabled={
+                                        !filterDatesIndicators.start ||
+                                        !filterDatesIndicators.end
+                                      }
+                                    >
+                                      {t("stationPage.actions.search")}
+                                    </UIButton>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Gráficas de indicadores climáticos */}
+                            {(() => {
+                              const CANIC_KEYS = [
+                                "CANIC",
+                                "CANIC-Dur",
+                                "CANIC-Int",
+                              ];
+                              const PRCD_KEYS = [
+                                "PRCD",
+                                "PRCD-Abs",
+                                "PRCD-Rel",
+                                "PRCD-Cat",
+                              ];
+                              const SPECIAL_KEYS = [
+                                ...CANIC_KEYS,
+                                ...PRCD_KEYS,
+                              ];
+                              const hasAnyData =
+                                filteredIndicatorsData &&
+                                Object.keys(filteredIndicatorsData).length > 0;
+                              const hasCanicGroup =
+                                hasAnyData &&
+                                CANIC_KEYS.some(
+                                  (k) => k in filteredIndicatorsData!,
+                                );
+                              const hasPrcdGroup =
+                                hasAnyData &&
+                                PRCD_KEYS.some(
+                                  (k) => k in filteredIndicatorsData!,
+                                );
+
+                              const regularEntries = hasAnyData
+                                ? Object.entries(filteredIndicatorsData!)
+                                    .filter(
+                                      ([key]) => !SPECIAL_KEYS.includes(key),
+                                    )
+                                    .sort(([keyA], [keyB]) => {
+                                      const getPriority = (key: string) => {
+                                        if (key === "IELL-decade") return 0;
+                                        if (key === "IELS-decade") return 1;
+                                        const isRainy = key.includes("IELL");
+                                        const isAnomal =
+                                          key.includes("Anomal") ||
+                                          key.includes("anomal");
+                                        if (isRainy && !isAnomal) return 2;
+                                        if (isRainy && isAnomal) return 3;
+                                        if (!isRainy && !isAnomal) return 4;
+                                        if (!isRainy && isAnomal) return 5;
+                                        return 6;
+                                      };
+                                      return (
+                                        getPriority(keyA) - getPriority(keyB)
+                                      );
+                                    })
+                                : [];
+
+                              if (!hasAnyData) {
+                                return (
+                                  <div className="flex items-center justify-center py-8">
+                                    <p className="text-gray-500">
+                                      {t("stationPage.empty.noData")}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <>
+                                  {/* Regular indicators — sorted grid */}
+                                  {regularEntries.length > 0 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      {regularEntries.map(
+                                        ([key, indicator]) => {
+                                          const typedIndicator = indicator as {
+                                            name: string;
+                                            unit: string;
+                                            dates: string[];
+                                            values: number[];
+                                          };
+
+                                          // Decade-calendar indicators use a special visualizer
+                                          if (
+                                            key === "IELL-decade" ||
+                                            key === "IELS-decade"
+                                          ) {
+                                            return (
+                                              <DecadeCalendarChart
+                                                key={key}
+                                                series={typedIndicator.values}
+                                                indicatorLabel={
+                                                  typedIndicator.name
+                                                }
+                                                colorScheme={
+                                                  key === "IELL-decade"
+                                                    ? "rainy"
+                                                    : "dry"
+                                                }
+                                                description={
+                                                  categoryIndicatorDescriptions[
+                                                    key
+                                                  ] || ""
+                                                }
+                                                className="col-span-1 md:col-span-2"
+                                              />
+                                            );
+                                          }
+
+                                          return (
+                                            <ClimateChart
+                                              key={key}
+                                              title={typedIndicator.name}
+                                              unit={typedIndicator.unit}
+                                              datasets={[
+                                                {
+                                                  label: t(
+                                                    "stationPage.chart.stationData",
+                                                  ),
+                                                  color: getIndicatorColor(key),
+                                                  data: typedIndicator.values,
+                                                  dates: typedIndicator.dates,
+                                                },
+                                              ]}
+                                              period={timePeriodIndicators}
+                                              xAxisYearOnly={true}
+                                              description={
+                                                categoryIndicatorDescriptions[
+                                                  key
+                                                ] || ""
+                                              }
+                                            />
+                                          );
+                                        },
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* CANIC panel — always rendered after the regular grid */}
+                                  {hasCanicGroup && (
+                                    <CanicVisualizer
+                                      locationId={station.id.toString()}
+                                      description={
+                                        categoryIndicatorDescriptions[
+                                          "CANIC"
+                                        ] || ""
+                                      }
+                                      className={
+                                        regularEntries.length > 0 ? "mt-6" : ""
+                                      }
+                                    />
+                                  )}
+
+                                  {/* PRCD panel — rendered after CANIC */}
+                                  {hasPrcdGroup && (
+                                    <PrcdVisualizer
+                                      locationId={station.id.toString()}
+                                      description={
+                                        categoryIndicatorDescriptions["PRCD"] ||
+                                        ""
+                                      }
+                                      className={
+                                        regularEntries.length > 0 ||
+                                        hasCanicGroup
+                                          ? "mt-6"
+                                          : ""
+                                      }
+                                    />
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  if (section === "forecast")
+                    return branchConfig.station?.showForecast ? (
+                      /* Acordeón para Pronóstico */
+                      <ForecastSection key="forecast" extId={station.ext_id} />
+                    ) : null;
+                  return null;
+                })}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Botón flotante para comparación satelital */}
+      <UIButton
+        onClick={toggleSatelliteComparison}
+        disabled={!station || loadingSatellite}
+        variant="floating"
+        className="fixed bottom-40 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
+        title={
+          !station
+            ? t("stationPage.tooltips.stationUnavailable")
+            : isSatelliteActive
+              ? t("stationPage.tooltips.disableSatellite")
+              : t("stationPage.tooltips.enableSatellite")
+        }
+      >
+        {loadingSatellite ? (
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-current inline-block"></span>
+        ) : (
+          <FontAwesomeIcon
+            icon={faSatellite}
+            className="h-6 w-6 text-current"
+          />
+        )}
+      </UIButton>
+
+      {/* Botón flotante de favoritos */}
+      <UIButton
+        variant={isFavorite ? "primary" : "floating"}
+        onClick={toggleFavorite}
+        disabled={!authenticated || loadingFavorite}
+        className={`fixed bottom-24 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] ${
+          !authenticated
+            ? "bg-gray-100 border-gray-300 text-gray-400 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-300 disabled:opacity-100"
+            : ""
+        }`}
+        title={
+          !authenticated
+            ? t("stationPage.tooltips.loginRequiredFavorite")
+            : isFavorite
+              ? t("stationPage.tooltips.removeFavorite")
+              : t("stationPage.tooltips.addFavorite")
+        }
+      >
+        {loadingFavorite ? (
+          <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white inline-block"></span>
+        ) : (
+          <FontAwesomeIcon
+            icon={isFavorite ? faStarSolid : faStarRegular}
+            className="h-6 w-6"
+          />
+        )}
+      </UIButton>
+
+      {/* Botón flotante de descarga PDF */}
+      {hasDataForPDF && (
+        <UIButton
+          onClick={handleDownloadPDF}
+          disabled={!hasDataForPDF || pdfLoading}
+          variant="floating"
+          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
+          title={t("stationPage.actions.downloadPdf")}
+        >
+          {pdfLoading ? (
+            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-current inline-block"></span>
+          ) : (
+            <FontAwesomeIcon
+              icon={faFileArrowDown}
+              className="h-6 w-6 text-current"
+            />
+          )}
+        </UIButton>
+      )}
+    </div>
+  );
+}
