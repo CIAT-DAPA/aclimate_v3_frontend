@@ -44,10 +44,10 @@ const Header = () => {
       <nav className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <Image
-            src="/assets/img/logo.png"
-            alt={t("common.logoAlt")}
-            width={32}
-            height={32}
+            src={config.headerLogo?.src || "/assets/img/logo.png"}
+            alt={config.headerLogo?.alt || t("common.logoAlt")}
+            width={config.headerLogo?.width ?? 32}
+            height={config.headerLogo?.height ?? 32}
           />
           <span className="text-lg sm:text-xl font-normal" style={{ color: "var(--color-text-light)" }}>
             AClimate {countryName.replace(/Amazonia/gi, "Amazonía")}

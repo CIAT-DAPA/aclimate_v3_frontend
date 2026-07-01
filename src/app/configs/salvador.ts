@@ -4,6 +4,11 @@ export const salvadorConfig: BranchConfig = {
   name: "salvador",
   idCountry: 5,
   displayName: "AClimate El Salvador",
+  headerLogo: {
+    src: "/assets/img/partners/MARN_HEADER.png",
+    width: 200,
+    height: 200,
+  },
   aboutUs: {
     title: "Sobre la herramienta",
     description: `AClimate El Salvador es una plataforma web especializada diseñada como una interfaz de usuario intuitiva para democratizar el acceso a productos climáticos en Ahuachapán Sur. Su objetivo principal es fortalecer la toma de decisiones en gestión sostenible de los recursos naturales y de Agricultura Sostenible Adaptada al Clima,  ante la creciente vulnerabilidad climática, especialmente frente a fenómenos como el Niño-Oscilación del Sur (ENOS) y eventos hidrometeorológicos extremos. 

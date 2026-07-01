@@ -3,6 +3,13 @@ export interface BranchConfig {
   name: string;
   idCountry: number;
   displayName: string;
+  /** Logo to show in the header. Defaults to /assets/img/logo.png if not set */
+  headerLogo?: {
+    src: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+  };
   aboutUs: {
     title: string;
     description: string;
@@ -71,6 +78,12 @@ export const getDefaultConfig = (): BranchConfig => ({
   name: "default",
   idCountry: 1,
   displayName: "AClimate",
+  headerLogo: {
+    src: "/assets/img/logo.png",
+    alt: "AClimate logo",
+    width: 32,
+    height: 32,
+  },
   aboutUs: {
     title: "Sobre la herramienta",
     description: `AClimate es una herramienta diseñada para apoyar la toma de decisiones en el sector agropecuario.
