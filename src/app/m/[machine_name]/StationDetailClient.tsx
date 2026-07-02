@@ -1353,6 +1353,25 @@ export default function StationDetailClient({
             </p>
           </div>
 
+          {/* Climate perspective banner */}
+          {branchConfig.station?.showClimatePerspective?.enabled && (
+            <div className="mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  {t(branchConfig.station.showClimatePerspective.labelKey)}{" "}
+                  <a
+                    href={branchConfig.station.showClimatePerspective.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline hover:text-blue-600"
+                  >
+                    ({branchConfig.station.showClimatePerspective.linkText})
+                  </a>
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Mapa */}
           <div className="h-80 rounded-lg overflow-hidden border border-gray-200">
             <MapComponent

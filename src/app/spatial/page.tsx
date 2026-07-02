@@ -937,6 +937,25 @@ export default function SpatialDataPage() {
         </div>
       </header>
 
+      {/* Climate perspective banner */}
+      {config.spatial?.showClimatePerspective?.enabled && (
+        <div className="max-w-6xl mx-auto mt-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+            <p className="text-sm text-blue-800 leading-relaxed">
+              {t(config.spatial.showClimatePerspective.labelKey)}{" "}
+              <a
+                href={config.spatial.showClimatePerspective.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline hover:text-blue-600"
+              >
+                ({config.spatial.showClimatePerspective.linkText})
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-6xl mx-auto mt-4 mb-24">
         <div className="bg-white rounded-lg shadow-sm">
           {/* Reemplazo de tabs por acordeones */}
@@ -1112,7 +1131,7 @@ export default function SpatialDataPage() {
                               )}
 
                               {layer.available ? (
-                                <div className="relative h-[550px] w-full max-w-full rounded-lg overflow-hidden">
+                                <div className="relative h-[350px] sm:h-[450px] lg:h-[550px] w-full max-w-full rounded-lg overflow-hidden">
                                   <MapComponent
                                     key={layer.name}
                                     center={currentCountry.center}
@@ -1142,7 +1161,7 @@ export default function SpatialDataPage() {
                                       )
                                     }
                                   />
-                                  {/* Botón de descarga dentro del mapa - posicionado debajo de zoom */}
+                                  {/* Botón de descarga dentro del mapa - a la derecha de los controles de zoom */}
                                   <button
                                     onClick={async () => {
                                       let rasterFile =
@@ -1163,7 +1182,7 @@ export default function SpatialDataPage() {
                                         downloadRasterFile(rasterFile);
                                       }
                                     }}
-                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                                    className="absolute top-40 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                                     title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
@@ -1604,7 +1623,7 @@ export default function SpatialDataPage() {
                                         downloadRasterFile(rasterFile);
                                       }
                                     }}
-                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                                    className="absolute top-40 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                                     title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
@@ -1842,7 +1861,7 @@ export default function SpatialDataPage() {
                                         downloadRasterFile(rasterFile);
                                       }
                                     }}
-                                    className="absolute top-36 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                                    className="absolute top-40 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
                                     title={t("spatial.actions.downloadRaster")}
                                   >
                                     <FontAwesomeIcon
@@ -1883,7 +1902,7 @@ export default function SpatialDataPage() {
         onClick={downloadAllData}
         disabled={!downloadReady || isPreparingDownload}
         variant="floating"
-        className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
+        className="fixed bottom-28 right-4 sm:bottom-32 sm:right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
         title={
           !downloadReady
             ? t("spatial.actions.waitingLayers")
@@ -1907,7 +1926,7 @@ export default function SpatialDataPage() {
       {/* Barra de progreso flotante */}
       {downloadProgress > 0 && (
         <div
-          className="fixed bottom-20 right-4 sm:bottom-24 sm:right-8 w-56 sm:w-64 bg-white rounded-lg shadow-lg p-3 sm:p-4 no-print"
+          className="fixed bottom-28 right-4 sm:bottom-32 sm:right-8 w-56 sm:w-64 bg-white rounded-lg shadow-lg p-3 sm:p-4 no-print"
           style={{ zIndex: 9999 }}
         >
           <p className="text-sm text-gray-700 mb-2">
@@ -1930,7 +1949,7 @@ export default function SpatialDataPage() {
           onClick={handleDownloadPDF}
           disabled={!hasDataForPDF || pdfLoading}
           variant="floating"
-          className="fixed bottom-8 right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
+          className="fixed bottom-8 right-4 sm:bottom-8 sm:right-8 p-4 shadow-lg no-print z-[9999] transition-all hover:scale-110 min-w-[56px] min-h-[56px] rounded-full border bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
           title={t("spatial.actions.downloadPdf")}
         >
           {pdfLoading ? (
