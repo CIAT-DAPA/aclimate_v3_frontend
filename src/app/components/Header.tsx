@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
 import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
@@ -15,6 +16,7 @@ const Header = () => {
     useAuth();
   const { countryName } = useCountry();
   const { t } = useI18n();
+  const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -54,11 +56,12 @@ const Header = () => {
           </span>
         </Link>
 
-        {/* Menú hamburguesa para móvil */}
+          {/* Menú hamburguesa para móvil - más visible */}
         <button
-          className="md:hidden p-2 transition-colors"
+          className="md:hidden flex items-center justify-center p-2 rounded-lg transition-all bg-white/10 hover:bg-white/20 border border-white/20 min-w-[44px] min-h-[44px]"
           style={{ color: "var(--color-text-light)" }}
           onClick={() => setShowMobileMenu(!showMobileMenu)}
+          aria-label={t("nav.menu")}
         >
           <svg
             className="w-6 h-6"
@@ -89,8 +92,8 @@ const Header = () => {
           {config.showScenario && (
             <Link
               href="/scenario"
-              className="transition-colors mt-2"
-              style={{ color: "var(--color-text-light)" }}
+              className={`transition-colors mt-2 pb-1 ${pathname === "/scenario" ? "font-bold border-b-2" : "hover:opacity-80"}`}
+              style={{ color: "var(--color-text-light)", borderBottomColor: pathname === "/scenario" ? "var(--color-secondary)" : "transparent" }}
             >
               {t("nav.scenarios")}
             </Link>
@@ -98,16 +101,16 @@ const Header = () => {
           {SHOW_STATIONS_MODULE && (
             <Link
               href="/locations"
-              className="transition-colors mt-2"
-              style={{ color: "var(--color-text-light)" }}
+              className={`transition-colors mt-2 pb-1 ${pathname?.startsWith("/locations") ? "font-bold border-b-2" : "hover:opacity-80"}`}
+              style={{ color: "var(--color-text-light)", borderBottomColor: pathname?.startsWith("/locations") ? "var(--color-secondary)" : "transparent" }}
             >
               {t("nav.stations")}
             </Link>
           )}
           <Link
             href="/spatial"
-            className="transition-colors mt-2"
-            style={{ color: "var(--color-text-light)" }}
+            className={`transition-colors mt-2 pb-1 ${pathname === "/spatial" ? "font-bold border-b-2" : "hover:opacity-80"}`}
+            style={{ color: "var(--color-text-light)", borderBottomColor: pathname === "/spatial" ? "var(--color-secondary)" : "transparent" }}
           >
             {t("nav.spatialData")}
           </Link>
@@ -116,7 +119,7 @@ const Header = () => {
               href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
               target="_blank"
               rel="noreferrer"
-              className="transition-colors mt-2"
+              className="transition-colors mt-2 pb-1"
               style={{ color: "var(--color-text-light)" }}
             >
               {t("nav.communityMonitoring")}
@@ -270,9 +273,9 @@ const Header = () => {
                   {t("nav.communityMonitoring")}
                 </a>
               )}
-              <Link
+          <Link
                 href="/about"
-                className="transition-colors py-2 px-2"
+                className={`transition-colors py-2 px-2 ${pathname === "/about" ? "font-bold" : ""}`}
                 style={{ color: "var(--color-text-light)" }}
                 onClick={() => setShowMobileMenu(false)}
               >

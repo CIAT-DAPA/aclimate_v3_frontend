@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import WeatherCard from "./components/WeatherCard";
 import { COUNTRY_NAME } from "./config";
 import { useI18n } from "@/app/contexts/I18nContext";
@@ -39,10 +40,28 @@ export default function HomeClient() {
                 >
                   {t("home.hero.subtitle")}
                 </p>
-                <div className="flex flex-col md:flex-row gap-4 text-center">
+                
+                {/* Banner introductorio - explica el propósito de la plataforma */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <p className="text-sm sm:text-base text-white/90 leading-relaxed">
+                    {t("home.hero.intro")}
+                  </p>
+                </div>
+                
+                <div className="flex flex-col md:flex-row gap-4 text-center items-center">
                   <UIButtonLink href="/spatial" size="lg">
                     {t("home.hero.cta")}
                   </UIButtonLink>
+                  <p className="text-sm sm:text-base text-white/80">
+                    {t("home.hero.moreInfo")}{" "}
+                    <Link
+                      href="/about"
+                      className="font-semibold underline hover:text-white transition-colors"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      {t("home.hero.learnMore")}
+                    </Link>
+                  </p>
                 </div>
               </div>
               <WeatherCard />
