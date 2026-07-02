@@ -1,5 +1,6 @@
 {
   "nav": {
+    "menu": "Menú",
     "scenarios": "Escenarios",
     "stations": "Estaciones",
     "spatialData": "Datos espaciales",
@@ -30,7 +31,10 @@
     "hero": {
       "title": "Bienvenido a AClimate {{country}}",
       "subtitle": "Explora, monitorea y compara datos satelitales, informate sobre como ha sido el clima en las regiones.",
-      "cta": "Explorar",
+      "intro": "AClimate es una plataforma que te permite explorar datos climáticos e indicadores agroclimáticos a través de mapas interactivos y gráficos. Encuentra información sobre temperatura, precipitación y más para la toma de decisiones en el campo.",
+      "cta": "Explorar datos climáticos",
+      "learnMore": "Conocer más",
+      "moreInfo": "¿Quieres saber más?",
       "backgroundAlt": "Paisaje climático"
     }
   },
@@ -105,7 +109,8 @@
     "noResultsHint": "Intenta con otro término de búsqueda"
   },
   "mapLegend": {
-    "title": "Leyenda"
+    "title": "Leyenda",
+    "hint": "Colores más intensos = valor más alto"
   },
   "charts": {
     "loading": "Cargando gráfica...",
@@ -262,8 +267,12 @@
       "rad": "Este mapa muestra la cantidad de energía solar que recibe cada región. Explora los colores para reconocer zonas con mayor o menor radiación y ajusta la fecha para ver cómo varía a lo largo del tiempo.",
       "et0": "Observa cuánto vapor de agua se pierde del suelo y la vegetación en cada área. Recorre el mapa para identificar zonas con mayor demanda hídrica y usa la línea de tiempo para analizar patrones diarios."
     },
+    "climatePerspective": {
+      "label": "Consulta las Perspectivas Climáticas generada por: Dirección General de Observatorio de Amenazas y Recursos Naturales",
+      "linkText": "DOA MARN"
+    },
     "filters": {
-      "department": "Departamento"
+      "department": "Departmento"
     }
   },
   "scenarioPage": {
