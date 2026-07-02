@@ -74,7 +74,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
 
   return (
     <div className={`absolute ${positionClasses[position]} z-[1000]`}>
-      <div className="bg-white p-2 rounded shadow-md max-w-[200px]">
+      <div className="bg-white p-2 rounded shadow-md max-w-[220px]">
         <div className="flex justify-between items-center mb-2">
           <h4 className="font-semibold text-sm text-gray-800">{legendTitle}</h4>
           <button
@@ -126,6 +126,12 @@ const MapLegend: React.FC<MapLegendProps> = ({
                 }}
               />
             ) : null}
+            {/* Texto interpretativo debajo de la leyenda */}
+            {!children && (
+              <p className="hidden sm:block text-[10px] text-gray-500 mt-1.5 leading-tight border-t border-gray-100 pt-1.5">
+                {t("mapLegend.hint")}
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -126,7 +126,7 @@ const WeatherCard = () => {
   if (!authenticated) {
     return (
       <div 
-        className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm"
+        className="relative overflow-hidden p-6 rounded-2xl shadow-lg max-w-sm mx-auto sm:mx-0"
         style={{ backgroundColor: "var(--color-primary)", color: "var(--color-text-light)" }}
       >
         <div className="relative z-10 text-center py-8">
