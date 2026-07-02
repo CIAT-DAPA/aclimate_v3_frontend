@@ -1,4 +1,11 @@
 // Configuración base que comparten todas las ramas
+export interface ClimatePerspectiveConfig {
+  enabled: boolean;
+  labelKey: string;
+  linkUrl: string;
+  linkText: string;
+}
+
 export interface BranchConfig {
   name: string;
   idCountry: number;
@@ -55,8 +62,10 @@ export interface BranchConfig {
     showForecast?: boolean;
     /** Attribution / source text shown at the top of the forecast section */
     forecastSource?: string;
-    /** Order of sections in the station detail page. Defaults to ["climate", "indicators"] */
+    /** Order of sections in the station detail page. Defaults to ["climate", "indicators", "forecast"] */
     sectionOrder?: Array<"climate" | "indicators" | "forecast">;
+    /** Climate perspective banner config */
+    showClimatePerspective?: ClimatePerspectiveConfig;
   };
   spatial?: {
     showClimateIndicator: boolean;
@@ -64,6 +73,8 @@ export interface BranchConfig {
     showClimateData: boolean;
     showHydrologicalIndicator: boolean;
     showForecastPctChange: boolean;
+    /** Climate perspective banner config */
+    showClimatePerspective?: ClimatePerspectiveConfig;
   };
   data?: {
     center: [number, number];

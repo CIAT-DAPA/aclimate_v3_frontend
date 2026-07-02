@@ -72,6 +72,12 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
     showClimateData: true,
     showHydrologicalIndicator: false,
     showForecastPctChange: false,
+    showClimatePerspective: {
+      enabled: true,
+      labelKey: "spatial.climatePerspective.label",
+      linkUrl: "https://www.snet.gob.sv/ver/meteorologia/pronostico/perspectivas+clima/",
+      linkText: "DOA MARN",
+    },
   },
   station: {
     showClimateIndicator: true,
@@ -79,6 +85,12 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
     forecastSource:
       "Fuente: Dirección general de observatorio de amenazas y recursos naturales (DOA) – MARN El Salvador.",
     sectionOrder: ["indicators", "forecast", "climate"],
+    showClimatePerspective: {
+      enabled: true,
+      labelKey: "spatial.climatePerspective.label",
+      linkUrl: "https://www.snet.gob.sv/ver/meteorologia/pronostico/perspectivas+clima/",
+      linkText: "DOA MARN",
+    },
   },
   data: {
     center: [13.69, -89.19],
