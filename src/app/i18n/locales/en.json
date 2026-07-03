@@ -34,8 +34,28 @@
       "intro": "AClimate is a platform that lets you explore climate data and agroclimatic indicators through interactive maps and charts. Find information on temperature, precipitation, and more for informed decision-making in the field.",
       "cta": "Explore climate data",
       "learnMore": "Learn more",
-      "moreInfo": "Want to learn more?",
       "backgroundAlt": "Climate landscape"
+    },
+    "modules": {
+      "sectionTitle": "Explore our modules",
+      "sectionDescription": "Access the different tools and sections of the platform",
+      "viewButton": "View",
+      "stations": {
+        "title": "Stations",
+        "description": "View historical climate data from weather stations, indicators and forecasts for your region."
+      },
+      "spatial": {
+        "title": "Spatial data",
+        "description": "Explore interactive maps of climate variables, indicators and scenarios for the entire territory."
+      },
+      "scenario": {
+        "title": "Scenarios",
+        "description": "Discover climate scenarios and receive recommendations for decision-making in the agricultural sector."
+      },
+      "communityMonitoring": {
+        "title": "Climate monitoring",
+        "description": "Access the community climate monitoring dashboard with updated data and indicators."
+      }
     }
   },
   "about": {
