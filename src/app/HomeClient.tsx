@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import WeatherCard from "./components/WeatherCard";
+import ModulesGrid from "./components/home/ModulesGrid";
 import { COUNTRY_NAME } from "./config";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButtonLink } from "@/app/components/ui/button";
@@ -29,39 +29,22 @@ export default function HomeClient() {
             <div className="space-y-8 sm:space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
               <div className="space-y-3">
                 <h1
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-balance"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-balance text-center sm:text-left"
                   style={{ color: "var(--color-text-light)" }}
                 >
                   {t("home.hero.title", { country: countryLabel })}
                 </h1>
                 <p
-                  className="text-base sm:text-lg md:text-xl text-pretty"
+                  className="text-base sm:text-lg md:text-xl text-pretty text-center sm:text-left"
                   style={{ color: "var(--color-text-light)" }}
                 >
                   {t("home.hero.subtitle")}
                 </p>
                 
-                {/* Banner introductorio - explica el propósito de la plataforma */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <p className="text-sm sm:text-base text-white/90 leading-relaxed">
-                    {t("home.hero.intro")}
-                  </p>
-                </div>
-                
                 <div className="flex flex-col md:flex-row gap-4 text-center items-center">
                   <UIButtonLink href="/spatial" size="lg">
                     {t("home.hero.cta")}
                   </UIButtonLink>
-                  <p className="text-sm sm:text-base text-white/80">
-                    {t("home.hero.moreInfo")}{" "}
-                    <Link
-                      href="/about"
-                      className="font-semibold underline hover:text-white transition-colors"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {t("home.hero.learnMore")}
-                    </Link>
-                  </p>
                 </div>
               </div>
               <WeatherCard />
@@ -69,6 +52,8 @@ export default function HomeClient() {
           </div>
         </div>
       </section>
+
+      <ModulesGrid />
     </div>
   );
 }
