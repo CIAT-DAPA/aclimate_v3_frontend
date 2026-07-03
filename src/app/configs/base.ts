@@ -34,6 +34,17 @@ export interface BranchConfig {
     }>;
   };
   showScenario?: boolean;
+  /** Home page modules configuration. Controls which modules appear in the modules grid section */
+  home?: {
+    /** Show stations module card. Defaults to SHOW_STATIONS_MODULE env var */
+    showStations?: boolean;
+    /** Show spatial data module card. Defaults to true */
+    showSpatialData?: boolean;
+    /** Show scenarios module card. Defaults to config.showScenario */
+    showScenarios?: boolean;
+    /** Show community monitoring module card. Defaults to config.name === "amazonia" */
+    showCommunityMonitoring?: boolean;
+  };
   /** Color scheme for the application. All colors are optional and will fall back to defaults if not provided */
   colors?: {
     /** Primary brand color - used for main buttons, links, and primary UI elements */
