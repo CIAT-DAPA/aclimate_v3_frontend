@@ -42,19 +42,15 @@
       "viewButton": "Ver",
       "stations": {
         "title": "Estaciones",
-        "description": "Visualiza datos climáticos históricos de estaciones meteorológicas, indicadores y pronósticos para tu región."
+        "description": "Consulta la información de las estaciones meteorológicas y analiza datos climáticos históricos e indicadores disponibles para cada ubicación."
       },
       "spatial": {
         "title": "Datos espaciales",
-        "description": "Explora mapas interactivos de variables climáticas, indicadores y escenarios para todo el territorio."
+        "description": "Explora mapas interactivos con información climática para todo el territorio. Accede a datos históricos, indicadores y otras capas de información geoespacial para apoyar tus análisis."
       },
       "scenario": {
         "title": "Escenarios",
-        "description": "Descubre los escenarios climáticos y recibe recomendaciones para la toma de decisiones en el sector agropecuario."
-      },
-      "communityMonitoring": {
-        "title": "Monitoreo climático",
-        "description": "Accede al panel de monitoreo climático comunitario con datos e indicadores actualizados."
+        "description": "Consulta escenarios climáticos y obtén recomendaciones que apoyen la toma de decisiones para la planificación y gestión de las actividades agropecuarias."
       }
     }
   },

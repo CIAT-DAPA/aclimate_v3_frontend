@@ -42,19 +42,15 @@
       "viewButton": "View",
       "stations": {
         "title": "Stations",
-        "description": "View historical climate data from weather stations, indicators and forecasts for your region."
+        "description": "Check weather station information and analyze historical climate data and indicators available for each location."
       },
       "spatial": {
         "title": "Spatial data",
-        "description": "Explore interactive maps of climate variables, indicators and scenarios for the entire territory."
+        "description": "Explore interactive maps with climate information for the entire territory. Access historical data, indicators and other geospatial layers to support your analysis."
       },
       "scenario": {
         "title": "Scenarios",
-        "description": "Discover climate scenarios and receive recommendations for decision-making in the agricultural sector."
-      },
-      "communityMonitoring": {
-        "title": "Climate monitoring",
-        "description": "Access the community climate monitoring dashboard with updated data and indicators."
+        "description": "Review climate scenarios and get recommendations to support decision-making for planning and managing agricultural activities."
       }
     }
   },

@@ -27,14 +27,5 @@ export const getAvailableModules = (config: BranchConfig): ModuleInfo[] => {
     modules.push({ key: "scenario", route: "/scenario", isActive: true });
   }
 
-  // Community Monitoring module (Amazonía only)
-  if (hc?.showCommunityMonitoring ?? config.name === "amazonia") {
-    modules.push({
-      key: "communityMonitoring",
-      route: "https://ezapatacaldas.github.io/climate-dashboard-sat-pma/",
-      isActive: true,
-    });
-  }
-
   return modules;
 };
