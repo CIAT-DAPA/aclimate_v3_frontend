@@ -53,6 +53,12 @@ La plataforma integra de manera estratégica datos de pronósticos oficiales y a
         alt: "MARN logo",
       },
     ],
+    userManual: {
+      url: "/assets/Manual_Navegación_Usuario_AClimate_El_Salvador_v1.0.pdf",
+      title: "Manual de navegación de la plataforma",
+      description:
+        "Descarga el manual de uso para aprender a navegar y aprovechar todas las funcionalidades de AClimate El Salvador.",
+    },
   },
   showScenario: false,
   colors: {
