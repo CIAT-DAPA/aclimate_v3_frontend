@@ -58,7 +58,10 @@
     "projectLink": "Conoce más del proyecto",
     "ctaTitle": "¿Listo para explorar los datos climáticos?",
     "ctaSubtitle": "Accede a información climática detallada y herramientas de análisis avanzadas",
-    "ctaButton": "Comenzar ahora"
+    "ctaButton": "Comenzar ahora",
+    "manualTitle": "Manual de usuario",
+    "manualDescription": "Descarga el manual de navegación para aprender a usar todas las funcionalidades de la plataforma.",
+    "manualButton": "Descargar manual"
   },
   "locations": {
     "loadingMap": "Cargando mapa...",
