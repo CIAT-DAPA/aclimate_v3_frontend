@@ -32,6 +32,12 @@ export interface BranchConfig {
       /** Renders the card larger and with a subtle highlight ring */
       featured?: boolean;
     }>;
+    /** Optional user manual PDF for the platform. Renders a download/link section in the About page */
+    userManual?: {
+      url: string;
+      title: string;
+      description?: string;
+    };
   };
   showScenario?: boolean;
   /** Home page modules configuration. Controls which modules appear in the modules grid section */

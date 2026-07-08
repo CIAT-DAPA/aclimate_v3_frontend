@@ -118,6 +118,90 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* User Manual section — conditional per-country config */}
+      {config.aboutUs.userManual && (
+        <section className="py-12 md:py-16 bg-white">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-3xl mx-auto">
+              <div
+                className="rounded-2xl p-8 md:p-10 text-center shadow-lg border border-gray-200"
+                style={{
+                  backgroundImage: `linear-gradient(to bottom right, rgba(var(--color-primary-rgb), 0.04), rgba(var(--color-secondary-rgb), 0.04))`,
+                }}
+              >
+                {/* PDF icon */}
+                <div
+                  className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--color-primary)" }}
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    style={{ color: "var(--color-text-light)" }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 11v4m0 0l-2-2m2 2l2-2"
+                    />
+                  </svg>
+                </div>
+
+                <h3
+                  className="text-xl md:text-2xl font-bold mb-3"
+                  style={{ color: "var(--color-text-dark)" }}
+                >
+                  {config.aboutUs.userManual.title}
+                </h3>
+
+                <p
+                  className="text-sm md:text-base mb-6 max-w-xl mx-auto"
+                  style={{ color: "var(--color-text-dark)", opacity: 0.7 }}
+                >
+                  {config.aboutUs.userManual.description ||
+                    t("about.manualDescription")}
+                </p>
+
+                <a
+                  href={config.aboutUs.userManual.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:brightness-110"
+                  style={{
+                    backgroundColor: "var(--color-primary)",
+                    color: "var(--color-text-light)",
+                  }}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  {t("about.manualButton")}
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="py-12 md:py-20 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-6xl mx-auto flex flex-col items-center">
