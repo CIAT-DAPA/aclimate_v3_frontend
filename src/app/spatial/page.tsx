@@ -3,7 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { COUNTRY_NAME, GEOSERVER_URL } from "@/app/config";
+import { COUNTRY_NAME, GEOSERVER_URL, apiPath } from "@/app/config";
 import { useCountry } from "@/app/contexts/CountryContext";
 import {
   spatialService,
@@ -664,7 +664,7 @@ export default function SpatialDataPage() {
       const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${time}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
 
       // Guardar la URL proxificada para evitar CORS/ORB en el navegador
-      const proxiedUrl = `/api/wms?url=${encodeURIComponent(url)}`;
+      const proxiedUrl = apiPath(`/api/wms?url=${encodeURIComponent(url)}`);
 
       // Actualizar la referencia sin causar rerender
       rasterFilesRef.current[layerName] = {
@@ -692,7 +692,7 @@ export default function SpatialDataPage() {
 
         // Usar el proxy para evitar bloqueos CORS al leer GetCapabilities
         const response = await fetch(
-          `/api/wms?url=${encodeURIComponent(capabilitiesUrl)}`,
+          apiPath(`/api/wms?url=${encodeURIComponent(capabilitiesUrl)}`),
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -724,7 +724,7 @@ export default function SpatialDataPage() {
           // Usar image/geotiff para obtener los valores reales del raster
           // WMS 1.3.0 con EPSG:4326 requiere orden: miny,minx,maxy,maxx (lat,lon,lat,lon)
           const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff&time=${timeValue}&bbox=${bbox}&width=1024&height=1024&crs=EPSG:4326`;
-          const proxied = `/api/wms?url=${encodeURIComponent(url)}`;
+          const proxied = apiPath(`/api/wms?url=${encodeURIComponent(url)}`);
           const fileInfo = {
             url: proxied,
             layer: layerName,
