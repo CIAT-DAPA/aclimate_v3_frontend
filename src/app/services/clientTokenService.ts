@@ -1,4 +1,4 @@
-import { KEYCLOAK_CLIENT_ID } from "@/app/config";
+import { KEYCLOAK_CLIENT_ID, apiPath } from "@/app/config";
 
 interface CachedToken {
   accessToken: string;
@@ -26,7 +26,7 @@ export async function getClientToken(): Promise<string> {
     client_id: KEYCLOAK_CLIENT_ID,
   });
 
-  const response = await fetch("/api/auth/token", {
+  const response = await fetch(apiPath("/api/auth/token"), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),

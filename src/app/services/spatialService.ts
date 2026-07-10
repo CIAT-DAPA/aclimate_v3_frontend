@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_URL } from "@/app/config";
+import { API_URL, apiPath } from "@/app/config";
 import { getClientToken } from "@/app/services/clientTokenService";
 
 // Cache para almacenar las promises de GetCapabilities y evitar peticiones duplicadas
@@ -21,7 +21,7 @@ const fetchCapabilities = async (wmsUrl: string): Promise<Document> => {
       try {
         // En el navegador usamos la ruta proxy para evitar CORS
         if (typeof window !== "undefined") {
-          const proxied = `/api/wms?url=${encodeURIComponent(cacheKey)}`;
+          const proxied = apiPath(`/api/wms?url=${encodeURIComponent(cacheKey)}`);
           const res = await fetch(proxied);
           const text = await res.text();
           const parser = new DOMParser();
@@ -397,7 +397,7 @@ export const spatialService = {
 
       if (!capabilitiesCache[cacheKey]) {
         capabilitiesCache[cacheKey] = (async () => {
-          const res = await fetch(`/api/wms?url=${encodeURIComponent(cacheKey)}`);
+          const res = await fetch(apiPath(`/api/wms?url=${encodeURIComponent(cacheKey)}`));
           const text = await res.text();
           const parser = new DOMParser();
           return parser.parseFromString(text, "text/xml");

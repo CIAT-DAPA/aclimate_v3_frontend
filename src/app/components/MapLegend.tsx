@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useMap } from "react-leaflet";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { apiPath } from "@/app/config";
 
 interface MapLegendProps {
   wmsUrl?: string;
@@ -53,7 +54,7 @@ const MapLegend: React.FC<MapLegendProps> = ({
       params.set("TIME", time);
     }
 
-    const url = `/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}&${params.toString()}`;
+    const url = apiPath(`/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}&${params.toString()}`);
     setLegendUrl(url);
   }, [wmsUrl, layerName, time]);
 
