@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButtonLink } from "@/app/components/ui/button";
+import { BASE_PATH } from "@/app/config";
 
 export default function AboutPage() {
   const config = useBranchConfig();
@@ -172,7 +173,7 @@ export default function AboutPage() {
                 </p>
 
                 <a
-                  href={config.aboutUs.userManual.url}
+                  href={`${BASE_PATH}${config.aboutUs.userManual.url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:brightness-110"
