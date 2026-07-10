@@ -20,3 +20,7 @@ export const KEYCLOAK_CLIENT_ID = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 
 // Módulos habilitados/deshabilitados
 export const SHOW_STATIONS_MODULE = process.env.NEXT_PUBLIC_SHOW_STATIONS_MODULE === 'true';
 export const SHOW_USERS_MODULE = process.env.NEXT_PUBLIC_SHOW_USERS_MODULE === 'true';
+
+// Helper para prefijar rutas de API con el basePath cuando corresponda
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+export const apiPath = (path: string) => `${BASE_PATH}${path}`;
