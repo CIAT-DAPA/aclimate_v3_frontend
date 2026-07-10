@@ -18,6 +18,7 @@ import React, {
   useMemo,
 } from "react";
 import { toPng } from "html-to-image";
+import { apiPath } from "@/app/config";
 import jsPDF from "jspdf";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -321,7 +322,7 @@ export default function AmazonasScenarioPage() {
 
       const link = document.createElement("a");
       // Use proxy to avoid CORS / ORB blocking in browser
-      link.href = `/api/wms?url=${encodeURIComponent(url)}`;
+      link.href = apiPath(`/api/wms?url=${encodeURIComponent(url)}`);
       link.download = `Monthly_Climate_Forecast${timeValue ? `_${timeValue}` : ""}.tiff`;
       document.body.appendChild(link);
       link.click();
@@ -389,7 +390,7 @@ export default function AmazonasScenarioPage() {
 
         console.log("📍 WMS URL:", url);
 
-        const response = await fetch(`/api/wms?url=${encodeURIComponent(url)}`);
+        const response = await fetch(apiPath(`/api/wms?url=${encodeURIComponent(url)}`));
         const data = await response.json();
 
         if (data.features && data.features.length > 0) {
