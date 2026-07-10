@@ -7,6 +7,7 @@ import "leaflet-timedimension";
 //import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 import { spatialService } from "@/app/services/spatialService";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { apiPath } from "@/app/config";
 
 interface TimelineControllerProps {
   dimensionName: string;
@@ -101,7 +102,7 @@ const TimelineController: React.FC<TimelineControllerProps> = ({
       tdInstanceRef.current = timeDimension;
 
       // Crear capa WMS con soporte de timeDimension local
-      const proxiedWmsUrl = `/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}`;
+      const proxiedWmsUrl = apiPath(`/api/wms?proxyTo=${encodeURIComponent(wmsUrl)}`);
 
       const baseWms = (L.tileLayer as any).wms(proxiedWmsUrl, {
         layers: layer,

@@ -27,6 +27,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButton } from "@/app/components/ui/button";
+import { apiPath } from "@/app/config";
 import {
   addUserStation,
   deleteUserStation,
@@ -575,7 +576,7 @@ const MapComponent = ({
             params.append("TIME", timeToUse);
           }
 
-          const url = `/api/wms?proxyTo=${encodeURIComponent(layer.url)}&${params.toString()}`;
+          const url = apiPath(`/api/wms?proxyTo=${encodeURIComponent(layer.url)}&${params.toString()}`);
           const response = await fetch(url);
           const data = await response.json();
 
@@ -830,7 +831,7 @@ const MapComponent = ({
             <WMSTileLayer
               key={`wms-${index}-${layer.layers}-${layer.time || "notime"}`}
               // include layer and time in key so React re-mounts layer when they change
-              url={`/api/wms?proxyTo=${encodeURIComponent(layer.url)}`}
+              url={apiPath(`/api/wms?proxyTo=${encodeURIComponent(layer.url)}`)}
               layers={layer.layers}
               format={layer.format || "image/png"}
               transparent={layer.transparent !== false}
@@ -859,9 +860,7 @@ const MapComponent = ({
                   checked={true}
                 >
                   <WMSTileLayer
-                    url={`/api/wms?proxyTo=${encodeURIComponent(
-                      `https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`,
-                    )}`}
+                    url={apiPath(`/api/wms?proxyTo=${encodeURIComponent(`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`)}`)}
                     layers={adminLayer.layer}
                     format="image/png"
                     transparent={true}
