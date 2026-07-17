@@ -18,6 +18,7 @@ import {
   KEYCLOAK_URL,
   KEYCLOAK_REALM,
   KEYCLOAK_CLIENT_ID,
+  SHOW_USERS_MODULE,
 } from "@/app/config";
 
 interface ValidationPayload {
@@ -44,9 +45,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Inicializar loading como false en el servidor para evitar problemas de hidratación
+  // Loading only applies when the users module is enabled and we're in the browser.
   const [loading, setLoading] = useState<boolean>(() =>
-    typeof window === "undefined" ? false : true,
+    typeof window === "undefined" ? false : SHOW_USERS_MODULE,
   );
   const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<any | null>(null);
@@ -69,8 +70,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    // Solo ejecutar en el cliente
+    // Solo ejecutar en el cliente, y solo si el módulo de usuarios está activo
     if (typeof window === "undefined") return;
+    if (!SHOW_USERS_MODULE) return;
 
     if (isRun.current) return;
     isRun.current = true;
