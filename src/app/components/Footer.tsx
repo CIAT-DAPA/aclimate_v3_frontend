@@ -3,15 +3,21 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useI18n } from "@/app/contexts/I18nContext";
+import { useBranchConfig } from "@/app/configs/index";
 
 const Footer = () => {
   const { t } = useI18n();
+  const config = useBranchConfig();
+  const branding = config.footer?.secondaryBranding;
 
   return (
     <footer style={{ backgroundColor: "var(--color-primary)" }}>
       <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-xs sm:text-sm" style={{ color: "var(--color-text-light)" }}>
+          <span
+            className="text-xs sm:text-sm"
+            style={{ color: "var(--color-text-light)" }}
+          >
             {t("footer.developedBy")}
           </span>
           <a
@@ -28,7 +34,28 @@ const Footer = () => {
               className="h-8 sm:h-10 w-auto"
             />
           </a>
+
+          {/* Secondary branding link (e.g. "Más de AClimate") */}
+          {branding && (
+            <a
+              href={branding.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity ml-3 sm:ml-4"
+              style={{ color: "var(--color-text-light)" }}
+            >
+              <span className="text-xs sm:text-sm">{branding.text}</span>
+              <Image
+                src={branding.logoSrc}
+                alt="AClimate"
+                width={20}
+                height={20}
+                className="h-5 w-auto"
+              />
+            </a>
+          )}
         </div>
+
         <div className="flex gap-2 sm:gap-4">
           <Link
             href="https://www.aclimate.org/data-policy"
