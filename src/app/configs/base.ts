@@ -6,6 +6,22 @@ export interface ClimatePerspectiveConfig {
   linkText: string;
 }
 
+/** Chart colors keyed by parameter type. Used across forecast, historical, and indicator charts. */
+export interface ChartColors {
+  temp_max?: string;
+  temp_min?: string;
+  temp?: string;
+  prec?: string;
+  cloud?: string;
+  wind?: string;
+  humidity?: string;
+  visibility?: string;
+  radiation?: string;
+  pressure?: string;
+  water?: string;
+  other?: string;
+}
+
 export interface BranchConfig {
   name: string;
   idCountry: number;
@@ -99,6 +115,17 @@ export interface BranchConfig {
   };
   analytics?: {
     gaId: string;
+  };
+  /** Chart colors keyed by parameter type. When set, these override the default hardcoded chart colors for this branch. */
+  chartColors?: ChartColors;
+  /** Footer configuration for additional branding links */
+  footer?: {
+    /** Secondary branding link (e.g. "Más de AClimate" with logo) */
+    secondaryBranding?: {
+      text: string;
+      url: string;
+      logoSrc: string;
+    };
   };
 }
 

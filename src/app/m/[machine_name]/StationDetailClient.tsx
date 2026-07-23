@@ -11,7 +11,6 @@ import {
   IndicatorCategory,
 } from "@/app/services/spatialService";
 import { Station } from "@/app/types/Station";
-import Link from "next/link";
 import ClimateChart from "@/app/components/ClimateChart";
 import DecadeCalendarChart from "@/app/components/DecadeCalendarChart";
 import { CanicVisualizer } from "@/app/components/CanicVisualizer";
@@ -43,9 +42,9 @@ import {
   VARIABLE_CONFIG,
   countryCodeMap,
   MONTHS,
-  indicatorPeriodOptions,
   getIndicatorColor,
 } from "./config";
+import { resolveChartColors, getVariableColorFromChartColors } from "@/app/utils/colorUtils";
 
 // Cargar ForecastSection dinámicamente sin SSR (se carga en background)
 const ForecastSection = dynamic(
@@ -450,6 +449,12 @@ export default function StationDetailClient({
     climateHistoricalDataFull,
   ]);
 
+  // Resolve chart colors from branch config (dynamic colors per country)
+  const resolvedChartColors = useMemo(
+    () => resolveChartColors(branchConfig.chartColors),
+    [branchConfig.chartColors],
+  );
+
   // Datos de gráficos climáticos procesados y limitados
   const climateChartsData = useMemo(() => {
     if (!climateHistoricalData) return null;
@@ -497,6 +502,9 @@ export default function StationDetailClient({
           values = sampledValues;
         }
 
+        // Get dynamic color from chartColors (falls back to VARIABLE_CONFIG default)
+        const variableColor = getVariableColorFromChartColors(resolvedChartColors, varKey);
+
         // Preparar datasets base
         const datasets: Array<{
           label: string;
@@ -507,7 +515,7 @@ export default function StationDetailClient({
         }> = [
           {
             label: "Datos estación",
-            color: config.color,
+            color: variableColor,
             data: values,
             dates: dates,
           },
