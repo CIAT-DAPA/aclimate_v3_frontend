@@ -27,6 +27,7 @@ import { useBranchConfig } from "@/app/configs";
 import { useForecast } from "@/app/hooks/useForecast";
 import type { ForecastPoint, ForecastParameter } from "@/app/services/forecastService";
 import type { ApexOptions } from "apexcharts";
+import { resolveChartColors } from "@/app/utils/colorUtils";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
@@ -47,51 +48,110 @@ export type ParamType =
   | "wind" | "humidity" | "visibility" | "radiation"
   | "pressure" | "water" | "other";
 
-interface ParamMeta {
+export interface ParamMeta {
   type: ParamType;
   icon: IconDefinition;
   color: string;       // Tailwind text-color class
   chartColor: string;  // hex for ApexCharts
 }
 
-const PARAM_RULES: Array<{ test: (kw: string) => boolean; meta: ParamMeta }> = [
-  { test: (kw) => /max|alta|superior/i.test(kw) && /temp|t_max/i.test(kw),
-    meta: { type: "temp_max", icon: faTemperatureArrowUp,   color: "text-red-500",    chartColor: "#EF4444" } },
-  { test: (kw) => /min|baja|inferior/i.test(kw) && /temp|t_min/i.test(kw),
-    meta: { type: "temp_min", icon: faTemperatureArrowDown, color: "text-blue-400",   chartColor: "#60A5FA" } },
-  { test: (kw) => /^temp(eratura)?$/i.test(kw),
-    meta: { type: "temp",     icon: faThermometerFull,      color: "text-orange-400", chartColor: "#FB923C" } },
-  { test: (kw) => /prec|rain|lluv/i.test(kw),
-    meta: { type: "prec",     icon: faCloudRain,            color: "text-blue-500",   chartColor: "#3B82F6" } },
-  { test: (kw) => /nub|cloud/i.test(kw),
-    meta: { type: "cloud",    icon: faCloud,                color: "text-gray-400",   chartColor: "#9CA3AF" } },
-  { test: (kw) => /viento|wind|vel_viento|velocidad|v_\d+m|wd_/i.test(kw),
-    meta: { type: "wind",     icon: faWind,                 color: "text-teal-500",   chartColor: "#14B8A6" } },
-  { test: (kw) => /hum|humid/i.test(kw),
-    meta: { type: "humidity", icon: faDroplet,              color: "text-sky-400",    chartColor: "#38BDF8" } },
-  { test: (kw) => /vis|visib/i.test(kw),
-    meta: { type: "visibility", icon: faEye,                color: "text-purple-400", chartColor: "#C084FC" } },
-  { test: (kw) => /rad|solar|sol/i.test(kw),
-    meta: { type: "radiation", icon: faMountainSun,         color: "text-yellow-500", chartColor: "#EAB308" } },
-  { test: (kw) => /pres|presion|pressure|hpa|mbar/i.test(kw),
-    meta: { type: "pressure", icon: faGauge,                color: "text-violet-500", chartColor: "#8B5CF6" } },
-  { test: (kw) => /agua|water|nivel|caudal/i.test(kw),
-    meta: { type: "water",    icon: faWater,                color: "text-cyan-500",   chartColor: "#06B6D4" } },
+/** Tailwind text-color classes keyed by param type */
+const PARAM_TAILWIND_COLORS: Record<ParamType, string> = {
+  temp_max: "text-red-500",
+  temp_min: "text-blue-400",
+  temp: "text-orange-400",
+  prec: "text-blue-500",
+  cloud: "text-gray-400",
+  wind: "text-teal-500",
+  humidity: "text-sky-400",
+  visibility: "text-purple-400",
+  radiation: "text-yellow-500",
+  pressure: "text-violet-500",
+  water: "text-cyan-500",
+  other: "text-green-600",
+};
+
+/** Icons keyed by param type */
+const PARAM_ICONS: Record<ParamType, IconDefinition> = {
+  temp_max: faTemperatureArrowUp,
+  temp_min: faTemperatureArrowDown,
+  temp: faThermometerFull,
+  prec: faCloudRain,
+  cloud: faCloud,
+  wind: faWind,
+  humidity: faDroplet,
+  visibility: faEye,
+  radiation: faMountainSun,
+  pressure: faGauge,
+  water: faWater,
+  other: faChartLine,
+};
+
+/** Short descriptive labels for parameter types (shown below the name on pills) */
+const PARAM_SHORT_LABELS: Record<ParamType, string> = {
+  temp_max: "Temperatura máxima",
+  temp_min: "Temperatura mínima",
+  temp: "Temperatura",
+  prec: "Precipitación",
+  cloud: "Nubosidad",
+  wind: "Viento",
+  humidity: "Humedad",
+  visibility: "Visibilidad",
+  radiation: "Radiación solar",
+  pressure: "Presión",
+  water: "Agua",
+  other: "Variable",
+};
+
+/** Classification rules: tested in order, first match wins. Maps keyword -> type */
+const PARAM_CLASSIFICATION: Array<{ test: (kw: string) => boolean; type: ParamType }> = [
+  { test: (kw) => /max|alta|superior/i.test(kw) && /temp|t_max/i.test(kw),    type: "temp_max" },
+  { test: (kw) => /min|baja|inferior/i.test(kw) && /temp|t_min/i.test(kw),    type: "temp_min" },
+  { test: (kw) => /^temp(eratura)?$/i.test(kw),                               type: "temp" },
+  { test: (kw) => /prec|rain|lluv/i.test(kw),                                  type: "prec" },
+  { test: (kw) => /nub|cloud/i.test(kw),                                       type: "cloud" },
+  { test: (kw) => /viento|wind|vel_viento|velocidad|v_\d+m|wd_/i.test(kw),     type: "wind" },
+  { test: (kw) => /hum|humid/i.test(kw),                                       type: "humidity" },
+  { test: (kw) => /vis|visib/i.test(kw),                                       type: "visibility" },
+  { test: (kw) => /rad|solar|sol/i.test(kw),                                   type: "radiation" },
+  { test: (kw) => /pres|presion|pressure|hpa|mbar/i.test(kw),                   type: "pressure" },
+  { test: (kw) => /agua|water|nivel|caudal/i.test(kw),                          type: "water" },
 ];
 
-function getParamMeta(keyword: string): ParamMeta {
-  for (const rule of PARAM_RULES) {
-    if (rule.test(keyword)) return rule.meta;
-  }
-  return { type: "other", icon: faChartLine, color: "text-green-600", chartColor: "#16A34A" };
+/**
+ * Build a getParamMeta function that uses the resolved chartColors from branch config.
+ * Falls back to hardcoded defaults when branch config has no chartColors.
+ */
+function buildGetParamMeta(chartColors: ReturnType<typeof resolveChartColors>) {
+  return (keyword: string): ParamMeta => {
+    for (const rule of PARAM_CLASSIFICATION) {
+      if (rule.test(keyword)) {
+        return {
+          type: rule.type,
+          icon: PARAM_ICONS[rule.type],
+          color: PARAM_TAILWIND_COLORS[rule.type],
+          chartColor: chartColors[rule.type],
+        };
+      }
+    }
+    return {
+      type: "other",
+      icon: PARAM_ICONS.other,
+      color: PARAM_TAILWIND_COLORS.other,
+      chartColor: chartColors.other,
+    };
+  };
 }
 
-// Convenience helpers used for card aggregation and climogram detection
-const isTempMax = (kw: string) => getParamMeta(kw).type === "temp_max";
-const isTempMin = (kw: string) => getParamMeta(kw).type === "temp_min";
-const isTemp    = (kw: string) => getParamMeta(kw).type === "temp";
-const isPrec    = (kw: string) => getParamMeta(kw).type === "prec";
-const isCloud   = (kw: string) => getParamMeta(kw).type === "cloud";
+// Convenience helpers used for card aggregation and climogram detection (these use a default getParamMeta)
+// They will be re-created inside the component with the resolved colors.
+const makeHelpers = (getMeta: ReturnType<typeof buildGetParamMeta>) => ({
+  isTempMax: (kw: string) => getMeta(kw).type === "temp_max",
+  isTempMin: (kw: string) => getMeta(kw).type === "temp_min",
+  isTemp:    (kw: string) => getMeta(kw).type === "temp",
+  isPrec:    (kw: string) => getMeta(kw).type === "prec",
+  isCloud:   (kw: string) => getMeta(kw).type === "cloud",
+});
 
 // ─── Weather icon helpers ─────────────────────────────────────────────────────
 
@@ -121,15 +181,16 @@ function buildDailySummaries(
   forecastData: Record<string, ForecastPoint[]>,
   parameters: ForecastParameter[],
   locale: string,
+  helpers: ReturnType<typeof makeHelpers>,
 ): DaySummary[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const tempMaxKw = parameters.find((p) => isTempMax(p.keyword))?.keyword;
-  const tempMinKw = parameters.find((p) => isTempMin(p.keyword))?.keyword;
-  const tempKw    = parameters.find((p) => isTemp(p.keyword))?.keyword;
-  const precKw    = parameters.find((p) => isPrec(p.keyword))?.keyword;
-  const cloudKw   = parameters.find((p) => isCloud(p.keyword))?.keyword;
+  const tempMaxKw = parameters.find((p) => helpers.isTempMax(p.keyword))?.keyword;
+  const tempMinKw = parameters.find((p) => helpers.isTempMin(p.keyword))?.keyword;
+  const tempKw    = parameters.find((p) => helpers.isTemp(p.keyword))?.keyword;
+  const precKw    = parameters.find((p) => helpers.isPrec(p.keyword))?.keyword;
+  const cloudKw   = parameters.find((p) => helpers.isCloud(p.keyword))?.keyword;
 
   const dateSet = new Set<string>();
   Object.values(forecastData).forEach((pts) =>
@@ -143,7 +204,6 @@ function buildDailySummaries(
   ): Record<string, number> => {
     if (!kw || !forecastData[kw]?.length) return {};
     const map: Record<string, number[]> = {};
-    // pt.fecha looks like "2026-05-07T11:00:00" — split("T")[0] gives "2026-05-07"
     forecastData[kw].forEach((pt) => {
       const d = pt.fecha.split("T")[0];
       (map[d] ??= []).push(pt.valor);
@@ -319,6 +379,7 @@ interface ClimoChartProps {
   tempMinKw: string | undefined;
   tempKw: string | undefined;
   parameters: ForecastParameter[];
+  chartColors: ReturnType<typeof resolveChartColors>;
 }
 
 function ClimoChart({
@@ -328,6 +389,7 @@ function ClimoChart({
   tempMinKw,
   tempKw,
   parameters,
+  chartColors,
 }: ClimoChartProps) {
   const { precData, tempMaxData, tempMinData, tempData } = useMemo(
     () => buildClimoData(forecastData, precKw, tempMaxKw, tempMinKw, tempKw),
@@ -344,24 +406,24 @@ function ClimoChart({
   const hasTempSingle = tempData.length > 0;
 
   const series = [
-    { name: precParam?.name ?? "Precipitación", type: "bar", data: precData },
+    { name: precParam?.name ?? "Precipitación", type: "bar" as const, data: precData },
     ...(hasTempMax
-      ? [{ name: tempMaxParam?.name ?? "T. Máx", type: "line", data: tempMaxData }]
+      ? [{ name: tempMaxParam?.name ?? "T. Máx", type: "line" as const, data: tempMaxData }]
       : []),
     ...(hasTempMin
-      ? [{ name: tempMinParam?.name ?? "T. Mín", type: "line", data: tempMinData }]
+      ? [{ name: tempMinParam?.name ?? "T. Mín", type: "line" as const, data: tempMinData }]
       : []),
     ...(hasTempSingle
-      ? [{ name: tempParam?.name ?? "Temperatura", type: "line", data: tempData }]
+      ? [{ name: tempParam?.name ?? "Temperatura", type: "line" as const, data: tempData }]
       : []),
   ];
 
-  // Dynamic colors: prec=blue, tempMax=red, tempMin=lightblue, tempSingle=orange
+  // Dynamic colors from chartColors config
   const colors = [
-    "#3B82F6",
-    ...(hasTempMax    ? ["#EF4444"] : []),
-    ...(hasTempMin    ? ["#60A5FA"] : []),
-    ...(hasTempSingle ? ["#FB923C"] : []),
+    chartColors.prec,
+    ...(hasTempMax    ? [chartColors.temp_max] : []),
+    ...(hasTempMin    ? [chartColors.temp_min] : []),
+    ...(hasTempSingle ? [chartColors.temp] : []),
   ];
 
   // yaxis: one entry per series.
@@ -437,10 +499,11 @@ function ClimoChart({
 interface LineChartProps {
   points: ForecastPoint[];
   parameter: ForecastParameter;
+  getMeta: ReturnType<typeof buildGetParamMeta>;
 }
 
-function LineChart({ points, parameter }: LineChartProps) {
-  const meta = useMemo(() => getParamMeta(parameter.keyword), [parameter.keyword]);
+function LineChart({ points, parameter, getMeta }: LineChartProps) {
+  const meta = useMemo(() => getMeta(parameter.keyword), [parameter.keyword, getMeta]);
   const data = useMemo(() => buildLineData(points), [points]);
 
   const options: ApexOptions = {
@@ -507,10 +570,22 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
   const { parameters, forecastData, loading, error } = useForecast(extId);
   const [selectedTab, setSelectedTab] = useState<string>("");
 
-  const precKw    = parameters.find((p) => isPrec(p.keyword))?.keyword;
-  const tempMaxKw = parameters.find((p) => isTempMax(p.keyword))?.keyword;
-  const tempMinKw = parameters.find((p) => isTempMin(p.keyword))?.keyword;
-  const tempKw    = parameters.find((p) => isTemp(p.keyword))?.keyword;
+  // Resolve chart colors from branch config (falls back to defaults for other countries)
+  const chartColors = useMemo(
+    () => resolveChartColors(branchConfig.chartColors),
+    [branchConfig.chartColors],
+  );
+
+  // Build dynamic getParamMeta with resolved colors
+  const getMeta = useMemo(() => buildGetParamMeta(chartColors), [chartColors]);
+
+  // Build helper functions using the dynamic getMeta
+  const helpers = useMemo(() => makeHelpers(getMeta), [getMeta]);
+
+  const precKw    = parameters.find((p) => helpers.isPrec(p.keyword))?.keyword;
+  const tempMaxKw = parameters.find((p) => helpers.isTempMax(p.keyword))?.keyword;
+  const tempMinKw = parameters.find((p) => helpers.isTempMin(p.keyword))?.keyword;
+  const tempKw    = parameters.find((p) => helpers.isTemp(p.keyword))?.keyword;
 
   const hasClimoData = Boolean(
     precKw &&
@@ -527,8 +602,8 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
   }, [parameters, selectedTab]);
 
   const dailySummaries = useMemo(
-    () => buildDailySummaries(forecastData, parameters, locale),
-    [forecastData, parameters, locale],
+    () => buildDailySummaries(forecastData, parameters, locale, helpers),
+    [forecastData, parameters, locale, helpers],
   );
 
   const hasCardData = dailySummaries.some((d) => d.avgCloud !== null || d.totalPrec !== null);
@@ -610,34 +685,49 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
                       tempMinKw={tempMinKw}
                       tempKw={tempKw}
                       parameters={parameters}
+                      chartColors={chartColors}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Parameter tabs — individual variable pills */}
+              {/* Parameter tabs — individual variable pills with visible titles */}
               <div className="flex flex-wrap gap-2">
                 {parameters.map((p) => {
-                  const meta = getParamMeta(p.keyword);
+                  const meta = getMeta(p.keyword);
                   const isActive = selectedTab === p.keyword;
-                  const tooltipText = [p.name, p.interpretacion].filter(Boolean).join(" — ");
+                  const bgColor = isActive ? meta.chartColor : undefined;
                   return (
                     <button
                       key={p.keyword}
                       onClick={() => setSelectedTab(p.keyword)}
-                      className={`relative group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border select-none ${
+                      className={`relative group inline-flex flex-col items-start px-3 py-2 rounded-xl text-sm font-medium transition-colors border select-none min-w-0 ${
                         isActive ? "text-white border-transparent" : "bg-white border-gray-300 hover:bg-gray-50"
                       }`}
-                      style={isActive ? { backgroundColor: meta.chartColor, borderColor: meta.chartColor } : {}}
+                      style={
+                        isActive
+                          ? { backgroundColor: bgColor, borderColor: bgColor }
+                          : { borderColor: meta.chartColor + "55" }
+                      }
                     >
-                      <FontAwesomeIcon
-                        icon={meta.icon}
-                        className={`w-3.5 h-3.5 ${isActive ? "text-white" : meta.color}`}
-                      />
-                      <span className={isActive ? "text-white" : "text-gray-700"}>{p.name}</span>
-                      {tooltipText && (
+                      {/* First line: icon + name */}
+                      <span className="flex items-center gap-1.5 w-full">
+                        <FontAwesomeIcon
+                          icon={meta.icon}
+                          className={`w-3.5 h-3.5 ${isActive ? "text-white" : meta.color}`}
+                        />
+                        <span className={isActive ? "text-white" : "text-gray-700"}>{p.name}</span>
+                      </span>
+                      {/* Second line: short descriptive label */}
+                      <span className={`text-[10px] leading-tight mt-0.5 text-left w-full ${
+                        isActive ? "text-white/80" : "text-gray-400"
+                      }`}>
+                        {PARAM_SHORT_LABELS[meta.type] || "Variable"}
+                      </span>
+                      {/* Tooltip with full parameter description on hover */}
+                      {p.interpretacion && (
                         <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-gray-800 text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 font-normal">
-                          {tooltipText}
+                          {p.name} — {p.interpretacion}
                         </span>
                       )}
                     </button>
@@ -651,6 +741,7 @@ export default function ForecastSection({ extId }: ForecastSectionProps) {
                   <LineChart
                     points={forecastData[selectedTab]}
                     parameter={parameters.find((p) => p.keyword === selectedTab)!}
+                    getMeta={getMeta}
                   />
                 </div>
               )}

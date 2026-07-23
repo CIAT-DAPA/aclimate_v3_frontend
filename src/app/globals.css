@@ -3,36 +3,15 @@
 @import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
 /* 
- * DEFAULT color variables - these will be overridden by SSR inline style tag 
- * in layout.tsx with the correct country-specific colors.
- * Keeping these here prevents any flash while the style tag loads.
+ * Color variables are managed by the SSR inline style tag in layout.tsx 
+ * (getThemeStyleTag() in utils/theme.ts). The style tag is injected into <head>
+ * so it arrives with the initial HTML — no flash of wrong colors.
+ * 
+ * Only keep the bare-minimum defaults here so Tailwind's @theme works.
  */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  
-  --color-primary: #283618;
-  --color-secondary: #dda15e;
-  --color-accent: #fefae0;
-  --color-tertiary: #bc6c25;
-  --color-quaternary: #dce1c8;
-  --color-text-light: #FFFBED;
-  --color-text-dark: #1f2937;
-  --color-gradient-start: #4b6d23;
-  --color-gradient-end: #283618;
-  --color-success: #16A34A;
-  
-  /* RGB versions for rgba() usage */
-  --color-primary-rgb: 40, 54, 24;
-  --color-secondary-rgb: 221, 161, 94;
-  --color-accent-rgb: 254, 250, 224;
-  --color-tertiary-rgb: 188, 108, 37;
-  --color-quaternary-rgb: 220, 225, 200;
-  --color-text-light-rgb: 255, 251, 237;
-  --color-text-dark-rgb: 31, 41, 55;
-  --color-gradient-start-rgb: 75, 109, 35;
-  --color-gradient-end-rgb: 40, 54, 24;
-  --color-success-rgb: 22, 163, 74;
 }
 
 @theme inline {
