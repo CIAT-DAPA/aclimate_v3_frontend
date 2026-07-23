@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { getBranchConfig } from "@/app/configs";
 
 const DEFAULT_OG_IMAGE = "/assets/img/bg.jpg";
+const DEFAULT_COUNTRY_NAME = "Amazonia";
 
 const branchConfig = getBranchConfig();
-const DEFAULT_ACLIMATE_APP_ID = "2";
 
 type AclimateAppSeoConfig = {
   countryName: string;
@@ -15,8 +15,10 @@ type AclimateAppSeoConfig = {
   apiCountryId: string;
 };
 
-const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
-  "1": {
+type CountryKey = "honduras" | "amazonia" | "nicaragua" | "el-salvador";
+
+const ACLIMATE_COUNTRY_CONFIGS: Record<CountryKey, AclimateAppSeoConfig> = {
+  honduras: {
     countryName: "Honduras",
     countryLabel: "Honduras",
     siteUrl: "https://honduras.aclimate.org",
@@ -25,7 +27,7 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     apiCountryId: "1",
   },
 
-  "2": {
+  amazonia: {
     countryName: "Amazonia",
     countryLabel: "Amazonía",
     siteUrl: "https://amazonia.aclimate.org",
@@ -34,7 +36,7 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     apiCountryId: "2",
   },
 
-  "3": {
+  nicaragua: {
     countryName: "Nicaragua",
     countryLabel: "Nicaragua",
     siteUrl: "https://nicaragua.aclimate.org",
@@ -43,7 +45,7 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
     apiCountryId: "3",
   },
 
-  "4": {
+  "el-salvador": {
     countryName: "Salvador",
     countryLabel: "El Salvador",
     siteUrl: "https://elsalvador.aclimate.org",
@@ -53,27 +55,47 @@ const ACLIMATE_APP_SEO_CONFIGS: Record<string, AclimateAppSeoConfig> = {
   },
 };
 
-export function getAclimateAppId() {
-  return (
-    process.env.NEXT_PUBLIC_ACLIMATE_APP_ID?.trim() ||
-    process.env.ACLIMATE_APP_ID?.trim() ||
-    DEFAULT_ACLIMATE_APP_ID
-  );
+function normalizeCountryName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, " ");
 }
 
-export function getSeoConfig() {
-  const appId = getAclimateAppId();
-  const config = ACLIMATE_APP_SEO_CONFIGS[appId];
+const COUNTRY_ALIASES: Record<string, CountryKey> = {
+  honduras: "honduras",
 
-  if (!config) {
+  amazonia: "amazonia",
+
+  nicaragua: "nicaragua",
+
+  salvador: "el-salvador",
+  "el salvador": "el-salvador",
+  elsalvador: "el-salvador",
+};
+
+export function getConfiguredCountryName() {
+  return process.env.NEXT_PUBLIC_COUNTRY_NAME?.trim() || DEFAULT_COUNTRY_NAME;
+}
+
+export function getSeoConfig(): AclimateAppSeoConfig {
+  const configuredCountryName = getConfiguredCountryName();
+  const normalizedCountryName = normalizeCountryName(configuredCountryName);
+
+  const countryKey = COUNTRY_ALIASES[normalizedCountryName];
+
+  if (!countryKey) {
     console.warn(
-      `[seo] Unknown AClimate app id "${appId}". Falling back to "${DEFAULT_ACLIMATE_APP_ID}".`,
+      `[seo] País desconocido "${configuredCountryName}" en NEXT_PUBLIC_COUNTRY_NAME. ` +
+        `Se utilizará "${DEFAULT_COUNTRY_NAME}" como configuración predeterminada.`,
     );
 
-    return ACLIMATE_APP_SEO_CONFIGS[DEFAULT_ACLIMATE_APP_ID];
+    return ACLIMATE_COUNTRY_CONFIGS.amazonia;
   }
 
-  return config;
+  return ACLIMATE_COUNTRY_CONFIGS[countryKey];
 }
 
 export function getApiCountryId() {
@@ -106,7 +128,10 @@ const BASE_KEYWORDS = [
 
 function buildDescription(value: string, fallback: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
-  if (!normalized) return fallback;
+
+  if (!normalized) {
+    return fallback;
+  }
 
   const firstSentence = normalized.split(/(?<=[.!?])\s+/)[0] || normalized;
 
@@ -121,6 +146,7 @@ export function getMetadataBase() {
 
 export function getAbsoluteUrl(pathname: string) {
   const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
   return new URL(normalizedPath, `${SITE_URL}/`).toString();
 }
 
