@@ -1,3 +1,5 @@
+import { ChartColors } from "@/app/configs/base";
+
 /**
  * Default color scheme used when colors are not specified in the branch config.
  * These colors match EXACTLY the visual appearance of the original main branch.
@@ -13,6 +15,91 @@ export const DEFAULT_COLORS = {
   gradientStart: "#4b6d23",
   gradientEnd: "#283618",
   success: "#16A34A",
+};
+
+/**
+ * Default chart colors used when chartColors is not specified in the branch config.
+ * These match the original hardcoded colors in ForecastSection.tsx PARAM_RULES.
+ */
+const DEFAULT_CHART_COLORS: Required<ChartColors> = {
+  temp_max: "#EF4444",
+  temp_min: "#60A5FA",
+  temp: "#FB923C",
+  prec: "#3B82F6",
+  cloud: "#9CA3AF",
+  wind: "#14B8A6",
+  humidity: "#38BDF8",
+  visibility: "#C084FC",
+  radiation: "#EAB308",
+  pressure: "#8B5CF6",
+  water: "#06B6D4",
+  other: "#16A34A",
+};
+
+/**
+ * Resolves chart colors from branch config, applying defaults for any missing values.
+ * Returns a record with all chart color properties guaranteed.
+ */
+export const resolveChartColors = (
+  chartColors?: ChartColors
+): Required<ChartColors> => {
+  return {
+    temp_max: chartColors?.temp_max ?? DEFAULT_CHART_COLORS.temp_max,
+    temp_min: chartColors?.temp_min ?? DEFAULT_CHART_COLORS.temp_min,
+    temp: chartColors?.temp ?? DEFAULT_CHART_COLORS.temp,
+    prec: chartColors?.prec ?? DEFAULT_CHART_COLORS.prec,
+    cloud: chartColors?.cloud ?? DEFAULT_CHART_COLORS.cloud,
+    wind: chartColors?.wind ?? DEFAULT_CHART_COLORS.wind,
+    humidity: chartColors?.humidity ?? DEFAULT_CHART_COLORS.humidity,
+    visibility: chartColors?.visibility ?? DEFAULT_CHART_COLORS.visibility,
+    radiation: chartColors?.radiation ?? DEFAULT_CHART_COLORS.radiation,
+    pressure: chartColors?.pressure ?? DEFAULT_CHART_COLORS.pressure,
+    water: chartColors?.water ?? DEFAULT_CHART_COLORS.water,
+    other: chartColors?.other ?? DEFAULT_CHART_COLORS.other,
+  };
+};
+
+/**
+ * Gets the historical variable color from chart colors.
+ * Maps the variable key (e.g. "tmax") to its corresponding chart color.
+ */
+export const getVariableColorFromChartColors = (
+  chartColors: Required<ChartColors>,
+  variableKey: string,
+): string => {
+  // Direct match by variable key
+  const directMap: Record<string, keyof ChartColors> = {
+    tmax: "temp_max",
+    Tmax: "temp_max",
+    t_min: "temp_min",
+    tmin: "temp_min",
+    Tmin: "temp_min",
+    tmean: "temp",
+    tmed: "temp",
+    prec: "prec",
+    Prec: "prec",
+    precipitation: "prec",
+    cloud: "cloud",
+    wind: "wind",
+    humidity: "humidity",
+    visibility: "visibility",
+    rad: "radiation",
+    Rad: "radiation",
+    radiation: "radiation",
+    pressure: "pressure",
+    et0: "water",
+    evapotranspiration: "water",
+    cmin: "water",
+    cmax: "water",
+    cmean: "water",
+  };
+
+  const mappedType = directMap[variableKey];
+  if (mappedType) {
+    return chartColors[mappedType];
+  }
+
+  return chartColors.other;
 };
 
 /**
