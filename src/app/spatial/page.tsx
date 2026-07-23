@@ -27,6 +27,10 @@ import type {
 import { useI18n } from "@/app/contexts/I18nContext";
 import type { Locale } from "@/app/i18n/i18n";
 
+/** IDs de indicadores que NO son espaciales (no tienen capa en el mapa).
+ *  Vaciar este array para restaurarlos. */
+const NON_SPATIAL_INDICATOR_IDS = new Set([18, 19, 20, 21, 22, 23, 24, 25, 26]);
+
 // Cargar el mapa dinámicamente sin SSR
 const MapComponent = dynamic(() => import("@/app/components/MapComponent"), {
   ssr: false,
@@ -609,7 +613,9 @@ export default function SpatialDataPage() {
           indicatorPeriod,
           selectedCategory.id,
         );
-        setIndicators(indicatorsList);
+        setIndicators(
+          indicatorsList.filter((ind) => !NON_SPATIAL_INDICATOR_IDS.has(ind.id))
+        );
       } catch (error) {
         console.error("Error cargando indicadores:", error);
         setIndicators([]);
