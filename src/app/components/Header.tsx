@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCountry } from "@/app/contexts/CountryContext";
 import { useAuth } from "@/app/hooks/useAuth";
-import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE } from "@/app/config";
+import { SHOW_STATIONS_MODULE, SHOW_USERS_MODULE, BASE_PATH } from "@/app/config";
 import { useBranchConfig } from "@/app/configs/index";
 import { useState, useEffect } from "react";
 import { useI18n } from "@/app/contexts/I18nContext";
@@ -46,7 +46,7 @@ const Header = () => {
       <nav className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <Image
-            src={config.headerLogo?.src || "/assets/img/logo.png"}
+            src={`${BASE_PATH}${config.headerLogo?.src || "/assets/img/logo.png"}`}
             alt={config.headerLogo?.alt || t("common.logoAlt")}
             width={config.headerLogo?.width ?? 32}
             height={config.headerLogo?.height ?? 32}

@@ -24,3 +24,6 @@ export const SHOW_USERS_MODULE = process.env.NEXT_PUBLIC_SHOW_USERS_MODULE === '
 // Helper para prefijar rutas de API con el basePath cuando corresponda
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export const apiPath = (path: string) => `${BASE_PATH}${path}`;
+
+// Helper para prefijar rutas de assets estáticos con el basePath
+export const assetPath = (path: string) => `${BASE_PATH}${path}`;
