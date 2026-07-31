@@ -3,7 +3,7 @@
 import Image from "next/image";
 import WeatherCard from "./components/WeatherCard";
 import ModulesGrid from "./components/home/ModulesGrid";
-import { COUNTRY_NAME } from "./config";
+import { COUNTRY_NAME, BASE_PATH } from "./config";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { UIButtonLink } from "@/app/components/ui/button";
 
@@ -16,7 +16,7 @@ export default function HomeClient() {
       <section className="relative min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/assets/img/bg.jpg"
+            src={`${BASE_PATH}/assets/img/bg.jpg`}
             alt={t("home.hero.backgroundAlt")}
             fill
             className="object-cover"

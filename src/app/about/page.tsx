@@ -235,10 +235,10 @@ export default function AboutPage() {
                           : "h-32 md:h-36 lg:h-40"
                       }`}
                     >
-                      <div className="relative w-full h-full">
+              <div className="relative w-full h-full">
                         {!imageErrors.has(partner.name) ? (
                           <Image
-                            src={partner.logo}
+                            src={`${BASE_PATH}${partner.logo}`}
                             alt={partner.alt}
                             fill
                             className="object-contain filter hover:brightness-110 transition-all duration-300"

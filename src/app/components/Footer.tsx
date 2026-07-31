@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useI18n } from "@/app/contexts/I18nContext";
 import { useBranchConfig } from "@/app/configs/index";
+import { BASE_PATH } from "@/app/config";
 
 const Footer = () => {
   const { t } = useI18n();
@@ -27,7 +28,7 @@ const Footer = () => {
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/assets/img/partners/Alliance_white.png"
+              src={`${BASE_PATH}/assets/img/partners/Alliance_white.png`}
               alt="Alliance Bioversity & CIAT"
               width={120}
               height={40}
@@ -46,7 +47,7 @@ const Footer = () => {
             >
               <span className="text-xs sm:text-sm">{branding.text}</span>
               <Image
-                src={branding.logoSrc}
+                src={`${BASE_PATH}${branding.logoSrc}`}
                 alt="AClimate"
                 width={20}
                 height={20}
