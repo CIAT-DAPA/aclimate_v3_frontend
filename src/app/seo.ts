@@ -15,7 +15,7 @@ type AclimateAppSeoConfig = {
   apiCountryId: string;
 };
 
-type CountryKey = "honduras" | "amazonia" | "nicaragua" | "el-salvador";
+type CountryKey = "honduras" | "amazonia" | "nicaragua" | "el-salvador" | "guatemala";
 
 const ACLIMATE_COUNTRY_CONFIGS: Record<CountryKey, AclimateAppSeoConfig> = {
   honduras: {
@@ -53,6 +53,15 @@ const ACLIMATE_COUNTRY_CONFIGS: Record<CountryKey, AclimateAppSeoConfig> = {
     locale: "es_SV",
     apiCountryId: "4",
   },
+
+  guatemala: {
+    countryName: "Guatemala",
+    countryLabel: "Guatemala",
+    siteUrl: "https://guatemala.aclimate.org",
+    siteName: "AClimate Guatemala",
+    locale: "es_GT",
+    apiCountryId: "5",
+  },
 };
 
 function normalizeCountryName(value: string) {
@@ -74,6 +83,8 @@ const COUNTRY_ALIASES: Record<string, CountryKey> = {
   salvador: "el-salvador",
   "el salvador": "el-salvador",
   elsalvador: "el-salvador",
+
+  guatemala: "guatemala",
 };
 
 export function getConfiguredCountryName() {
