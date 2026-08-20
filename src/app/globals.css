@@ -1,7 +1,14 @@
 @import "tailwindcss";
-@import 'leaflet/dist/leaflet.css';
-@import 'leaflet-timedimension/dist/leaflet.timedimension.control.css';
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-timedimension/dist/leaflet.timedimension.control.css";
 
+/* 
+ * Color variables are managed by the SSR inline style tag in layout.tsx 
+ * (getThemeStyleTag() in utils/theme.ts). The style tag is injected into <head>
+ * so it arrives with the initial HTML — no flash of wrong colors.
+ * 
+ * Only keep the bare-minimum defaults here so Tailwind's @theme works.
+ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -21,8 +28,376 @@
   }
 }
 
+html,
 body {
   background: var(--background);
-  color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-montserrat), system-ui, sans-serif;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+}
+
+/* Prevenir overflow en contenedores de Leaflet */
+.leaflet-container {
+  overflow: hidden !important;
+}
+
+.leaflet-div-icon.custom-community-label-icon {
+  background: transparent;
+  border: none;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .leaflet-bottom.leaflet-right {
+    left: 0;
+    right: 0;
+  }
+
+  .leaflet-bottom.leaflet-right .leaflet-bar-timecontrol {
+    float: left;
+    margin: 0 8px 8px;
+    width: calc(100% - 16px);
+  }
+
+  .leaflet-bar-timecontrol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .leaflet-bar-timecontrol .leaflet-control-timecontrol {
+    float: none;
+    height: 32px;
+    line-height: 32px;
+    border-width: 0;
+  }
+
+  .leaflet-bar-timecontrol a.timecontrol-date,
+  .leaflet-bar-timecontrol a.timecontrol-date:hover {
+    min-width: 0;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .leaflet-bar-timecontrol .timecontrol-dateslider {
+    order: 2;
+    flex: 1 1 100%;
+  }
+
+  .leaflet-bar-timecontrol .timecontrol-dateslider .slider {
+    width: 100%;
+    margin: 6px 0 2px;
+  }
+
+  /* Agrandar controles de zoom de Leaflet en móvil para mejor experiencia táctil */
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 18px !important;
+  }
+
+  /* Reducir altura de mapas en móvil */
+  .map-container-fixed {
+    height: 350px !important;
+  }
+
+  /* Reducir tamaño de la leyenda en móvil para que no tape el mapa */
+  .map-legend {
+    max-width: 160px !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    font-size: 11px !important;
+    padding: 6px !important;
+  }
+
+  .map-legend .legend-item {
+    font-size: 10px !important;
+    gap: 2px !important;
+  }
+
+  /* Reducir tamaño de controles de timeline en móvil */
+  .leaflet-bar-timecontrol {
+    padding: 2px !important;
+    font-size: 12px !important;
+  }
+
+  .leaflet-bar-timecontrol .leaflet-control-timecontrol {
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 12px !important;
+  }
+
+  .leaflet-bar-timecontrol a.timecontrol-date,
+  .leaflet-bar-timecontrol a.timecontrol-date:hover {
+    font-size: 12px !important;
+    padding: 0 6px !important;
+  }
+
+  /* Evitar que el mapa capture gestos táctiles en móvil */
+  .leaflet-container {
+    touch-action: pan-x pan-y !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .map-container-fixed {
+    height: 450px !important;
+  }
+}
+
+/* Forzar colores oscuros en tooltips de ApexCharts */
+.apexcharts-tooltip {
+  background: #ffffff !important;
+  border: 1px solid #e3e3e3 !important;
+  color: #373d3f !important;
+}
+
+/* Mejorar legibilidad del menú de herramientas de ApexCharts */
+.apexcharts-menu {
+  background: #ffffff !important;
+  border: 1px solid #e3e3e3 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10000 !important;
+}
+
+.apexcharts-menu-item {
+  padding: 10px 16px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  color: #373d3f !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.apexcharts-menu-item:last-child {
+  border-bottom: none !important;
+}
+
+.apexcharts-menu-item:hover {
+  background-color: #f5f5f5 !important;
+  color: #000 !important;
+}
+
+/* Asegurar que el menú sea visible */
+.apexcharts-menu.apexcharts-menu-open {
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Mejorar la barra de herramientas de ApexCharts */
+.apexcharts-toolbar {
+  z-index: 999 !important;
+  gap: 8px !important;
+}
+
+.apexcharts-toolbar svg {
+  color: #373d3f !important;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.apexcharts-toolbar svg:hover {
+  color: #000 !important;
+}
+
+.apexcharts-tooltip-title {
+  background: #f3f4f5 !important;
+  border-bottom: 1px solid #e3e3e3 !important;
+  color: #373d3f !important;
+}
+
+.apexcharts-tooltip-text,
+.apexcharts-tooltip-text-y-label,
+.apexcharts-tooltip-text-y-value,
+.apexcharts-tooltip-text-goals-label,
+.apexcharts-tooltip-text-goals-value,
+.apexcharts-tooltip-text-z-label,
+.apexcharts-tooltip-text-z-value {
+  color: #373d3f !important;
+}
+
+.apexcharts-tooltip-series-group {
+  color: #373d3f !important;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* === Button utility classes (SSR-safe - no Tailwind arbitrary values with CSS vars) === */
+.btn-ui {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  outline: none;
+}
+.btn-ui:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variances */
+.btn-primary {
+  background-color: var(--color-tertiary);
+  border-color: var(--color-tertiary);
+  color: var(--color-text-light);
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-text-dark);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+.btn-floating {
+  background-color: #ffffff;
+  border-color: var(--color-tertiary);
+  color: var(--color-tertiary);
+}
+.btn-floating:hover:not(:disabled) {
+  background-color: var(--color-tertiary);
+  color: #ffffff;
+}
+
+/* Focus ring for buttons */
+.btn-ui:focus-visible {
+  outline: 2px solid var(--color-tertiary);
+  outline-offset: 2px;
+}
+
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .station-detail-page {
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+
+  .station-detail-page .no-print,
+  .station-detail-page .fixed,
+  .station-detail-page .leaflet-control-container,
+  .station-detail-page .leaflet-top,
+  .station-detail-page .leaflet-bottom,
+  .station-detail-page .leaflet-pane.leaflet-marker-pane,
+  .station-detail-page .leaflet-pane.leaflet-shadow-pane {
+    display: none !important;
+  }
+
+  .station-detail-page header,
+  .station-detail-page main > div,
+  .station-detail-page main > div > div {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 0 10mm 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .station-detail-page .h-80.rounded-lg.overflow-hidden.border.border-gray-200 {
+    display: block !important;
+    height: 72mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-top: 4mm !important;
+  }
+
+  .station-detail-page .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .station-detail-page main {
+    margin-top: 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-trigger > button,
+  .station-detail-page #indicators-accordion-trigger > button {
+    all: unset;
+    display: block !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    margin: 0 0 4mm 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-trigger svg,
+  .station-detail-page #indicators-accordion-trigger svg {
+    display: none !important;
+  }
+
+  .station-detail-page #climatic-accordion-content,
+  .station-detail-page #indicators-accordion-content {
+    display: block !important;
+  }
+
+  .station-detail-page #climatic-accordion-content > div,
+  .station-detail-page #indicators-accordion-content > div {
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .station-detail-page #climatic-accordion-content .mb-6.border-b,
+  .station-detail-page #indicators-accordion-content .mb-6.border-b {
+    display: none !important;
+  }
+
+  .station-detail-page table,
+  .station-detail-page tbody tr,
+  .station-detail-page .rounded-lg,
+  .station-detail-page .rounded-xl,
+  .station-detail-page .apexcharts-canvas,
+  .station-detail-page .apexcharts-container,
+  .station-detail-page .apexcharts-svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

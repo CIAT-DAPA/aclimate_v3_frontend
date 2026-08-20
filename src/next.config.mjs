@@ -1,6 +1,9 @@
-import type { NextConfig } from "next";
- 
-const nextConfig: NextConfig = {
+// @ts-check
+/** @type {import('next').NextConfig} */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+const nextConfig = {
+  ...(basePath ? { basePath } : {}),
   // Modo dinámico - sin output: "export"
   typescript: {
     // !! WARN !!
@@ -15,5 +18,5 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 };
- 
+
 export default nextConfig;

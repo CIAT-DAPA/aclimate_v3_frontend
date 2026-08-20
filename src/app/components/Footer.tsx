@@ -1,16 +1,78 @@
-import { Waves } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useI18n } from "@/app/contexts/I18nContext";
+import { useBranchConfig } from "@/app/configs/index";
+import { BASE_PATH } from "@/app/config";
 
 const Footer = () => {
+  const { t } = useI18n();
+  const config = useBranchConfig();
+  const branding = config.footer?.secondaryBranding;
+
   return (
-    <footer className="bg-[#283618]">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="text-amber-50 text-sm">
-          <div className="h-2 w-24 bg-gray-200 rounded"></div>
+    <footer style={{ backgroundColor: "var(--color-primary)" }}>
+      <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span
+            className="text-xs sm:text-sm"
+            style={{ color: "var(--color-text-light)" }}
+          >
+            {t("footer.developedBy")}
+          </span>
+          <a
+            href="https://alliancebioversityciat.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            <Image
+              src={`${BASE_PATH}/assets/img/partners/Alliance_white.png`}
+              alt="Alliance Bioversity & CIAT"
+              width={120}
+              height={40}
+              className="h-8 sm:h-10 w-auto"
+            />
+          </a>
+
+          {/* Secondary branding link (e.g. "Más de AClimate") */}
+          {branding && (
+            <a
+              href={branding.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity ml-3 sm:ml-4"
+              style={{ color: "var(--color-text-light)" }}
+            >
+              <span className="text-xs sm:text-sm">{branding.text}</span>
+              <Image
+                src={`${BASE_PATH}${branding.logoSrc}`}
+                alt="AClimate"
+                width={20}
+                height={20}
+                className="h-5 w-auto"
+              />
+            </a>
+          )}
         </div>
-        <div className="flex gap-4">
-          <Waves className="text-amber-50" />
-          <Waves className="text-amber-50" />
-          <Waves className="text-amber-50" />
+
+        <div className="flex gap-2 sm:gap-4">
+          <Link
+            href="https://www.aclimate.org/data-policy"
+            className="transition-colors text-xs sm:text-sm"
+            target="_blank"
+            style={{ color: "var(--color-text-light)" }}
+          >
+            {t("footer.privacyPolicy")}
+          </Link>
+          <Link
+            href="/about"
+            className="transition-colors text-xs sm:text-sm"
+            style={{ color: "var(--color-text-light)" }}
+          >
+            {t("footer.about")}
+          </Link>
         </div>
       </div>
     </footer>

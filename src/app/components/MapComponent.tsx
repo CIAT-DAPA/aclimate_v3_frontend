@@ -9,10 +9,11 @@ import {
   ZoomControl,
   WMSTileLayer,
   LayersControl,
+  LayerGroup,
   useMapEvents,
-  useMap
+  useMap,
 } from "react-leaflet";
-import { Icon, LatLngExpression } from "leaflet";
+import { Icon, LatLngExpression, DivIcon } from "leaflet";
 import L from "leaflet";
 import { Station } from "@/app/types/Station";
 import Link from "next/link";
@@ -20,39 +21,165 @@ import Link from "next/link";
 import TimelineController from "./TimeLineController";
 import MapLegend from "./MapLegend";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAuth } from "@/app/hooks/useAuth";
-import { addUserStation, deleteUserStation, getUserStations } from "@/app/services/userService";
-import { faTemperatureArrowUp } from '@fortawesome/free-solid-svg-icons';
-import { faTemperatureArrowDown } from '@fortawesome/free-solid-svg-icons';
-import { faCloudRain } from '@fortawesome/free-solid-svg-icons';
-import { faSun } from '@fortawesome/free-solid-svg-icons';
-import { faChartSimple } from '@fortawesome/free-solid-svg-icons';
+import { useI18n } from "@/app/contexts/I18nContext";
+import { UIButton } from "@/app/components/ui/button";
+import { apiPath } from "@/app/config";
+import {
+  addUserStation,
+  deleteUserStation,
+  getUserStations,
+} from "@/app/services/userService";
+import { faTemperatureArrowUp } from "@fortawesome/free-solid-svg-icons";
+import { faTemperatureArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faCloudRain } from "@fortawesome/free-solid-svg-icons";
+import { faSun } from "@fortawesome/free-solid-svg-icons";
+import { faChartPie } from "@fortawesome/free-solid-svg-icons";
+import { faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
+import { faMapPin } from "@fortawesome/free-solid-svg-icons";
+import { faTint } from "@fortawesome/free-solid-svg-icons";
+import { faWater } from "@fortawesome/free-solid-svg-icons";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 
+// Paleta de colores accesibles con buen contraste
+const ACCESSIBLE_COLORS = [
+  "#1f77b4", // Azul
+  "#ff7f0e", // Naranja
+  "#2ca02c", // Verde
+  "#d62728", // Rojo
+  "#9467bd", // Púrpura
+  "#8c564b", // Marrón
+  "#e377c2", // Rosa
+  "#7f7f7f", // Gris
+  "#bcbd22", // Amarillo oliva
+  "#17becf", // Cyan
+  "#aec7e8", // Azul claro
+  "#ffbb78", // Naranja claro
+  "#98df8a", // Verde claro
+  "#ff9896", // Rojo claro
+  "#c5b0d5", // Púrpura claro
+];
 
-const customIcon = new Icon({
-  iconUrl: "/assets/img/marker.png",
-  iconSize: [48, 48],
-});
+// Función para crear íconos con color dinámico
+const createColoredIcon = (color: string): DivIcon => {
+  return L.divIcon({
+    className: "custom-marker-icon",
+    html: `
+      <div style="position: relative; width: 48px; height: 48px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" 
+                fill="${color}" 
+                stroke="#ffffff" 
+                stroke-width="0.5"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [48, 48],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -48],
+  });
+};
+
+const createCommunityLabelIcon = (
+  name: string,
+  department?: string,
+  color?: string,
+): DivIcon => {
+  const labelColor = color || "#C27830";
+
+  return L.divIcon({
+    className: "custom-community-label-icon",
+    html: `
+      <div style="display:inline-flex; flex-direction:column; align-items:center; transform:translate(-50%, -100%);">
+        <div style="display:inline-flex; flex-direction:column; align-items:flex-start; gap:2px; background:rgba(255,255,255,0.94); border:1px solid ${labelColor}; border-radius:8px; padding:6px 8px; box-shadow:0 1px 4px rgba(0,0,0,0.18); white-space:nowrap;">
+          <span style="font-size:12px; line-height:1.2; font-weight:700; color:#1f2937;">${name}</span>
+          ${department ? `<span style="font-size:11px; line-height:1.1; color:#4b5563;">${department}</span>` : ""}
+        </div>
+        <span style="display:block; width:1px; height:14px; background:${labelColor}; opacity:0.9;"></span>
+        <span style="display:block; width:4px; height:4px; border-radius:9999px; background:${labelColor};"></span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+};
+
+const MapActionButton = ({
+  show,
+  onClick,
+}: {
+  show: boolean;
+  onClick?: () => void;
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!show || !onClick) return;
+
+    const control = new L.Control({ position: "topright" });
+
+    control.onAdd = () => {
+      const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+      const button = L.DomUtil.create("button", "", container);
+
+      button.type = "button";
+      button.title = "Descargar capa raster de pronóstico";
+      button.setAttribute("aria-label", button.title);
+      button.className =
+        "flex h-10 w-10 items-center justify-center rounded-md border border-black bg-white text-black shadow-md transition-colors hover:text-black/50";
+      button.style.lineHeight = "1";
+
+      // Extraer SVG del icono FontAwesome
+      const [width, height, , , paths] = faFileArrowDown.icon;
+      const pathString = Array.isArray(paths)
+        ? (paths as string[]).map((p) => `<path d="${p}"/>`).join("")
+        : `<path d="${paths as string}"/>`;
+
+      button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="18" height="18" fill="currentColor">${pathString}</svg>`;
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.disableScrollPropagation(container);
+      L.DomEvent.on(button, "click", (event) => {
+        L.DomEvent.stop(event);
+        onClick();
+      });
+
+      return container;
+    };
+
+    control.addTo(map);
+
+    return () => {
+      control.remove();
+    };
+  }, [map, onClick, show]);
+
+  return null;
+};
 
 const rasterLayers = [
   {
     name: "OpenStreetMap",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   },
   {
     name: "Satélite",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+    attribution:
+      "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
   },
   {
     name: "Topográfico",
     url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-  }
+    attribution:
+      'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+  },
 ];
 
 interface WMSLayer {
@@ -70,16 +197,28 @@ interface WMSLayer {
   unit?: string;
 }
 
-interface AdminLayer {
+export interface AdminLayer {
   name: string;
   workspace: string;
   store: string;
   layer: string;
+  level: number;
+  styles: string[];
+}
+
+export interface CustomCommunityMarker {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  department?: string;
+  color?: string;
 }
 
 interface MapComponentProps {
   center?: [number, number];
   zoom?: number;
+  bounds?: [[number, number], [number, number]];
   stations?: Station[];
   wmsLayers?: WMSLayer[];
   baseLayerIndex?: number;
@@ -92,11 +231,17 @@ interface MapComponentProps {
   adminLayers?: AdminLayer[];
   stationData?: Record<string, any[]>;
   selectedStation?: Station | null;
+  displayFormat?: string;
+  onMapClick?: (lat: number, lng: number) => void;
+  customMarkers?: CustomCommunityMarker[];
+  showActionButton?: boolean;
+  onActionButtonClick?: () => void;
 }
 
 const MapComponent = ({
   center = [4.6097, -74.0817],
   zoom = 6,
+  bounds,
   stations = [],
   wmsLayers = [],
   baseLayerIndex = 0,
@@ -109,12 +254,17 @@ const MapComponent = ({
   adminLayers = [],
   stationData = {},
   selectedStation = null,
+  displayFormat = "YYYY-MM-DD",
+  onMapClick,
+  customMarkers = [],
+  showActionButton = false,
+  onActionButtonClick,
 }: MapComponentProps) => {
-  const activeStations = stations.filter(station => station.enable);
+  const { t, locale } = useI18n();
+  const activeStations = stations.filter((station) => station.enable);
   const hasStations = activeStations.length > 0;
   const singleStationMode = activeStations.length === 1;
   const noStationsMode = activeStations.length === 0;
-  
 
   const mapCenter: LatLngExpression = singleStationMode
     ? [activeStations[0].latitude, activeStations[0].longitude]
@@ -124,24 +274,83 @@ const MapComponent = ({
 
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const { userValidatedInfo, authenticated } = useAuth();
+  const { userValidatedInfo, authenticated, loading: authLoading } = useAuth();
+  const resolvedUserId = userValidatedInfo?.user?.id ?? userValidatedInfo?.id;
+
+  // Extraer valores primitivos para el useEffect
+  const centerLat = Array.isArray(mapCenter)
+    ? mapCenter[0]
+    : ((mapCenter as { lat: number; lng: number }).lat ?? center[0]);
+  const centerLng = Array.isArray(mapCenter)
+    ? mapCenter[1]
+    : ((mapCenter as { lat: number; lng: number }).lng ?? center[1]);
+
+  // Efecto general para actualizar suavemente el mapa cuando center o zoom cambian
+  useEffect(() => {
+    if (mapRef.current && centerLat !== undefined && centerLng !== undefined) {
+      mapRef.current.setView(
+        [centerLat as number, centerLng as number],
+        mapZoom,
+        {
+          animate: true,
+          duration: 0.5,
+        },
+      );
+    }
+  }, [centerLat, centerLng, mapZoom]);
+
+  // Fix for "Map container is being reused by another instance" error during HMR/Strict Mode
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   // Estado para controlar favoritos
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(new Set());
+  const [loadingFavorites, setLoadingFavorites] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // Estado para guardar el tiempo actual de la capa
+  const [currentTime, setCurrentTime] = useState<string>("");
+  const currentTimeRef = useRef<string>("");
+
+  // Usar ref para evitar múltiples cargas de favoritos
+  const favoritesLoadedRef = useRef(false);
+
+  // Calcular el mapeo de fuentes a colores usando useMemo
+  const sourceColorMap = useMemo(() => {
+    const uniqueSources = new Set<string>();
+    activeStations.forEach((station) => {
+      if (station.source_name) {
+        uniqueSources.add(station.source_name);
+      }
+    });
+
+    const colorMap: Record<string, string> = {};
+    Array.from(uniqueSources).forEach((source, index) => {
+      colorMap[source] = ACCESSIBLE_COLORS[index % ACCESSIBLE_COLORS.length];
+    });
+
+    return colorMap;
+  }, [activeStations]);
 
   // Efecto para centrar el mapa cuando se selecciona una estación desde la búsqueda
   useEffect(() => {
     if (selectedStation && mapRef.current) {
       const map = mapRef.current;
       const marker = markersRef.current.get(selectedStation.id.toString());
-      
+
       // Centrar el mapa en la estación con animación
       map.setView([selectedStation.latitude, selectedStation.longitude], 12, {
         animate: true,
-        duration: 1
+        duration: 1,
       });
-      
+
       // Abrir el popup del marcador si existe
       if (marker) {
         setTimeout(() => {
@@ -154,38 +363,56 @@ const MapComponent = ({
   // Cargar favoritos del usuario autenticado
   useEffect(() => {
     const loadUserFavorites = async () => {
-      if (!authenticated || !userValidatedInfo) {
+      // Solo cargar una vez cuando la autenticación ya terminó y el usuario está resuelto
+      if (
+        authLoading ||
+        !authenticated ||
+        !resolvedUserId ||
+        favoritesLoadedRef.current
+      ) {
         return;
       }
 
       try {
-  const userId = userValidatedInfo.id;
-        const userStations = await getUserStations(userId);
-        const favoriteIds = new Set(userStations.map(station => station.ws_ext_id?.toString() || ''));
+        favoritesLoadedRef.current = true;
+        const userStations = await getUserStations(resolvedUserId);
+        const favoriteIds = new Set(
+          userStations.map((station) => station.ws_ext_id?.toString() || ""),
+        );
         setFavorites(favoriteIds);
       } catch (error) {
-        console.error('Error al cargar favoritos:', error);
+        console.error("Error al cargar favoritos:", error);
         setFavorites(new Set());
+        favoritesLoadedRef.current = false; // Permitir reintentar si falla
       }
     };
 
     loadUserFavorites();
-  }, [authenticated, userValidatedInfo]);
+  }, [authLoading, authenticated, resolvedUserId]);
 
   const toggleFavorite = async (stationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    if (!authenticated || !userValidatedInfo) {
-      alert('Debe iniciar sesión para gestionar favoritos');
+
+    if (authLoading) {
+      return;
+    }
+
+    if (!authenticated) {
+      alert(t("map.alerts.loginRequired"));
+      return;
+    }
+
+    if (!resolvedUserId) {
+      alert(t("map.alerts.userMissing"));
       return;
     }
 
     // Encontrar userId de la misma manera que en loadUserFavorites
-    const userId = userValidatedInfo.user?.id ?? userValidatedInfo.id;
+    const userId = resolvedUserId;
     if (!userId) {
-      console.error('No se pudo encontrar userId para toggleFavorite');
-      alert('Error: No se pudo identificar al usuario');
+      console.error("No se pudo encontrar userId para toggleFavorite");
+      alert(t("map.alerts.userMissing"));
       return;
     }
 
@@ -210,27 +437,30 @@ const MapComponent = ({
             ws_ext_id: stationId,
             notification: {
               email: true,
-              push: false
-            }
+              push: false,
+            },
           });
           const newFavorites = new Set(favorites);
           newFavorites.add(stationId);
           setFavorites(newFavorites);
         } catch (addError) {
           // Si el error es porque ya existe, actualizar el estado local
-          if (addError instanceof Error && addError.message.includes('favoritos')) {
+          if (
+            addError instanceof Error &&
+            addError.message.includes("favoritos")
+          ) {
             const newFavorites = new Set(favorites);
             newFavorites.add(stationId);
             setFavorites(newFavorites);
-            alert('Esta estación ya está en favoritos');
+            alert("Esta estación ya está en favoritos");
           } else {
             throw addError;
           }
         }
       }
     } catch (error) {
-      console.error('Error al gestionar favorito:', error);
-      alert('Error al actualizar favoritos. Por favor, intente de nuevo.');
+      console.error("Error al gestionar favorito:", error);
+      alert("Error al actualizar favoritos. Por favor, intente de nuevo.");
     } finally {
       // Remover del loading state
       const newLoadingFavorites = new Set(loadingFavorites);
@@ -239,29 +469,66 @@ const MapComponent = ({
     }
   };
 
+  // Wrapper para onTimeChange que también actualiza el estado local
+  const handleTimeChange = (time: string) => {
+    currentTimeRef.current = time;
+    setCurrentTime(time);
+    onTimeChange(time);
+  };
+
+  const renderCommunityLabels = () =>
+    customMarkers.map((marker) => (
+      <Marker
+        key={`custom-community-${marker.id}`}
+        position={[marker.lat, marker.lon] as LatLngExpression}
+        icon={createCommunityLabelIcon(
+          marker.name,
+          marker.department,
+          marker.color,
+        )}
+        keyboard={false}
+      />
+    ));
+
   // Componente para manejar clics en el mapa (solo para datos espaciales)
   const MapClickHandler = () => {
     const map = useMap();
-    
+
     useMapEvents({
       click: async (e) => {
+        const { lat, lng } = e.latlng;
+        const pixelTitle = t("map.pixel.title");
+        const pixelLoading = t("map.pixel.loading");
+        const pixelValueLabel = t("map.pixel.value");
+        const pixelError = t("map.pixel.error");
+
+        // Si hay una función personalizada para clics, usarla y salir
+        if (onMapClick) {
+          onMapClick(lat, lng);
+          return;
+        }
+
         // Solo procesar clics si hay capas WMS y no estamos en modo de estaciones
         if (wmsLayers.length === 0 || showMarkers) {
           return;
         }
 
-        const { lat, lng } = e.latlng;
-
         // Crear contenido HTML para el popup con estado de carga
-        const popupContent = document.createElement('div');
-        popupContent.className = 'p-2';
+        const popupContent = document.createElement("div");
+        popupContent.className = "p-2";
         popupContent.innerHTML = `
-          <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-          <div class="text-xs text-gray-600 mb-2">
-            <p>Lat: ${lat.toFixed(5)}</p>
-            <p>Lng: ${lng.toFixed(5)}</p>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <h3 class="font-semibold text-sm">${pixelTitle}</h3>
+            <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                </svg>
+              </span>
+              <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+            </div>
+            <div class="text-sm text-gray-500" style="line-height:1.2;">${pixelLoading}</div>
           </div>
-          <p class="text-sm text-gray-500">Cargando...</p>
         `;
 
         // Mostrar popup inmediatamente
@@ -275,177 +542,266 @@ const MapComponent = ({
           const layer = wmsLayers[0];
           const bounds = map.getBounds();
           const size = map.getSize();
-          
+
           // Construir la URL de GetFeatureInfo
           const point = map.latLngToContainerPoint(e.latlng);
-          
+
+          // Para WMS 1.3.0 con EPSG:4326, el orden del BBOX es: miny,minx,maxy,maxx (lat,lon,lat,lon)
+          const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+
+          // Verificar que tengamos el tiempo (desde el estado o desde la capa)
+          const timeToUse = currentTimeRef.current || currentTime || layer.time;
+
           const params = new URLSearchParams({
-            SERVICE: 'WMS',
-            VERSION: layer.version || '1.3.0',
-            REQUEST: 'GetFeatureInfo',
-            FORMAT: 'image/png',
-            TRANSPARENT: 'true',
-            QUERY_LAYERS: layer.layers,
+            SERVICE: "WMS",
+            VERSION: layer.version || "1.3.0",
+            REQUEST: "GetFeatureInfo",
             LAYERS: layer.layers,
-            INFO_FORMAT: 'application/json',
-            I: Math.floor(point.x).toString(),
-            J: Math.floor(point.y).toString(),
+            QUERY_LAYERS: layer.layers,
+            STYLES: layer.styles || "",
+            BBOX: bbox,
             WIDTH: size.x.toString(),
             HEIGHT: size.y.toString(),
-            CRS: 'EPSG:4326',
-            BBOX: `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`,
+            CRS: "EPSG:4326",
+            FORMAT: "image/png",
+            TRANSPARENT: "true",
+            INFO_FORMAT: "application/json",
+            FEATURE_COUNT: "1",
+            I: Math.floor(point.x).toString(),
+            J: Math.floor(point.y).toString(),
           });
 
           // Agregar parámetros adicionales si existen
-          if (layer.time) {
-            params.append('TIME', layer.time);
-          }
-          if (layer.styles) {
-            params.append('STYLES', layer.styles);
+          if (timeToUse) {
+            params.append("TIME", timeToUse);
           }
 
-          const url = `${layer.url}?${params.toString()}`;
+          const url = apiPath(`/api/wms?proxyTo=${encodeURIComponent(layer.url)}&${params.toString()}`);
           const response = await fetch(url);
           const data = await response.json();
 
-          // Extraer el valor del píxel
-          let pixelValue = 'Sin datos';
+          let pixelValue = t("map.pixel.noData");
+
           if (data.features && data.features.length > 0) {
             const properties = data.features[0].properties;
-            // Buscar la propiedad que contiene el valor
-            const valueKey = Object.keys(properties).find(key => 
-              key.toLowerCase().includes('gray') || 
-              key.toLowerCase().includes('value') ||
-              key === 'GRAY_INDEX'
-            );
-            
-            if (valueKey && properties[valueKey] !== null && properties[valueKey] !== undefined) {
-              pixelValue = Number(properties[valueKey]).toFixed(2);
+            const grayIndex = properties.GRAY_INDEX;
+
+            if (grayIndex !== null && grayIndex !== undefined) {
+              // GRAY_INDEX contiene el valor real del pixel
+              pixelValue = Number(grayIndex).toFixed(2);
             }
           }
 
           // Determinar la unidad a mostrar
-          const unit = layer.unit || '';
+          const unit = layer.unit || "";
 
           // Actualizar el contenido del popup
           popupContent.innerHTML = `
-            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2">
-              <p>Lat: ${lat.toFixed(5)}</p>
-              <p>Lng: ${lng.toFixed(5)}</p>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <h3 class="font-semibold text-sm">${pixelTitle}</h3>
+              <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                  </svg>
+                </span>
+                <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+              </div>
+              <div class="text-sm font-medium text-gray-800" style="line-height:1.2;">
+                ${pixelValueLabel}: ${pixelValue}${unit ? " " + unit : ""}
+              </div>
             </div>
-            <p class="text-sm font-medium text-gray-800">
-              Valor: ${pixelValue}${unit ? ' ' + unit : ''}
-            </p>
           `;
         } catch (error) {
-          console.error('Error al obtener información del píxel:', error);
+          console.error("Error al obtener información del píxel:", error);
           popupContent.innerHTML = `
-            <h3 class="font-semibold text-sm mb-2">Valor del píxel</h3>
-            <div class="text-xs text-gray-600 mb-2">
-              <p>Lat: ${lat.toFixed(5)}</p>
-              <p>Lng: ${lng.toFixed(5)}</p>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <h3 class="font-semibold text-sm">${pixelTitle}</h3>
+              <div class="text-xs text-gray-600" style="display:inline-flex; align-items:center; gap:4px; line-height:1; white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="#4b5563" style="display:block; transform:translateY(-1px);">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.54 22.351a.75.75 0 0 0 .92 0c1.342-1.066 5.79-4.994 5.79-10.101A6.75 6.75 0 1 0 5.75 12.25c0 5.107 4.448 9.035 5.79 10.101ZM12 15.75a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+                  </svg>
+                </span>
+                <span style="line-height:1;">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+              </div>
+              <div class="text-sm text-red-600" style="line-height:1.2;">${pixelError}</div>
             </div>
-            <p class="text-sm text-red-600">Error al cargar datos</p>
           `;
         }
-      }
+      },
     });
-    
+
     return null;
   };
 
-   // Función para formatear los datos de la estación para mostrar en el popup
-  const renderStationData = (stationId: string) => {
-    const data = stationData[stationId];
-    if (!data || data.length === 0) {
-      return <p className="text-gray-500 text-sm">No hay datos disponibles</p>;
-    }
+  // Función para formatear los datos de la estación para mostrar en el popup
+  const renderStationData = (station: Station) => {
+    const data = stationData[station.id.toString()];
+    const hasData = data && data.length > 0;
+    const localeTag = locale === "es" ? "es-ES" : "en-US";
 
-    // Agrupar datos por medida
-    type Measure = { value: number };
-    const measures: Record<string, Measure> = {};
-    data.forEach((item: { measure_short_name: string; value: number }) => {
-      measures[item.measure_short_name] = { value: item.value };
-    });
+    // Obtener la fecha formateada si hay datos
+    const dateFormatted = hasData
+      ? new Date(data[0].date).toLocaleDateString(localeTag)
+      : "N/A";
+
+    // Mapeo de medidas a iconos y configuración
+    const measureConfig: Record<
+      string,
+      { labelKey?: string; unit?: string; icon?: any }
+    > = {
+      Tmax: {
+        labelKey: "map.measureLabels.tmax",
+        unit: "°C",
+        icon: faTemperatureArrowUp,
+      },
+      Tmin: {
+        labelKey: "map.measureLabels.tmin",
+        unit: "°C",
+        icon: faTemperatureArrowDown,
+      },
+      Prec: {
+        labelKey: "map.measureLabels.prec",
+        unit: "mm",
+        icon: faCloudRain,
+      },
+      Rad: {
+        labelKey: "map.measureLabels.rad",
+        unit: "MJ/m²",
+        icon: faSun,
+      },
+      Cmax: {
+        labelKey: "map.measureLabels.cmax",
+        unit: "mm³/seg",
+        icon: faWater,
+      },
+      Cmin: {
+        labelKey: "map.measureLabels.cmin",
+        unit: "mm³/seg",
+        icon: faTint,
+      },
+      Cmed: {
+        labelKey: "map.measureLabels.cmed",
+        unit: "mm³/seg",
+        icon: faWaveSquare,
+      },
+    };
+
+    // Helper map to translate names when short names don't match
+    const labelAliasMap: Record<string, string> = {
+      "maximum temperature": "map.measureLabels.tmax",
+      "minimum temperature": "map.measureLabels.tmin",
+      "temperatura máxima": "map.measureLabels.tmax",
+      "temperatura minima": "map.measureLabels.tmin",
+      precipitation: "map.measureLabels.prec",
+      precipitación: "map.measureLabels.prec",
+      "solar radiation": "map.measureLabels.rad",
+      "radiación solar": "map.measureLabels.rad",
+      "caudal mínimo diario": "map.measureLabels.cmin",
+      "caudal maximo diario": "map.measureLabels.cmax",
+      "caudal máximo diario": "map.measureLabels.cmax",
+      "caudal medio diario": "map.measureLabels.cmed",
+    };
+    const getFallbackIcon = (label: string): any => {
+      const lowerLabel = label.toLowerCase();
+      if (lowerLabel.includes("caudal máximo")) return faWater;
+      if (lowerLabel.includes("caudal mínimo")) return faTint;
+      if (lowerLabel.includes("caudal medio")) return faWaveSquare;
+      if (lowerLabel.includes("caudal")) return faWater;
+      if (lowerLabel.includes("temperatur") && lowerLabel.includes("mínim"))
+        return faTemperatureArrowDown;
+      if (lowerLabel.includes("temperatur")) return faTemperatureArrowUp;
+      if (lowerLabel.includes("precipita") || lowerLabel.includes("lluvia"))
+        return faCloudRain;
+      if (lowerLabel.includes("radiac")) return faSun;
+      return null;
+    };
 
     return (
-      <div className="mt-3 pt-3 border-t border-gray-200">
-        <p className="text-xs text-gray-500 mb-3 font-medium">
-          Datos para: {new Date(data[0].date).toLocaleDateString()}
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {/* Temperatura máxima */}
-          {measures.Tmax && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faTemperatureArrowUp} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color rojo
-              />
-              <div>
-                <p className="text-xs text-gray-500">Temperatura máxima</p>
-                <p className="text-sm font-semibold">{Number(measures.Tmax.value).toFixed(1)}°C</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Temperatura mínima */}
-          {measures.Tmin && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faTemperatureArrowDown} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color azul
-              />
-              <div>
-                <p className="text-xs text-gray-500">Temperatura mínima</p>
-                <p className="text-sm font-semibold">{Number(measures.Tmin.value).toFixed(1)}°C</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Precipitación */}
-          {measures.Prec && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faCloudRain} 
-                className="text-xl text-black-400 mr-2" // Aumentado a xl y color azul claro
-              />
-              <div>
-                <p className="text-xs text-gray-500">Precipitación</p>
-                <p className="text-sm font-semibold">{Number(measures.Prec.value).toFixed(1)}mm</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Radiación solar */}
-          {measures.Rad && (
-            <div className="flex items-center">
-              <FontAwesomeIcon 
-                icon={faSun} 
-                className="text-xl text-black-500 mr-2" // Aumentado a xl y color amarillo
-              />
-              <div>
-                <p className="text-xs text-gray-500">Radiación</p>
-                <p className="text-sm font-semibold">{Number(measures.Rad.value).toFixed(1)}MJ/m²</p>
-              </div>
-            </div>
+      <div className="flex flex-col">
+        <div className="flex justify-between items-center text-sm text-gray-700 mb-2">
+          <span>
+            {t("map.station.lastDate")}:{" "}
+            <span className="font-medium">{dateFormatted}</span>
+          </span>
+        </div>
+
+        <h4 className="font-semibold text-sm text-brand-green mb-1 uppercase tracking-wider">
+          {t("map.station.summary")}
+        </h4>
+
+        <div className="flex flex-col gap-1">
+          {!hasData ? (
+            <p className="text-gray-500 text-sm italic">
+              {t("map.station.noData")}
+            </p>
+          ) : (
+            data.map((item: any, index: number) => {
+              const config = measureConfig[item.measure_short_name];
+              let label = config?.labelKey
+                ? t(config.labelKey)
+                : item.measure_name || item.measure_short_name;
+              let unit = config?.unit || item.measure_unit || "";
+              let icon = config?.icon;
+
+              // Force translation if needed
+              const aliasKey = labelAliasMap[label.toLowerCase()];
+              if (aliasKey) {
+                label = t(aliasKey);
+              }
+
+              // Try fallback icon if not found by short name
+              if (!icon) {
+                icon = getFallbackIcon(label);
+              }
+
+              // Override unit specifically for caudal to be formatted correctly
+              if (
+                label.toLowerCase().includes("caudal") &&
+                (unit.includes("m^3") || unit.includes("mm^3"))
+              ) {
+                unit = unit.replace("^3", "³");
+              }
+
+              return (
+                <div key={index} className="flex items-center text-sm mt-1">
+                  <div className="w-5 flex-shrink-0 flex justify-center text-brand-green opacity-80 mr-2">
+                    {icon ? (
+                      <FontAwesomeIcon icon={icon} className="text-sm" />
+                    ) : (
+                      <span className="w-3 h-3 rounded-full bg-brand-green opacity-40"></span>
+                    )}
+                  </div>
+                  <div className="flex justify-between w-full">
+                    <span className="text-gray-700">{label}:</span>
+                    <span className="font-medium ml-2 text-right">
+                      {Number(item.value).toFixed(1)} {unit}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
     );
   };
 
-  
-
   return (
-    <div className="relative h-full w-full">
+    <div
+      className="relative h-full w-full"
+      style={{
+        cursor: wmsLayers.length > 0 && !showMarkers ? "crosshair" : "grab",
+      }}
+    >
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
+        bounds={bounds}
         className="h-full w-full"
         zoomControl={false}
         ref={mapRef}
-        style={{ cursor: wmsLayers.length > 0 && !showMarkers ? 'crosshair' : 'grab' }}
       >
         <TileLayer
           attribution={rasterLayers[baseLayerIndex].attribution}
@@ -469,59 +825,80 @@ const MapComponent = ({
 
         {/* Capas WMS climáticas (raster) - se dibujan primero */}
         {/* Solo renderizar WMSTileLayer si showTimeline es false, ya que el timeline crea su propia capa */}
-        {wmsLayers.length > 0 && !showTimeline && wmsLayers.map((layer, index) => (
-          <WMSTileLayer
-            key={`wms-${index}`}
-            url={layer.url}
-            layers={layer.layers}
-            format={layer.format || "image/png"}
-            transparent={layer.transparent !== false}
-            version={layer.version || "1.3.0"}
-            opacity={layer.opacity || 0.7}
-            styles={layer.styles || ""}
-            attribution={layer.attribution || ""}
-            params={{
-              ...(layer.time && { time: layer.time }),
-              ...(layer.cql_filter && { cql_filter: layer.cql_filter })
-            } as any}
-          />
-        ))}
+        {wmsLayers.length > 0 &&
+          !showTimeline &&
+          wmsLayers.map((layer, index) => (
+            <WMSTileLayer
+              key={`wms-${index}-${layer.layers}-${layer.time || "notime"}`}
+              // include layer and time in key so React re-mounts layer when they change
+              url={apiPath(`/api/wms?proxyTo=${encodeURIComponent(layer.url)}`)}
+              layers={layer.layers}
+              format={layer.format || "image/png"}
+              transparent={layer.transparent !== false}
+              version={layer.version || "1.3.0"}
+              opacity={layer.opacity !== undefined ? layer.opacity : 1.0}
+              styles={layer.styles || ""}
+              attribution={layer.attribution || ""}
+              params={
+                {
+                  ...(layer.time && { time: layer.time }),
+                  ...(layer.cql_filter && { cql_filter: layer.cql_filter }),
+                } as any
+              }
+            />
+          ))}
 
         {/* Control de capas con las capas administrativas dinámicas */}
-        {wmsLayers.length > 0 && showAdminLayer && adminLayers.length > 0 && (
-          <LayersControl position="topright">
-            {adminLayers.map((adminLayer, index) => (
-              <LayersControl.Overlay 
-                key={`admin-${index}`}
-                name={adminLayer.name}
-                checked={true}
-              >
-                <WMSTileLayer
-                  url={`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`}
-                  layers={adminLayer.layer}
-                  format="image/png"
-                  transparent={true}
-                  version="1.1.1"
-                  opacity={1}
-                  styles="line"
-                  attribution=""
-                  zIndex={1000 + index}
-                />
-              </LayersControl.Overlay>
-            ))}
-          </LayersControl>
-        )}
+        {wmsLayers.length > 0 &&
+          showAdminLayer &&
+          (adminLayers.length > 0 || customMarkers.length > 0) && (
+            <LayersControl position="topright">
+              {adminLayers.map((adminLayer) => (
+                <LayersControl.Overlay
+                  key={`admin-${adminLayer.level}-${adminLayer.layer}`}
+                  name={adminLayer.name}
+                  checked={true}
+                >
+                  <WMSTileLayer
+                    url={apiPath(`/api/wms?proxyTo=${encodeURIComponent(`https://geo.aclimate.org/geoserver/${adminLayer.workspace}/wms`)}`)}
+                    layers={adminLayer.layer}
+                    format="image/png"
+                    transparent={true}
+                    version="1.1.1"
+                    opacity={1}
+                    styles={adminLayer.styles?.[0]}
+                    attribution=""
+                    zIndex={1000 + adminLayer.level}
+                  />
+                </LayersControl.Overlay>
+              ))}
+
+              {customMarkers.length > 0 && (
+                <LayersControl.Overlay
+                  name={t("map.communities")}
+                  checked={true}
+                >
+                  <LayerGroup>{renderCommunityLabels()}</LayerGroup>
+                </LayersControl.Overlay>
+              )}
+            </LayersControl>
+          )}
 
         {/* Manejador de clics para datos espaciales */}
-        {wmsLayers.length > 0 && !showMarkers && <MapClickHandler />}
+        {(onMapClick || (wmsLayers.length > 0 && !showMarkers)) && (
+          <MapClickHandler />
+        )}
 
         {showTimeline && wmsLayers.length > 0 && (
           <TimelineController
             dimensionName="time"
             layer={wmsLayers[0].layers}
-            onTimeChange={onTimeChange}
+            onTimeChange={handleTimeChange}
             wmsUrl={wmsLayers[0].url}
-            opacity={wmsLayers[0].opacity || 0.7}
+            opacity={
+              wmsLayers[0].opacity !== undefined ? wmsLayers[0].opacity : 1.0
+            }
+            displayFormat={displayFormat}
           />
         )}
 
@@ -530,139 +907,174 @@ const MapComponent = ({
             wmsUrl={wmsLayers[0].url}
             layerName={wmsLayers[0].layers}
             position="bottomleft"
+            avoidTimeline={showTimeline}
           />
         )}
 
         {showZoomControl && <ZoomControl position="topright" />}
 
-        {showMarkers && hasStations && !singleStationMode && activeStations.map((station) => (
-          <Marker
-            key={station.id}
-            position={[station.latitude, station.longitude] as LatLngExpression}
-            icon={customIcon}
-            ref={(ref) => {
-              if (ref) {
-                markersRef.current.set(station.id.toString(), ref);
-              }
-            }}
-          >
-            <Popup>
-              <div className="p-4 min-w-[280px]">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-lg text-brand-green">
-                    Estación {station.name}
-                  </h3>
-                  <button
-                    onClick={(e) => toggleFavorite(station.id.toString(), e)}
-                    disabled={loadingFavorites.has(station.id.toString())}
-                    className={`p-1 ${
-                      favorites.has(station.id.toString()) 
-                        ? "text-yellow-500" 
-                        : "text-gray-400 hover:text-yellow-500"
-                    } transition-colors ${
-                      loadingFavorites.has(station.id.toString()) 
-                        ? "opacity-50 cursor-not-allowed" 
-                        : ""
-                    }`}
-                    aria-label="Agregar a favoritos"
-                  >
-                    {loadingFavorites.has(station.id.toString()) ? (
-                      <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
-                    ) : (
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5" 
-                        viewBox="0 0 20 20" 
-                        fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                
-                <div className="space-y-2 text-sm mb-4">
-                  <p className="text-gray-600">
-                    <span className="font-medium">Ubicación:</span>{" "}
-                    {station.admin2_name}, {station.admin1_name}
-                  </p>
-                  <p className="text-gray-600">
-                    <span className="font-medium">País:</span>{" "}
-                    {station.country_name}
-                  </p>
-                  
-                  {/* Mostrar datos de la última fecha disponible */}
-                  {renderStationData(station.id.toString())}
-                  
-                  <p className="text-xs text-gray-400 mt-3 pt-2 border-t">
-                    Coordenadas: {station.latitude.toFixed(4)}, {station.longitude.toFixed(4)}
-                  </p>
-                </div>
-                
-                <div className="flex justify-between gap-2">
-                  <button
-                    onClick={(e) => toggleFavorite(station.id.toString(), e)}
-                    disabled={loadingFavorites.has(station.id.toString()) || !authenticated}
-                    className={`flex items-center justify-center text-xs px-3 py-2 border rounded-md transition-colors ${
-                      favorites.has(station.id.toString())
-                        ? "text-yellow-600 border-yellow-300 bg-yellow-50 hover:bg-yellow-100"
-                        : "text-gray-600 border-gray-300 hover:text-gray-800 hover:bg-gray-50"
-                    } ${
-                      loadingFavorites.has(station.id.toString()) || !authenticated
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    {loadingFavorites.has(station.id.toString()) ? (
-                      <div className="animate-spin h-4 w-4 mr-1 border-2 border-current border-t-transparent rounded-full"></div>
-                    ) : (
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4 mr-1" 
-                        viewBox="0 0 20 20" 
-                        fill={favorites.has(station.id.toString()) ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    )}
-                    {!authenticated 
-                      ? "Inicie sesión" 
-                      : favorites.has(station.id.toString()) 
-                        ? "Quitar favorito" 
-                        : "Agregar favorito"
-                    }
-                  </button>
-                  
-                  <Link
-                    className="bg-brand-green text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center"
-                    href={`/monitory/${station.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FontAwesomeIcon icon={faChartSimple} />
-                    Monitoreo
-                  </Link>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        {showMarkers && singleStationMode && activeStations.map((station) => (
-          <Marker
-            key={station.id}
-            position={[station.latitude, station.longitude] as LatLngExpression}
-            icon={customIcon}
-            ref={(ref) => {
-              if (ref) {
-                markersRef.current.set(station.id.toString(), ref);
-              }
-            }}
+        {showActionButton && onActionButtonClick && (
+          <MapActionButton
+            show={showActionButton}
+            onClick={onActionButtonClick}
           />
-        ))}
+        )}
+
+        {showMarkers &&
+          hasStations &&
+          !singleStationMode &&
+          activeStations.map((station) => {
+            const markerColor = station.source_name
+              ? sourceColorMap[station.source_name]
+              : ACCESSIBLE_COLORS[0];
+
+            return (
+              <Marker
+                key={station.id}
+                position={
+                  [station.latitude, station.longitude] as LatLngExpression
+                }
+                icon={createColoredIcon(markerColor)}
+                ref={(ref) => {
+                  if (ref) {
+                    markersRef.current.set(station.id.toString(), ref);
+                  }
+                }}
+              >
+                <Popup>
+                  <div className="p-4 min-w-[280px]">
+                    <div className="border-b border-gray-200">
+                      <h3 className="font-semibold text-lg text-brand-green">
+                        {station.name}
+                      </h3>
+                      <p className="text-gray-600 flex items-center text-sm !m-0 !p-0">
+                        <FontAwesomeIcon
+                          icon={faMapMarkerAlt}
+                          className="text-sm mr-1"
+                        />
+                        {station.admin1_name}, {station.admin2_name}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      {/* Mostrar datos de la última fecha disponible */}
+                      {renderStationData(station)}
+                    </div>
+
+                    <div className="flex justify-between items-center mt-3 pt-2">
+                      <UIButton
+                        variant="secondary"
+                        onClick={(e) =>
+                          toggleFavorite(station.id.toString(), e)
+                        }
+                        disabled={
+                          loadingFavorites.has(station.id.toString()) ||
+                          authLoading ||
+                          !authenticated ||
+                          !resolvedUserId
+                        }
+                        className={`text-xs ${
+                          favorites.has(station.id.toString())
+                            ? "text-[#a85a1f] border-[#bc6c25] bg-[#f8f3ee]"
+                            : ""
+                        }`}
+                      >
+                        {loadingFavorites.has(station.id.toString()) ? (
+                          <div className="animate-spin h-4 w-4 mr-1 border-2 border-current border-t-transparent rounded-full"></div>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-1"
+                            viewBox="0 0 20 20"
+                            fill={
+                              favorites.has(station.id.toString())
+                                ? "currentColor"
+                                : "none"
+                            }
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        )}
+                        {!authenticated
+                          ? t("map.favorites.login")
+                          : favorites.has(station.id.toString())
+                            ? t("map.favorites.saved")
+                            : t("map.favorites.favorite")}
+                      </UIButton>
+
+                      <Link
+                        className="flex items-center justify-center text-sm px-4 py-2 bg-[#C27830] !text-white rounded-lg hover:bg-[#A96627] transition-colors font-medium"
+                        href={`/m/${station.machine_name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <FontAwesomeIcon icon={faChartPie} className="mr-2" />
+                        {t("map.dataButton")}
+                      </Link>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+        {showMarkers &&
+          singleStationMode &&
+          activeStations.map((station) => {
+            const markerColor = station.source_name
+              ? sourceColorMap[station.source_name]
+              : ACCESSIBLE_COLORS[0];
+
+            return (
+              <Marker
+                key={station.id}
+                position={
+                  [station.latitude, station.longitude] as LatLngExpression
+                }
+                icon={createColoredIcon(markerColor)}
+                ref={(ref) => {
+                  if (ref) {
+                    markersRef.current.set(station.id.toString(), ref);
+                  }
+                }}
+              />
+            );
+          })}
+
+        {(!showAdminLayer || wmsLayers.length === 0) && renderCommunityLabels()}
+
+        {/* Leyenda de fuentes - solo mostrar cuando hay estaciones con marcadores */}
+        {showMarkers &&
+          hasStations &&
+          Object.keys(sourceColorMap).length > 0 && (
+            <MapLegend
+              position="topright"
+              title={t("map.legendSources")}
+              maxHeight="200px"
+            >
+              <div className="space-y-1">
+                {Object.entries(sourceColorMap).map(([source, color]) => (
+                  <div key={source} className="flex items-center gap-2">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                        fill={color}
+                        stroke="#ffffff"
+                        strokeWidth="0.5"
+                      />
+                    </svg>
+                    <span className="text-xs text-gray-600">{source}</span>
+                  </div>
+                ))}
+              </div>
+            </MapLegend>
+          )}
       </MapContainer>
     </div>
   );

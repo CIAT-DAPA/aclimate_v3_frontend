@@ -1,22 +1,33 @@
-import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import { config } from "@fortawesome/fontawesome-svg-core";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { AuthProvider } from "@/app/hooks/useAuth";
 import { CountryProvider } from "@/app/contexts/CountryContext";
-import { COUNTRY_NAME } from "./config";
-import { GoogleAnalytics  } from '@next/third-parties/google'
+import { StationsProvider } from "@/app/contexts/StationsContext";
+import { I18nProvider } from "@/app/contexts/I18nContext";
+import { CookieConsentProvider } from "@/app/contexts/CookieConsentContext";
+import { ColorProvider } from "@/app/contexts/ColorContext";
+import CookieBanner from "./components/CookieBanner";
+import AnalyticsByConsent from "./components/AnalyticsByConsent";
+import { buildRootMetadata } from "./seo";
+import { getThemeStyleTag } from "./utils/theme";
+import { getBranchConfig } from "./configs";
+
+config.autoAddCss = false;
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: `AClimate ${COUNTRY_NAME}`,
-  description:
-    "Explora, monitorea y compara los datos de las estaciones climátologicas con bases de datos satelitales. Informate sobre como ha sido el clima en las regiones.",
+export const metadata = buildRootMetadata();
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -24,18 +35,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeStyleTag = getThemeStyleTag();
+
   return (
-    <html lang="en">
+    <html lang="es">
+      <head>
+        {/* SSR-injected theme styles - no flash because these arrive with the HTML */}
+        <style id="theme-variables">{themeStyleTag}</style>
+      </head>
       <body className={`${montserrat.variable} antialiased`}>
-        <AuthProvider>
-          <CountryProvider>
-            <Header />
-            {children}
-            <Footer />
-          </CountryProvider>
-        </AuthProvider>
+        <ColorProvider>
+          <I18nProvider>
+            <CookieConsentProvider>
+              <AuthProvider>
+                <CountryProvider>
+                  <StationsProvider>
+                    <Header />
+                    {children}
+                    <Footer />
+                  </StationsProvider>
+                </CountryProvider>
+              </AuthProvider>
+              <CookieBanner />
+              <AnalyticsByConsent
+                gaId={getBranchConfig().analytics?.gaId ?? ""}
+              />
+            </CookieConsentProvider>
+          </I18nProvider>
+        </ColorProvider>
       </body>
-      <GoogleAnalytics gaId="G-5XT0B5ZC2P" />
     </html>
   );
 }

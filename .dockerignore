@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+src/node_modules
+src/.next
+.env
+src/.env
+src/1.env
+npm-debug.log*
+Jenkinsfile
+ecosystem.config.js
+README.md
+.idea/
+.vscode/
+*.md

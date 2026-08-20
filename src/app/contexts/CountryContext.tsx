@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { API_URL, COUNTRY_NAME } from '@/app/config';
+import { getClientToken } from '@/app/services/clientTokenService';
 
 interface CountryContextType {
   countryId: string | null;
@@ -34,7 +35,8 @@ export function CountryProvider({ children }: CountryProviderProps) {
         setError(null);
         
         const response = await fetch(
-          `${API_URL}/countries/by-name?name=${encodeURIComponent(COUNTRY_NAME)}`
+          `${API_URL}/countries/by-name?name=${encodeURIComponent(COUNTRY_NAME)}`,
+          { headers: { Authorization: `Bearer ${await getClientToken()}` } }
         );
         
         if (!response.ok) {
@@ -43,7 +45,6 @@ export function CountryProvider({ children }: CountryProviderProps) {
         
         const data = await response.json();
         
-        // Asumir que la API devuelve un objeto con id o un array con el primer elemento
         const id = Array.isArray(data) ? data[0]?.id : data?.id;
         
         if (!id) {
@@ -56,7 +57,6 @@ export function CountryProvider({ children }: CountryProviderProps) {
         console.error('Error fetching country ID:', errorMessage);
         setError(errorMessage);
         
-        // Fallback: intentar usar el ID del .env si existe
         const fallbackId = process.env.NEXT_PUBLIC_ACLIMATE_COUNTRY_ID;
         if (fallbackId) {
           console.warn(`Using fallback country ID from env: ${fallbackId}`);

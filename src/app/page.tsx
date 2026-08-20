@@ -1,50 +1,47 @@
-"use client";
-import Image from "next/image";
-import WeatherCard from "./components/WeatherCard";
-import Link from "next/link";
-import { COUNTRY_NAME } from "./config";
-import { useCountry } from "@/app/contexts/CountryContext";
+import type { Metadata } from "next";
+import HomeClient from "./HomeClient";
+import {
+  buildPageMetadata,
+  COUNTRY_LABEL,
+  SITE_NAME,
+  getAbsoluteUrl,
+} from "./seo";
+
+const HOME_TITLE = `${SITE_NAME} | Información climática y agroclimática`;
+const HOME_DESCRIPTION = `AClimate ${COUNTRY_LABEL} es una plataforma de información climática, agroclimática e hidrometeorológica para consultar mapas, indicadores, estaciones y escenarios por región.`;
+
+export const metadata: Metadata = buildPageMetadata({
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  pathname: "/",
+  keywords: [
+    "AClimate",
+    COUNTRY_LABEL,
+    SITE_NAME,
+    "información climática",
+    "información agroclimática",
+    "mapas climáticos",
+    "estaciones meteorológicas",
+  ],
+});
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": ["Organization", "WebSite"],
+  name: SITE_NAME,
+  alternateName: `AClimate ${COUNTRY_LABEL}`,
+  url: getAbsoluteUrl("/"),
+  description: HOME_DESCRIPTION,
+};
 
 export default function Home() {
-  const { countryId } = useCountry();
   return (
-    <div>
-      <section className="relative min-h-screen flex items-center justify-center">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/assets/img/bg.jpg"
-            alt="Paisaje climático"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
-        </div>
-        <div className="relative z-10 container mx-auto px-6">
-          <div className="grid lg:grid-cols-4 gap-12 items-center">
-            <div className="space-y-12 md:col-span-3 2xl:col-span-2 col-span-4">
-              <div className="space-y-3">
-                <h1 className="text-5xl md:text-6xl font-semibold text-amber-50 text-balance">
-                  Bienvenido a AClimate {COUNTRY_NAME}
-                </h1>
-                <p className="text-xl text-amber-50 text-pretty">
-                  Explora, monitorea y compara datos satelitales, informate sobre como ha sido el clima en las regiones.
-                </p>
-                <div className="flex flex-col md:flex-row gap-4 text-center">
-                  <Link
-                    href={`/spatial/${countryId || '1'}`}
-                    className="bg-[#bc6c25] text-amber-50 font-semibold py-2 px-8 rounded-full hover:bg-amber-700 transition-colors text-lg"
-                  >
-                    Explorar
-                  </Link>
-                </div>
-              </div>
-              <WeatherCard />
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <HomeClient />
+    </>
   );
 }

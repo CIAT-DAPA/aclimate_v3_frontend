@@ -16,15 +16,25 @@ const FeatureCard = ({
 }: FeatureCardProps) => {
   return (
     <div
-      className={`${
-        bg ? "bg-[#dce1c8]" : "bg-white"
-      } py-10 px-4 flex flex-col items-center text-center`}
+      style={{
+        backgroundColor: bg ? "var(--color-quaternary)" : "white",
+      }}
+      className="py-10 px-4 flex flex-col items-center text-center"
     >
-      <Icon className="h-8 w-8 text-[#283618] mb-2" />
-      <h3 className="text-lg font-bold text-[#283618] mb-2 text-balance">
+      <Icon
+        className="h-8 w-8 mb-2"
+        style={{ color: "var(--color-primary)" }}
+      />
+      <h3
+        className="text-lg font-bold mb-2 text-balance"
+        style={{ color: "var(--color-primary)" }}
+      >
         {title}
       </h3>
-      <p className="text-[#283618] text-base font-medium text-pretty">
+      <p
+        className="text-base font-medium text-pretty"
+        style={{ color: "var(--color-text-dark)" }}
+      >
         {description}
       </p>
     </div>
