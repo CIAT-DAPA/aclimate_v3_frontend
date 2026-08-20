@@ -88,6 +88,7 @@ const countryCodeMap: Record<string, string> = {
   "3": "st", // SAT AMAZONIA
   "4": "ni", // Nicaragua
   "5": "sv", // El Salvador
+  "6": "gt", // Guatemala
 };
 
 // Opciones de período para indicadores
@@ -385,6 +386,12 @@ export default function SpatialDataPage() {
       zoom: 8,
       bbox: "-90.0,13.0,-87.5,15.0",
       bboxWMS13: "13.0,-90.0,15.0,-87.5",
+    },
+    gt: {
+      center: [15.78, -90.23],
+      zoom: 7,
+      bbox: "-92.2,13.7,-88.2,17.8",
+      bboxWMS13: "13.7,-92.2,17.8,-88.2",
     },
   };
 
