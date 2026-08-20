@@ -10,11 +10,11 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 8007
+      PORT: 8000
     },
     env_production: {
       NODE_ENV: 'production',
-      PORT: 8007
+      PORT: 8000
     },
     out_file: './aclimate_gt_out.log',
     error_file: './aclimate_gt_err.log',
