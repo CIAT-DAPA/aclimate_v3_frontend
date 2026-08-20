@@ -165,6 +165,7 @@ export default function AmazonasScenarioPage() {
     "1": "co",
     "2": "hn",
     "3": "st",
+    "6": "gt",
   };
   const countryCode = countryCodeMap[countryId || "2"] || "hn";
 
