@@ -19,7 +19,7 @@ Proporciona acceso a información climática procesada de fuentes como Copernicu
         logo: "/assets/img/partners/alliance.png",
         alt: "Alliance Bioversity-CIAT logo",
       },
-            {
+      {
         name: "Consultative Group on International Agricultural Research (CGIAR)",
         url: "https://cgiar.org/",
         logo: "/assets/img/partners/cgiar.png",
