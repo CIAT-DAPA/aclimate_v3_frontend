@@ -8,10 +8,8 @@ export const guatemalaConfig: BranchConfig = {
     title: "Sobre la herramienta",
     description: `AClimate Guatemala es una plataforma web especializada en el análisis de datos climáticos históricos espaciales.
 Proporciona acceso a información climática procesada de fuentes como Copernicus (AgEra5 v2) y CHIRPS v3, facilitando la toma de decisiones en el sector agropecuario y la planificación territorial.`,
-    projectTitle: "AgriLAC",
-    projectDescription: `AClimate Guatemala forma parte de la iniciativa AClimate que busca democratizar el acceso a información climática de calidad en América Latina y el Caribe.
-
-La plataforma automatiza el procesamiento de datos desde la descarga hasta la visualización, incluyendo resampling, validación, cálculos mensuales y climatologías. Esto permite a usuarios de diferentes sectores acceder fácilmente a datos históricos espaciales y cálculos de indicadores climáticos para Guatemala.`,
+    projectTitle: "Programa de Acción Climática del CGIAR (CASP)",
+    projectDescription: `AClimate Guatemala forma parte de las acciones del Programa de Acción Climática del CGIAR (CASP) para fortalecer los servicios de información climática y apoyar la toma de decisiones basada en evidencia. La plataforma automatiza el procesamiento de datos climáticos, desde la descarga y validación hasta la generación de climatologías e indicadores, facilitando el acceso a información climática histórica de alta calidad para investigadores, instituciones técnicas, servicios de extensión y tomadores de decisiones en Guatemala. Asimismo, contribuye al desarrollo y escalamiento de servicios climáticos centrados en el usuario en el marco de la iniciativa Next Wave.`,
     projectLink: "https://www.aclimate.org/",
     partnersTitle: "Socios",
     partners: [
@@ -20,6 +18,12 @@ La plataforma automatiza el procesamiento de datos desde la descarga hasta la vi
         url: "https://alliancebioversityciat.org/",
         logo: "/assets/img/partners/alliance.png",
         alt: "Alliance Bioversity-CIAT logo",
+      },
+      {
+        name: "Consultative Group on International Agricultural Research (CGIAR)",
+        url: "https://cgiar.org/",
+        logo: "/assets/img/partners/cgiar.png",
+        alt: "CGIAR logo",
       },
     ],
   },
