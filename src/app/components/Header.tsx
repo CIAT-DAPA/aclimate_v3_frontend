@@ -116,7 +116,7 @@ const Header = () => {
           </Link>
           {config.name === "amazonia" && (
             <a
-              href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
+              href="https://pmasattsv.github.io/climate-dashboard-sat-pma/"
               target="_blank"
               rel="noreferrer"
               className="transition-colors mt-2 pb-1"
@@ -263,7 +263,7 @@ const Header = () => {
               </Link>
               {config.name === "amazonia" && (
                 <a
-                  href="https://ezapatacaldas.github.io/climate-dashboard-sat-pma/"
+                  href="https://pmasattsv.github.io/climate-dashboard-sat-pma/"
                   target="_blank"
                   rel="noreferrer"
                   className="transition-colors py-2 px-2"
