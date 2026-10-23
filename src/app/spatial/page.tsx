@@ -757,6 +757,92 @@ export default function SpatialDataPage() {
     [currentCountry.bboxWMS13],
   );
 
+  // Descargar una capa de escenarios usando el bbox propio de la capa (departamento)
+  const downloadScenarioLayer = async (
+    layerName: string,
+    layerTitle: string,
+    selectedTime: string,
+  ) => {
+    try {
+      const [workspaceName, shortName] = layerName.split(":");
+      const wmsUrl = `${GEOSERVER_URL}/${workspaceName}/wms`;
+      const capabilitiesUrl = `${wmsUrl}?service=WMS&request=GetCapabilities&version=1.3.0`;
+
+      let bbox = currentCountry.bboxWMS13;
+      let width = 1024;
+      let height = 1024;
+      let timeValue = selectedTime;
+
+      try {
+        const response = await fetch(
+          apiPath(`/api/wms?url=${encodeURIComponent(capabilitiesUrl)}`),
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const text = await response.text();
+        const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
+        const layers = xmlDoc.getElementsByTagName("Layer");
+
+        for (let i = 0; i < layers.length; i++) {
+          const layer = layers[i];
+          const name = layer.getElementsByTagName("Name")[0]?.textContent;
+          if (name !== layerName && name !== shortName) continue;
+
+          // EX_GeographicBoundingBox siempre está en lon/lat, sin ambigüedad de orden de ejes
+          const geoBox = layer.getElementsByTagName(
+            "EX_GeographicBoundingBox",
+          )[0];
+          if (geoBox) {
+            const read = (tag: string) =>
+              parseFloat(
+                geoBox.getElementsByTagName(tag)[0]?.textContent || "",
+              );
+            const west = read("westBoundLongitude");
+            const east = read("eastBoundLongitude");
+            const south = read("southBoundLatitude");
+            const north = read("northBoundLatitude");
+            if ([west, east, south, north].every((v) => !isNaN(v))) {
+              // WMS 1.3.0 con EPSG:4326: miny,minx,maxy,maxx (lat,lon,lat,lon)
+              bbox = `${south},${west},${north},${east}`;
+              // Mantener la proporción del área para no deformar los píxeles
+              const ratio = (north - south) / (east - west);
+              if (ratio > 0 && isFinite(ratio)) {
+                height = Math.max(1, Math.round(width * ratio));
+              }
+            }
+          }
+
+          if (!timeValue) {
+            const dimension = layer.getElementsByTagName("Dimension")[0];
+            if (dimension && dimension.getAttribute("name") === "time") {
+              const times = dimension.textContent?.trim().split(",") || [];
+              timeValue = times[times.length - 1]?.trim() || "";
+            }
+          }
+          break;
+        }
+      } catch (error) {
+        // Si falla GetCapabilities se usa el bbox del país
+        console.error(`Error leyendo capacidades de ${layerTitle}:`, error);
+      }
+
+      const timeParam = timeValue ? `&time=${timeValue}` : "";
+      const url = `${wmsUrl}?service=WMS&request=GetMap&version=1.3.0&layers=${layerName}&styles=&format=image/geotiff${timeParam}&bbox=${bbox}&width=${width}&height=${height}&crs=EPSG:4326`;
+
+      downloadRasterFile({
+        url: apiPath(`/api/wms?url=${encodeURIComponent(url)}`),
+        layer: layerName,
+        time: timeValue.split("T")[0] || "latest",
+        title: layerTitle,
+      });
+    } catch (error) {
+      console.error("Error descargando capa de escenario:", error);
+      alert(t("spatial.errors.downloadOne"));
+    }
+  };
+
   // Función para descargar todos los archivos
   const downloadAllData = async () => {
     if (isPreparingDownload) return; // Evitar múltiples clics
@@ -1348,6 +1434,23 @@ export default function SpatialDataPage() {
                                 );
                               }}
                             />
+                            {/* Botón de descarga dentro del mapa - posicionado debajo de zoom */}
+                            <button
+                              onClick={() =>
+                                downloadScenarioLayer(
+                                  `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_pct_change`,
+                                  `${t("spatial.scenarios.pctChange.title")} ${selectedScenarioDepartment}`,
+                                  latestForecastPctTime,
+                                )
+                              }
+                              className="absolute top-40 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                              title={t("spatial.actions.downloadRaster")}
+                            >
+                              <FontAwesomeIcon
+                                icon={faFileArrowDown}
+                                className="h-4 w-4"
+                              />
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1403,6 +1506,23 @@ export default function SpatialDataPage() {
                                 );
                               }}
                             />
+                            {/* Botón de descarga dentro del mapa - posicionado debajo de zoom */}
+                            <button
+                              onClick={() =>
+                                downloadScenarioLayer(
+                                  `climate_forecast_monthly:climate_forecast_monthly_st_${selectedScenarioDepartment}_spei`,
+                                  `${t("spatial.scenarios.monthly.title")} ${selectedScenarioDepartment}`,
+                                  latestScenarioTime,
+                                )
+                              }
+                              className="absolute top-40 right-4 bg-white hover:bg-gray-100 text-gray-700 font-medium rounded-lg p-2 shadow-md transition-colors cursor-pointer z-[1000]"
+                              title={t("spatial.actions.downloadRaster")}
+                            >
+                              <FontAwesomeIcon
+                                icon={faFileArrowDown}
+                                className="h-4 w-4"
+                              />
+                            </button>
                           </div>
                         </div>
                       )}
