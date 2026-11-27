@@ -26,6 +26,7 @@ jobs:
           - aclimate_salvador
           - aclimate_sat
           - aclimate_guatemala
+          - aclimate_colombia
       fail-fast: false
     
     steps:
